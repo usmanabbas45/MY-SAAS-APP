@@ -112,7 +112,7 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
               <SubmitButton pendingText="Starting audit…">Start audit</SubmitButton>
             </div>
           </form>
-          {docs.length === 0 ? <p className="hint" style={{ marginTop: 10 }}>Tip: add your help articles first. Without them AgentProof can&apos;t tell if an answer is made up.</p> : null}
+          {docs.length === 0 ? <p className="hint" style={{ marginTop: 10 }}>Tip: add your help articles first. Without them ProofMyAI can&apos;t tell if an answer is made up.</p> : null}
         </div>
       </div>
 

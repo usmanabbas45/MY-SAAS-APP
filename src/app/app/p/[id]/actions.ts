@@ -267,7 +267,7 @@ export async function testAlertAction(form: FormData) {
   if (!p.alert_webhook && !p.alert_email) done(`/app/p/${p.id}/settings`, { error: "Add a webhook URL or email first, then save." });
   await raiseIncident(p.id, {
     module: "workflows", code: "TEST_ALERT", severity: "medium",
-    title: "Test alert from AgentProof", detail: "If you can read this, alerts are working.",
+    title: "Test alert from ProofMyAI", detail: "If you can read this, alerts are working.",
   });
   done(`/app/p/${p.id}/settings`, { ok: "Test alert sent. Check your Slack/Discord channel or inbox." });
 }

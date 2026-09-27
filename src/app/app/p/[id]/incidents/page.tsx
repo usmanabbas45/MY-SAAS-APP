@@ -37,7 +37,7 @@ export default async function IncidentsPage({ params, searchParams }: { params: 
         <Link className={`tab ${resolved ? "active" : ""}`} href={`${base}?show=resolved`}>Resolved</Link>
       </div>
       <div className="card">
-        {rows.length === 0 ? <Empty icon={resolved ? "🗂️" : "🎉"} title={resolved ? "No resolved incidents" : "All clear"}>{resolved ? "" : "No open incidents. AgentProof keeps watching."}</Empty> : (
+        {rows.length === 0 ? <Empty icon={resolved ? "🗂️" : "🎉"} title={resolved ? "No resolved incidents" : "All clear"}>{resolved ? "" : "No open incidents. ProofMyAI keeps watching."}</Empty> : (
           <div className="table-wrap">
             <table>
               <thead><tr><th>Severity</th><th>Incident</th><th>Area</th><th>When</th>{resolved ? null : <th />}</tr></thead>

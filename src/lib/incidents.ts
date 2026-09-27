@@ -37,7 +37,7 @@ async function sendAlert(projectId: number, inc: NewIncident): Promise<void> {
   );
   if (!project) return;
   const link = `${process.env.APP_URL ?? ""}/app/p/${projectId}`;
-  const text = `[AgentProof · ${project.name}] ${inc.severity.toUpperCase()}: ${inc.title}\n${inc.detail}\n${link}`;
+  const text = `[ProofMyAI · ${project.name}] ${inc.severity.toUpperCase()}: ${inc.title}\n${inc.detail}\n${link}`;
   const jobs: Promise<unknown>[] = [];
 
   if (project.alert_webhook) {
@@ -56,9 +56,9 @@ async function sendAlert(projectId: number, inc: NewIncident): Promise<void> {
         method: "POST",
         headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
         body: JSON.stringify({
-          from: process.env.ALERT_FROM_EMAIL || "alerts@agentproof.app",
+          from: process.env.ALERT_FROM_EMAIL || "alerts@proofmyai.com",
           to: [project.alert_email],
-          subject: `[AgentProof] ${inc.title}`,
+          subject: `[ProofMyAI] ${inc.title}`,
           text,
         }),
         signal: AbortSignal.timeout(10000),

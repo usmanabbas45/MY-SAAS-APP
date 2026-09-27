@@ -289,3 +289,16 @@ details[open] summary { margin-bottom: 10px; }
 .grid > .card, .grid > form.card { margin-top: 0; }
 .stack > .card + .card { margin-top: 16px; }
 .shell > .sidebar { align-self: start; }
+.feed { display: flex; flex-direction: column; }
+.feed-row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+.feed-row:last-child { border-bottom: none; }
+.feed-icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; color: #fff; }
+.feed-icon.ok { background: var(--ok); }
+.feed-icon.warn { background: var(--warn); }
+.feed-icon.bad { background: var(--bad); }
+.live-dot { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+.live-status.live-ok { border-top: 3px solid var(--ok); }
+.live-status.live-problem { border-top: 3px solid var(--bad); }
+.live-status.live-idle { border-top: 3px solid var(--border); }

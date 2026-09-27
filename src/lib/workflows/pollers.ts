@@ -20,7 +20,7 @@ async function getJson(url: string, headers: Record<string, string>): Promise<un
 
 type N8nExecution = { id: string | number; workflowId: string | number; status?: string; finished?: boolean; startedAt?: string; stoppedAt?: string | null };
 
-/** Maps an n8n execution (public API v1) to AgentProof's run format. Exported for tests. */
+/** Maps an n8n execution (public API v1) to ProofMyAI's run format. Exported for tests. */
 export function mapN8nExecution(e: N8nExecution, names: Map<string, string>): WorkflowRunInput | null {
   const status = e.status ?? (e.finished ? "success" : "error");
   if (status === "running" || status === "waiting" || status === "new") return null;

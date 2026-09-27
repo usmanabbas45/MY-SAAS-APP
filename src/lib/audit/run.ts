@@ -60,8 +60,8 @@ export async function executeAudit(auditId: number, projectId: number, conversat
         const features = featureVector(signalsFor(e, index), g.verdict, g.confidence);
         severities.push(g.severity);
         run(
-          `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
           auditId, e.conversationId, e.turnIndex, e.question, e.answer, g.verdict, g.severity, g.reason, g.sourceDoc,
           g.confidence, JSON.stringify(features), riskScore(model, features, g.verdict, g.confidence),
         );

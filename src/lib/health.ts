@@ -40,7 +40,7 @@ export function projectHealth(projectId: number, days = 14): ProjectHealth {
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
 
   const audit = get<{ score: number; created_at: string; name: string }>(
-    "SELECT score, created_at, name FROM audits WHERE project_id = ? AND status = 'done' ORDER BY id DESC LIMIT 1", projectId,
+    "SELECT score, created_at, name FROM audits WHERE project_id = ? AND status IN ('done', 'live') AND score IS NOT NULL ORDER BY id DESC LIMIT 1", projectId,
   );
   const test = get<{ passed: number; failed: number; created_at: string }>(
     "SELECT passed, failed, created_at FROM test_runs WHERE project_id = ? ORDER BY id DESC LIMIT 1", projectId,

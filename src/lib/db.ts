@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS audit_items (
   features_json TEXT NOT NULL,
   risk REAL,
   feedback TEXT,
-  corrected_verdict TEXT
+  corrected_verdict TEXT,
+  created_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_audit_items_audit ON audit_items(audit_id);
 CREATE TABLE IF NOT EXISTS bot_targets (
@@ -165,6 +166,9 @@ CREATE TABLE IF NOT EXISTS risk_models (
 function migrate(db: DatabaseSync): void {
   const cols = (db.prepare("PRAGMA table_info(audits)").all() as { name: string }[]).map((c) => c.name);
   if (!cols.includes("judge")) db.exec("ALTER TABLE audits ADD COLUMN judge TEXT");
+  const itemCols = (db.prepare("PRAGMA table_info(audit_items)").all() as { name: string }[]).map((c) => c.name);
+  if (!itemCols.includes("created_at")) db.exec("ALTER TABLE audit_items ADD COLUMN created_at TEXT");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_conv ON audit_items(conversation_id, turn_index)");
 }
 
 let instance: DatabaseSync | null = null;

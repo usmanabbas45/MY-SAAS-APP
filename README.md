@@ -1,11 +1,11 @@
-# AgentProof: proof your AI works
+# ProofMyAI: prove your AI works
 
-AgentProof is a quality-monitoring SaaS for small businesses and agencies that run **AI chatbots, AI agents and n8n/Make automations**. It catches wrong answers, broken agents and silent workflow failures before customers notice, and tells you exactly what to fix.
+ProofMyAI is a quality-monitoring SaaS for small businesses and agencies that run **AI chatbots, AI agents and n8n/Make automations**. It catches wrong answers, broken agents and silent workflow failures before customers notice, and tells you exactly what to fix.
 
 | Module | What it does |
 |---|---|
 | 💬 **Chatbot audits** | Upload transcripts (CSV/JSON from Intercom, Tidio, Crisp, Zendesk, any bot). Every answer is graded against your help docs: *correct, not in docs, made up, should escalate, off policy, unclear*. A **fix list** groups problems by the help article that caused them. |
-| 🧪 **Nightly chatbot tests** | Save important questions and the facts a correct answer must contain. AgentProof calls your bot's HTTP endpoint every 24 h and alerts you when an answer breaks. |
+| 🧪 **Nightly chatbot tests** | Save important questions and the facts a correct answer must contain. ProofMyAI calls your bot's HTTP endpoint every 24 h and alerts you when an answer breaks. |
 | 🤖 **AI agent monitoring** | One HTTP call per agent run. Detects loops, tool errors, runaway cost/steps/time, empty output, "success" that ended on an error, and (with the AI judge) goals not met or claims the tools never returned. |
 | ⚙️ **n8n & Make monitoring** | Connect with an API key or a webhook. Detects failures, silent failures (success with 0 output), slow runs, error-rate spikes and workflows that stopped running. |
 | 🚨 **Incidents & alerts** | Deduplicated incidents with Slack / Discord / Teams / Google Chat webhooks and email (Resend). |

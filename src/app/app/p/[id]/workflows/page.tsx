@@ -48,7 +48,7 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <div className="card">
-          <div className="card-head"><div><h3>Connections</h3><span className="sub">AgentProof checks these every 15 minutes.</span></div></div>
+          <div className="card-head"><div><h3>Connections</h3><span className="sub">ProofMyAI checks these every 15 minutes.</span></div></div>
           {sources.map((s) => (
             <div key={s.id} className="card" style={{ boxShadow: "none", marginBottom: 12 }}>
               <div className="row between">

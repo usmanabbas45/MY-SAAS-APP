@@ -1,10 +1,10 @@
-# AgentProof: complete step-by-step guide
+# ProofMyAI: complete step-by-step guide
 
 Written for Muhammad Usman. Follow the parts in order. Each step says exactly what to click.
 
 | Part | What you will do | Time |
 |---|---|---|
-| A | Run AgentProof on your own computer | 20 min |
+| A | Run ProofMyAI on your own computer | 20 min |
 | B | Turn on the AI judge (Claude API key) | 10 min |
 | C | Put it online (Railway) | 30 min |
 | D | Turn on automatic checks (cron) | 5 min |
@@ -80,11 +80,11 @@ npm run build       # expect: "Compiled successfully"
 
 ## Part B: Turn on the AI judge
 
-Without a key, AgentProof uses rules plus your neural network. With a key, Claude reads every answer like a human quality checker.
+Without a key, ProofMyAI uses rules plus your neural network. With a key, Claude reads every answer like a human quality checker.
 
 1. Go to **https://console.anthropic.com** → sign up.
 2. Click **Settings → Billing** → add credits. $10 is plenty to start.
-3. Click **API Keys → Create Key** → name it `agentproof` → **copy** the key. You will only see it once.
+3. Click **API Keys → Create Key** → name it `proofmyai` → **copy** the key. You will only see it once.
 4. Paste it into `.env` after `ANTHROPIC_API_KEY=`.
 5. Stop the app (**Ctrl + C**) and start it again with `npm run dev`. The yellow "basic mode" banner disappears.
 
@@ -151,7 +151,7 @@ These checks power n8n/Make polling, stopped-workflow alerts and the nightly cha
 ## Part E: Custom domain and email alerts
 
 ### E1. Domain
-1. Buy a domain on **Namecheap** or **Porkbun** (for example `agentproof.io`, or any name you like).
+1. Buy a domain on **Namecheap** or **Porkbun** (yours: `proofmyai.com`).
 2. Railway → service → **Settings → Networking → Custom Domain** → type your domain.
 3. Railway shows a **CNAME** record. At your domain registrar, open **DNS** → **Add record** → type CNAME, host `@` (or `www`), value as shown.
 4. Wait 5–30 minutes. Then update `APP_URL` in Railway variables to `https://yourdomain.com`.
@@ -202,10 +202,10 @@ Follow the validation plan in `docs/market-research.md`. In short:
    - Posts in r/shopify, r/n8n, r/automation and r/SaaS.
 
    > Hi {name}, I built a tool that checks AI chatbots for wrong answers and n8n/Make workflows for silent failures. I'd like to run a **free audit** of your bot. You'd get a report of every wrong answer and which help article causes it. Interested?
-3. **Deliver the audit** in AgentProof and send screenshots of the fix list.
+3. **Deliver the audit** in ProofMyAI and send screenshots of the fix list.
 4. **Convert:** "Want this checked automatically every night? It's $29/month, and 50% off for life if you join as a founding customer."
 5. **Agencies are the best channel:** one agency brings 10–50 client bots. Offer them the **Agency plan** and white-label reports.
-6. **Your own freelancing:** add *"AI quality audits for chatbots and n8n/Make workflows"* as a service on Upwork and Fiverr, and use AgentProof to deliver it.
+6. **Your own freelancing:** add *"AI quality audits for chatbots and n8n/Make workflows"* as a service on Upwork and Fiverr, and use ProofMyAI to deliver it.
 
 **Goal:** 3 paying customers in the first 30 days. If you reach it, build billing (Part J). If not, go back to the interview questions in the research doc and adjust the offer.
 
