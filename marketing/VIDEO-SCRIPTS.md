@@ -1,23 +1,20 @@
 # ProofMyAI videos
 
+All videos have a **professional male voiceover** (American English, AI-generated with the open-source Kokoro "Michael" voice) plus large on-screen captions, so they work with or without sound.
+
 | File | Format | Length | Use it on |
 |---|---|---|---|
-| `videos/proofmyai-marketing-16x9.mp4` | 1920×1080 | 60 s | Website hero, YouTube, LinkedIn, Upwork/Fiverr portfolio, cold emails |
-| `videos/proofmyai-marketing-9x16.mp4` | 1080×1920 | 60 s | Instagram Reels, TikTok, YouTube Shorts, WhatsApp Status, Facebook Stories |
-| `videos/proofmyai-tutorial.mp4` | 1920×1080 | 2 min 55 s | YouTube "How to use", onboarding email, help page, sales demos |
+| `videos/proofmyai-marketing-16x9.mp4` | 1920×1080, voice | 1 min 24 s | Website hero, YouTube, LinkedIn, Upwork/Fiverr portfolio, cold emails |
+| `videos/proofmyai-marketing-9x16.mp4` | 1080×1920, voice | 1 min 24 s | Instagram Reels, TikTok, YouTube Shorts, WhatsApp Status, Facebook Stories |
+| `videos/proofmyai-tutorial.mp4` | 1920×1080, voice | about 3 min | YouTube "How to use", onboarding email, help page, sales demos |
 
-All three videos use large on-screen captions, so they work with the sound off (most social viewers watch muted). To add a voiceover or music:
+**Optional: add background music.** Open the video in **CapCut** (free) → **Audio → Sounds** → pick a calm "corporate / tech" track → set the music volume to about 10–15% so the voice stays clear → **Export** at 1080p.
 
-1. Open **CapCut** (free, desktop or phone) → **New project** → import the video.
-2. **Audio → Sounds** → pick a calm "tech / corporate" track → set its volume to about 20%.
-3. For a voiceover, either:
-   - **Record yourself:** Audio → Record, reading the script below, or
-   - **AI voice:** Text → paste a line → **Text to speech** → pick a voice → drag each line under its scene.
-4. **Export** → 1080p, 30 fps.
+**Use your own voice instead:** mute the video track's audio in CapCut and record the script below with **Audio → Record**.
 
 ---
 
-## Marketing video voiceover (60 s)
+## Marketing video voiceover script (1 min 24 s)
 
 | Time | On screen | Voiceover |
 |---|---|---|
@@ -37,7 +34,7 @@ All three videos use large on-screen captions, so they work with the sound off (
 
 ---
 
-## Tutorial voiceover (2 min 55 s)
+## Tutorial voiceover script (about 3 min)
 
 Each on-screen step has a caption; read it or expand it:
 
