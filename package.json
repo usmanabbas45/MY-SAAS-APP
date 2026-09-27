@@ -1,8 +1,8 @@
 {
-  "name": "agentproof",
+  "name": "proofmyai",
   "version": "0.1.0",
   "private": true,
-  "description": "AgentProof - quality monitoring for AI chatbots, AI agents and n8n/Make workflows",
+  "description": "ProofMyAI - quality monitoring for AI chatbots, AI agents and n8n/Make workflows",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -1,4 +1,4 @@
-# AgentProof ingestion API
+# ProofMyAI ingestion API
 
 All endpoints take JSON and authenticate with the project API key (Dashboard → **Settings → API key**):
 
@@ -38,6 +38,23 @@ Each step: `type` (`llm` \| `tool` \| `retrieval` \| `other`), `name`, `input`, 
 Response: `{ "id": 12, "score": 65, "issues": [{ "code": "LOOP_DETECTED", "severity": "high", "message": "…" }] }`
 
 Issue codes: `RUN_FAILED`, `TOOL_ERRORS`, `LOOP_DETECTED` (same tool + same input ≥ 3 times), `TOO_MANY_STEPS`, `OVER_BUDGET`, `SLOW_RUN`, `EMPTY_OUTPUT`, `ENDED_ON_ERROR`, and from the AI review, `GOAL_NOT_MET` and `UNGROUNDED_OUTPUT`. Limits are set per project in Settings.
+
+---
+
+## POST `/api/v1/chat-events` (live chatbot tracking)
+
+Send each conversation as it happens. Either send the whole history each time (only new bot replies are graded), or just the latest question and answer.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `conversation_id` | string | ✅ | Your chat/session id |
+| `bot_name` | string | | Keeps conversations of different bots apart |
+| `messages` | array of `{role, content}` | one of | Roles: user/customer and assistant/bot; system messages are ignored |
+| `question` + `answer` | strings | one of | Single exchange |
+
+Response: `202 { "accepted": 1 }`. Grading happens in the background, and results appear on the **Live tracking** page and in today's **Live chats** audit. Add `?wait=1` to get the verdicts back in the response: `{ "graded": 1, "results": [{ "verdict": "hallucination", "label": "Made up", "severity": "high", "reason": "…" }] }`.
+
+High-severity answers open an incident and send an alert. If the AI judge is unavailable or over quota, the basic checks are used instead, so live tracking never stops.
 
 ---
 

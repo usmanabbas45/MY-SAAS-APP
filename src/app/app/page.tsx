@@ -24,7 +24,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <nav className="lp-nav">
-        <Link href="/" className="logo"><span className="logo-mark">✓</span>AgentProof</Link>
+        <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <div className="row">
           <span className="sub">{user.email}</span>
           <ThemeToggle />

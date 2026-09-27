@@ -43,12 +43,12 @@ export function ActivityChart({ series }: { series: DayPoint[] }) {
   );
 }
 
-export function Sparkline({ values, color = "var(--brand)" }: { values: number[]; color?: string }) {
+export function Sparkline({ values, color = "var(--brand)", width = 120, height = 32 }: { values: number[]; color?: string; width?: number; height?: number }) {
   if (values.length < 2) return null;
-  const W = 120, H = 32, max = Math.max(...values, 1), min = Math.min(...values, 0);
+  const W = width, H = height, max = Math.max(...values, 1), min = Math.min(...values, 0);
   const pts = values.map((v, i) => `${(i / (values.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * (H - 4) - 2}`).join(" ");
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ maxWidth: "100%", height: "auto" }} aria-hidden>
       <polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );

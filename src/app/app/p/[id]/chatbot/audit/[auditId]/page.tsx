@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AutoRefresh, SubmitButton } from "@/components/client";
-import { Badge, Empty, HBars, PageHeader, ScoreRing, SeverityBadge, VerdictBadge } from "@/components/ui";
+import { AutoRefresh, CopyButton, SubmitButton } from "@/components/client";
+import { Badge, Empty, Flash, HBars, PageHeader, ScoreRing, SeverityBadge, VerdictBadge } from "@/components/ui";
 import { fixList } from "@/lib/audit/run";
 import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
 import { VERDICT_LABELS, VERDICTS, type Verdict } from "@/lib/judge/types";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
 import { ownedProject } from "@/lib/projects";
-import { feedbackAction } from "../../../actions";
+import { feedbackAction, shareAuditAction } from "../../../actions";
 
 export const metadata = { title: "Audit results" };
 
@@ -21,21 +21,22 @@ const VERDICT_COLOR: Record<Verdict, string> = {
 interface Item {
   id: number; conversation_id: string; question: string; answer: string; verdict: Verdict; severity: string;
   reason: string; source_doc: string | null; risk: number | null; feedback: string | null; corrected_verdict: Verdict | null;
+  frustrated: number; rule_hit: string | null;
 }
 
 export default async function AuditPage({ params, searchParams }: {
   params: Promise<{ id: string; auditId: string }>;
-  searchParams: Promise<{ v?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{ v?: string; sort?: string; page?: string; ok?: string; error?: string }>;
 }) {
   const user = await requireUser();
   const { id, auditId } = await params;
   const p = ownedProject(user.id, Number(id));
-  const audit = get<{ id: number; name: string; status: string; score: number | null; error: string | null; mode: string; judge: string | null }>(
-    "SELECT id, name, status, score, error, mode, judge FROM audits WHERE id = ? AND project_id = ?", Number(auditId), p.id,
+  const audit = get<{ id: number; name: string; status: string; score: number | null; error: string | null; mode: string; judge: string | null; share_token: string | null }>(
+    "SELECT id, name, status, score, error, mode, judge, share_token FROM audits WHERE id = ? AND project_id = ?", Number(auditId), p.id,
   );
   if (!audit) notFound();
   const sp = await searchParams;
-  const filter = sp.v && (sp.v === "problems" || (VERDICTS as readonly string[]).includes(sp.v)) ? sp.v : "problems";
+  const filter = sp.v && (sp.v === "problems" || sp.v === "frustrated" || (VERDICTS as readonly string[]).includes(sp.v)) ? sp.v : "problems";
   const sort = sp.sort === "order" ? "order" : "risk";
   const page = Math.max(1, Number(sp.page) || 1);
   const base = `/app/p/${p.id}/chatbot/audit/${audit.id}`;
@@ -48,30 +49,51 @@ export default async function AuditPage({ params, searchParams }: {
   const problems = total - (counts.find((c) => c.verdict === "correct")?.n ?? 0);
   const reviewed = get<{ n: number }>("SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND feedback IS NOT NULL", audit.id)?.n ?? 0;
 
-  const where = filter === "problems" ? "AND COALESCE(corrected_verdict, verdict) <> 'correct'" : "AND COALESCE(corrected_verdict, verdict) = ?";
-  const args: (string | number)[] = filter === "problems" ? [audit.id] : [audit.id, filter];
+  const where = filter === "problems" ? "AND COALESCE(corrected_verdict, verdict) <> 'correct'"
+    : filter === "frustrated" ? "AND frustrated = 1" : "AND COALESCE(corrected_verdict, verdict) = ?";
+  const args: (string | number)[] = filter === "problems" || filter === "frustrated" ? [audit.id] : [audit.id, filter];
+  const frustrated = get<{ n: number }>("SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND frustrated = 1", audit.id)?.n ?? 0;
+  const shareUrl = audit.share_token ? `${process.env.APP_URL || ""}/r/${audit.share_token}` : null;
   const matching = get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? ${where}`, ...args)?.n ?? 0;
   const items = all<Item>(
-    `SELECT id, conversation_id, question, answer, verdict, severity, reason, source_doc, risk, feedback, corrected_verdict
+    `SELECT id, conversation_id, question, answer, verdict, severity, reason, source_doc, risk, feedback, corrected_verdict, frustrated, rule_hit
        FROM audit_items WHERE audit_id = ? ${where}
       ORDER BY ${sort === "risk" ? "COALESCE(risk, 0) DESC, id" : "id"} LIMIT ? OFFSET ?`,
     ...args, PAGE_SIZE, (page - 1) * PAGE_SIZE,
   );
-  const fixes = audit.status === "done" ? fixList(audit.id) : [];
+  const fixes = audit.status === "done" || audit.status === "live" ? fixList(audit.id) : [];
   const pages = Math.max(1, Math.ceil(matching / PAGE_SIZE));
 
   return (
     <div>
-      <AutoRefresh active={audit.status === "running"} />
+      <AutoRefresh active={audit.status === "running" || audit.status === "live"} ms={audit.status === "live" ? 10000 : 3000} />
       <p className="sub"><Link href={`/app/p/${p.id}/chatbot`}>← All audits</Link></p>
-      <PageHeader title={audit.name} subtitle={`Graded by ${audit.judge ?? (audit.mode === "ai" ? "the AI judge" : "basic mode")} · ${total} answers`} />
+      <Flash ok={sp.ok} error={sp.error} />
+      <PageHeader
+        title={audit.name}
+        subtitle={`Graded by ${audit.judge ?? (audit.mode === "ai" ? "the AI judge" : "basic mode")} · ${total} answers${audit.status === "live" ? " · updates live" : ""}`}
+        actions={total > 0 ? (
+          <>
+            <a className="btn btn-ghost btn-sm" href={`/app/p/${p.id}/chatbot/audit/${audit.id}/csv`}>⬇ CSV</a>
+            {shareUrl ? (
+              <>
+                <a className="btn btn-ghost btn-sm" href={shareUrl} target="_blank" rel="noreferrer">📄 Client report / PDF</a>
+                <CopyButton text={shareUrl} label="Copy share link" />
+                <form action={shareAuditAction}><input type="hidden" name="projectId" value={p.id} /><input type="hidden" name="auditId" value={audit.id} /><input type="hidden" name="revoke" value="1" /><SubmitButton className="btn btn-ghost btn-sm" pendingText="…">Stop sharing</SubmitButton></form>
+              </>
+            ) : (
+              <form action={shareAuditAction}><input type="hidden" name="projectId" value={p.id} /><input type="hidden" name="auditId" value={audit.id} /><SubmitButton className="btn btn-sm" pendingText="Creating…">🔗 Share client report</SubmitButton></form>
+            )}
+          </>
+        ) : null}
+      />
 
       {audit.status === "running" ? (
         <div className="card row"><span className="spin" /> <strong>Grading answers…</strong><span className="sub">This page updates automatically. Large files take a few minutes.</span></div>
       ) : null}
       {audit.status === "failed" ? <div className="alert alert-bad"><strong>Audit failed:</strong> {audit.error}</div> : null}
 
-      {audit.status === "done" ? (
+      {audit.status === "done" || audit.status === "live" ? (
         <>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div className="card" style={{ display: "grid", placeItems: "center" }}>
@@ -127,6 +149,7 @@ export default async function AuditPage({ params, searchParams }: {
           </div>
           <div className="tabs">
             <Link className={`tab ${filter === "problems" ? "active" : ""}`} href={qs({ v: "problems" })}>All problems ({problems})</Link>
+            <Link className={`tab ${filter === "frustrated" ? "active" : ""}`} href={qs({ v: "frustrated" })}>😠 Frustrated customers ({frustrated})</Link>
             {VERDICTS.map((v) => (
               <Link key={v} className={`tab ${filter === v ? "active" : ""}`} href={qs({ v })}>{VERDICT_LABELS[v]} ({counts.find((c) => c.verdict === v)?.n ?? 0})</Link>
             ))}
@@ -142,6 +165,8 @@ export default async function AuditPage({ params, searchParams }: {
                         <VerdictBadge verdict={shown} />
                         {it.severity !== "none" && shown !== "correct" ? <SeverityBadge severity={it.severity} /> : null}
                         {it.risk != null ? <Badge tone={it.risk >= 0.7 ? "bad" : it.risk >= 0.4 ? "warn" : "ok"}>Risk {Math.round(it.risk * 100)}%</Badge> : null}
+                        {it.frustrated ? <Badge tone="warn">😠 Frustrated customer</Badge> : null}
+                        {it.rule_hit ? <Badge tone="bad">📏 Rule broken</Badge> : null}
                         {it.feedback ? <Badge tone="brand">{it.feedback === "agree" ? "Reviewed ✓" : `Corrected (judge said ${VERDICT_LABELS[it.verdict]})`}</Badge> : null}
                       </div>
                       <span className="faint mono">#{it.conversation_id}</span>

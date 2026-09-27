@@ -45,6 +45,13 @@ export default async function SettingsPage({ params, searchParams }: { params: P
             <div className="field"><label htmlFor="t">Max seconds</label><input id="t" name="agent_max_seconds" type="number" min="1" defaultValue={Math.round(p.agent_max_ms / 1000)} /></div>
           </div>
           <label className="check"><input type="checkbox" name="agent_ai_review" defaultChecked={Boolean(p.agent_ai_review)} /> AI review of agent outputs (goal achieved? grounded in tool results?)</label>
+          <h3 style={{ marginTop: 18 }}>Privacy & reports</h3>
+          <label className="check"><input type="checkbox" name="redact_pii" defaultChecked={Boolean(p.redact_pii)} /> 🔒 Mask personal data (emails, phone numbers, card numbers, IBANs, IPs) before storing or AI checking</label>
+          <label className="check" style={{ marginTop: 8 }}><input type="checkbox" name="weekly_digest" defaultChecked={Boolean(p.weekly_digest)} /> 📬 Send a weekly summary email to the alert email</label>
+          <div className="field" style={{ marginTop: 12 }}>
+            <label htmlFor="brand">Report brand name <span className="hint">(agencies: your agency name on shared client reports; empty = ProofMyAI)</span></label>
+            <input id="brand" name="report_brand" type="text" defaultValue={p.report_brand ?? ""} maxLength={80} placeholder="Your Agency Ltd" />
+          </div>
           <div className="row" style={{ marginTop: 16 }}><SubmitButton pendingText="Saving…">Save settings</SubmitButton></div>
         </form>
 

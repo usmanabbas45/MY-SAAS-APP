@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "AgentProof - Proof your AI works", template: "%s · AgentProof" },
+  title: { default: "ProofMyAI - Prove your AI works", template: "%s · ProofMyAI" },
   description: "Quality monitoring for AI chatbots, AI agents and n8n/Make workflows. Catch wrong answers, broken agents and silent automation failures before customers do.",
 };
 

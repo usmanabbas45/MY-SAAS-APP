@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new Response(exportTrainingJsonl(projectId), {
     headers: {
       "content-type": "application/x-ndjson; charset=utf-8",
-      "content-disposition": `attachment; filename="agentproof-training-${projectId}.jsonl"`,
+      "content-disposition": `attachment; filename="proofmyai-training-${projectId}.jsonl"`,
     },
   });
 }

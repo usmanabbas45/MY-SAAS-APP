@@ -56,7 +56,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       title: "Connect n8n or Make", time: "2 min",
       body: (
         <ul>
-          <li><strong>n8n:</strong> in n8n go to Settings → n8n API → Create an API key. In AgentProof open <Link href={`${b}/workflows`}>n8n &amp; Make</Link> → Connect n8n, paste your n8n URL and key.</li>
+          <li><strong>n8n:</strong> in n8n go to Settings → n8n API → Create an API key. In ProofMyAI open <Link href={`${b}/workflows`}>n8n &amp; Make</Link> → Connect n8n, paste your n8n URL and key.</li>
           <li><strong>Make:</strong> in Make open your avatar → Profile → API access → Add token (scope <code>scenarios:read</code>). Copy your scenario IDs from the scenario URLs, then choose Connect Make.</li>
           <li>Optional: set <em>“Alert if no runs for… minutes”</em> to catch workflows that silently stop.</li>
         </ul>

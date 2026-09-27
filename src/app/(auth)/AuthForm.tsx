@@ -11,7 +11,7 @@ export function AuthForm({ mode, action }: { mode: "login" | "signup"; action: (
   return (
     <div className="auth-wrap">
       <div className="card auth-card">
-        <Link href="/" className="logo"><span className="logo-mark">✓</span>AgentProof</Link>
+        <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <h2>{signup ? "Create your free account" : "Welcome back"}</h2>
         <p className="sub">{signup ? "Start checking your AI chatbots, agents and workflows in 5 minutes." : "Log in to your dashboard."}</p>
         {state.error ? <div className="alert alert-bad" role="alert">{state.error}</div> : null}

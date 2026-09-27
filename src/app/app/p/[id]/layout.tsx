@@ -14,6 +14,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
 
   const monitor: NavItem[] = [
     { href: base, label: "Overview", icon: "📊" },
+    { href: `${base}/live`, label: "Live tracking", icon: "📡" },
     { href: `${base}/chatbot`, label: "Chatbot audits", icon: "💬" },
     { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪" },
     { href: `${base}/agents`, label: "AI agents", icon: "🤖" },
@@ -28,7 +29,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link href="/app?new=1" className="logo"><span className="logo-mark">✓</span>AgentProof</Link>
+        <Link href="/app?new=1" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <ProjectSwitcher projects={listProjects(user.id).map((p) => ({ id: p.id, name: p.name }))} current={project.id} />
         <div className="nav-label">Monitor</div>
         <NavLinks items={monitor} />

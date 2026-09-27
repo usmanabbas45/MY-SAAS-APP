@@ -33,7 +33,7 @@ const ID_COLS = ["conversation_id", "conversation", "chat_id", "session_id", "th
 const ROLE_COLS = ["role", "sender", "author", "from", "speaker", "type"];
 const TEXT_COLS = ["message", "content", "text", "body", "utterance"];
 
-function normaliseRole(raw: unknown): Turn["role"] | null {
+export function normaliseRole(raw: unknown): Turn["role"] | null {
   const r = String(raw ?? "").trim().toLowerCase();
   if (["user", "customer", "visitor", "client", "human", "contact", "lead", "end_user", "enduser"].includes(r)) return "user";
   if (["assistant", "bot", "ai", "agent", "chatbot", "operator", "admin", "model", "system_bot", "fin", "lyro"].includes(r)) return "assistant";

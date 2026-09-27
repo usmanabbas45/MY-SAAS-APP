@@ -61,3 +61,28 @@ export function workflowSnippets(appUrl: string, key: string) {
     url,
   };
 }
+
+export function liveChatSnippets(appUrl: string, key: string) {
+  const url = `${appUrl}/api/v1/chat-events`;
+  return {
+    url,
+    curl: `curl -X POST ${url} \\
+  -H "Authorization: Bearer ${key}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"conversation_id": "chat-8812", "question": "How much is express shipping?", "answer": "Express shipping costs $15."}'`,
+    js: `// Call after your bot replies (does not slow your bot down: grading happens in the background)
+await fetch("${url}", {
+  method: "POST",
+  headers: { Authorization: "Bearer ${key}", "Content-Type": "application/json" },
+  body: JSON.stringify({ conversation_id: chatId, messages }), // messages: [{ role: "user" | "assistant", content }]
+});`,
+    python: `import requests
+
+requests.post(
+    "${url}",
+    headers={"Authorization": "Bearer ${key}"},
+    json={"conversation_id": chat_id, "messages": messages},  # [{"role": "user"|"assistant", "content": ...}]
+    timeout=10,
+)`,
+  };
+}

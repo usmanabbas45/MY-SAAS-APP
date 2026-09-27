@@ -105,7 +105,7 @@ async function callJudge<S extends z.ZodType>(
   return response.parsed_output as z.infer<S>;
 }
 
-const CHAT_INSTRUCTIONS = `You are AgentProof's quality auditor for customer-support chatbots.
+const CHAT_INSTRUCTIONS = `You are ProofMyAI's quality auditor for customer-support chatbots.
 You receive a business's knowledge base and one conversation between a customer and the business's AI chatbot.
 Grade every assistant reply listed in the task. Use the knowledge base as the source of truth.
 
@@ -156,7 +156,7 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[])
   });
 }
 
-const TEST_INSTRUCTIONS = `You are AgentProof's regression tester for AI chatbots.
+const TEST_INSTRUCTIONS = `You are ProofMyAI's regression tester for AI chatbots.
 You receive a test question, the facts a correct answer must contain, optionally statements the answer must NOT contain, and the chatbot's actual answer.
 Pass the answer only if it conveys every expected fact (wording may differ) and contains none of the forbidden statements. Extra helpful detail is fine unless it contradicts the expected facts.
 reason: one plain-English sentence explaining the result.`;
@@ -168,7 +168,7 @@ export async function llmGradeTest(question: string, expected: string, mustNot: 
   return callJudge(TEST_INSTRUCTIONS, null, task, TestResult);
 }
 
-const AGENT_INSTRUCTIONS = `You are AgentProof's auditor for autonomous AI agents.
+const AGENT_INSTRUCTIONS = `You are ProofMyAI's auditor for autonomous AI agents.
 You receive the agent's goal, a compact log of its steps (LLM calls and tool calls with results or errors) and its final output.
 Decide whether the final output actually achieves the goal, and whether it is grounded in what the tools returned (no invented results, no claims of actions that never happened).
 reason: one or two plain-English sentences.`;
