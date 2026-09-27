@@ -6,7 +6,7 @@ All videos have a **professional male voiceover** (American English, AI-generate
 |---|---|---|---|
 | `videos/proofmyai-marketing-16x9.mp4` | 1920×1080, voice | 1 min 24 s | Website hero, YouTube, LinkedIn, Upwork/Fiverr portfolio, cold emails |
 | `videos/proofmyai-marketing-9x16.mp4` | 1080×1920, voice | 1 min 24 s | Instagram Reels, TikTok, YouTube Shorts, WhatsApp Status, Facebook Stories |
-| `videos/proofmyai-tutorial.mp4` | 1920×1080, voice | about 3 min | YouTube "How to use", onboarding email, help page, sales demos |
+| `videos/proofmyai-tutorial.mp4` | 1920×1080, voice | 3 min 14 s | YouTube "How to use", onboarding email, help page, sales demos |
 
 **Optional: add background music.** Open the video in **CapCut** (free) → **Audio → Sounds** → pick a calm "corporate / tech" track → set the music volume to about 10–15% so the voice stays clear → **Export** at 1080p.
 
@@ -34,7 +34,7 @@ All videos have a **professional male voiceover** (American English, AI-generate
 
 ---
 
-## Tutorial voiceover script (about 3 min)
+## Tutorial voiceover script (3 min 14 s)
 
 Each on-screen step has a caption; read it or expand it:
 
