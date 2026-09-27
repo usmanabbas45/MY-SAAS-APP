@@ -3,7 +3,7 @@ import { SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, ScoreBadge, StatusBadge, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
-import { llmAvailable } from "@/lib/judge/llm";
+import { judgeProvider, llmAvailable } from "@/lib/judge/llm";
 import { ownedProject } from "@/lib/projects";
 import { addKbDocAction, deleteAuditAction, deleteKbDocAction, startAuditAction } from "../actions";
 
@@ -91,7 +91,7 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
               <h3>2. New audit</h3>
               <span className="sub">Export chats from Intercom, Tidio, Crisp, Zendesk or your own bot as CSV or JSON.</span>
             </div>
-            <Badge tone={llmAvailable() ? "brand" : "muted"}>{llmAvailable() ? "AI judge" : "Basic mode"}</Badge>
+            <Badge tone={llmAvailable() ? "brand" : "muted"}>{judgeProvider() === "gemini" ? "Gemini judge" : judgeProvider() === "anthropic" ? "Claude judge" : "Basic mode"}</Badge>
           </div>
           <form action={startAuditAction}>
             <input type="hidden" name="projectId" value={p.id} />

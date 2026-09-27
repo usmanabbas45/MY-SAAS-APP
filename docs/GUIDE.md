@@ -88,6 +88,14 @@ Without a key, AgentProof uses rules plus your neural network. With a key, Claud
 4. Paste it into `.env` after `ANTHROPIC_API_KEY=`.
 5. Stop the app (**Ctrl + C**) and start it again with `npm run dev`. The yellow "basic mode" banner disappears.
 
+### Free option: Google Gemini
+1. Go to **https://aistudio.google.com/apikey** → sign in with Google → **Create API key** → copy it.
+2. Add it as `GEMINI_API_KEY=<key>` (in `.env` locally, or in Railway → **Variables**).
+3. Leave `ANTHROPIC_API_KEY` empty, or set `JUDGE_PROVIDER=gemini` to force Gemini when both keys are set.
+4. The dashboard now shows **"Gemini judge"**. The default model is `gemini-flash-lite-latest`, which has the largest free daily quota (roughly one request per conversation). If you see "usage limit reached", wait, use a smaller file, or turn on billing in Google AI Studio.
+
+> ⚠️ On Gemini's **free** tier, Google may use the data you send to improve its products. That is fine for demos and your own test data. **Before auditing paying customers' chats, switch to a paid key** (Gemini with billing enabled, or Claude).
+
 **Cost:** the judge uses `claude-opus-5` by default. The knowledge base is cached across every conversation in an audit, which cuts cost a lot. To reduce cost further, set `JUDGE_MODEL=claude-sonnet-5` in `.env`. Check the real cost in the Anthropic console after your first audits, then set your prices so each customer pays well above what their audits cost you.
 
 ---

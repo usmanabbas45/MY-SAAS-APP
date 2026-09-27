@@ -3,7 +3,7 @@ import { Badge, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { FEATURE_NAMES } from "@/lib/judge/features";
-import { llmAvailable } from "@/lib/judge/llm";
+import { judgeLabel } from "@/lib/judge/llm";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
 import { ownedProject } from "@/lib/projects";
 import { deleteProjectAction, regenerateKeyAction, retrainAction, testAlertAction, updateSettingsAction } from "../actions";
@@ -84,7 +84,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
         </div>
         <p className="hint" style={{ marginTop: 10 }}>
           Inputs: {FEATURE_NAMES.length} signals ({FEATURE_NAMES.slice(0, 5).join(", ")}, …). The export is ready for fine-tuning a larger model once you have thousands of reviews.
-          Judge: {llmAvailable() ? `Claude (${process.env.JUDGE_MODEL || "claude-opus-5"})` : "basic mode - add ANTHROPIC_API_KEY for the AI judge"}.
+          Active judge: <strong>{judgeLabel()}</strong>.
         </p>
       </div>
 
