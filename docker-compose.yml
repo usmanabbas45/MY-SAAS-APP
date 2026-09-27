@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/agentproof.db
+    volumes:
+      - agentproof-data:/data
+volumes:
+  agentproof-data:

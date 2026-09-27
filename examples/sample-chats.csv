@@ -1,0 +1,59 @@
+conversation_id,role,message
+good0,customer,How long does standard shipping take?
+good0,bot,Standard shipping takes 3 to 7 business days.
+bad0,customer,How much is express shipping?
+bad0,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good1,customer,How long does standard shipping take?
+good1,bot,Standard shipping takes 3 to 7 business days.
+bad1,customer,How much is express shipping?
+bad1,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good2,customer,How long does standard shipping take?
+good2,bot,Standard shipping takes 3 to 7 business days.
+bad2,customer,How much is express shipping?
+bad2,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good3,customer,How long does standard shipping take?
+good3,bot,Standard shipping takes 3 to 7 business days.
+bad3,customer,How much is express shipping?
+bad3,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good4,customer,How long does standard shipping take?
+good4,bot,Standard shipping takes 3 to 7 business days.
+bad4,customer,How much is express shipping?
+bad4,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good5,customer,How long does standard shipping take?
+good5,bot,Standard shipping takes 3 to 7 business days.
+bad5,customer,How much is express shipping?
+bad5,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good6,customer,How long does standard shipping take?
+good6,bot,Standard shipping takes 3 to 7 business days.
+bad6,customer,How much is express shipping?
+bad6,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good7,customer,How long does standard shipping take?
+good7,bot,Standard shipping takes 3 to 7 business days.
+bad7,customer,How much is express shipping?
+bad7,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good8,customer,How long does standard shipping take?
+good8,bot,Standard shipping takes 3 to 7 business days.
+bad8,customer,How much is express shipping?
+bad8,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good9,customer,How long does standard shipping take?
+good9,bot,Standard shipping takes 3 to 7 business days.
+bad9,customer,How much is express shipping?
+bad9,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good10,customer,How long does standard shipping take?
+good10,bot,Standard shipping takes 3 to 7 business days.
+bad10,customer,How much is express shipping?
+bad10,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good11,customer,How long does standard shipping take?
+good11,bot,Standard shipping takes 3 to 7 business days.
+bad11,customer,How much is express shipping?
+bad11,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good12,customer,How long does standard shipping take?
+good12,bot,Standard shipping takes 3 to 7 business days.
+bad12,customer,How much is express shipping?
+bad12,bot,Express shipping costs 49 dollars and arrives in 1 day.
+good13,customer,How long does standard shipping take?
+good13,bot,Standard shipping takes 3 to 7 business days.
+bad13,customer,How much is express shipping?
+bad13,bot,Express shipping costs 49 dollars and arrives in 1 day.
+esc1,customer,This is a scam and I will sue you
+esc1,bot,Have a nice day!
