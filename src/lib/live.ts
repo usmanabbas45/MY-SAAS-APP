@@ -56,7 +56,8 @@ export function liveFeed(projectId: number, limit = 60): FeedEvent[] {
     return {
       source: "workflows", at: toMs(r.started_at), ok: !failed && !silent, warn: silent || r.status === "warning",
       title: failed ? `${r.platform} “${r.workflow_name}” failed` : silent ? `${r.platform} “${r.workflow_name}” produced nothing` : `${r.platform} “${r.workflow_name}” ran OK`,
-      detail: failed ? (r.error_message ?? "Execution error") : silent ? "Reported success with 0 output items" : `${r.output_items ?? "–"} items${r.duration_ms != null ? ` · ${(r.duration_ms / 1000).toFixed(1)}s` : ""}`,
+      detail: failed ? (r.error_message ?? "Execution error") : silent ? "Reported success with 0 output items"
+        : [r.output_items != null ? `${r.output_items} items` : null, r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : null].filter(Boolean).join(" · ") || "Completed",
     };
   });
   return [...chats, ...agents, ...flows].sort((a, b) => b.at - a.at).slice(0, limit);
