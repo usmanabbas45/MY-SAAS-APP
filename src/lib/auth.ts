@@ -70,6 +70,12 @@ export async function currentUser(): Promise<User | null> {
   return { id: row.id, email: row.email };
 }
 
+/** Hash of the current session token, used to keep this device signed in after a password change. */
+export async function currentSessionHash(): Promise<string | null> {
+  const token = (await cookies()).get(COOKIE)?.value;
+  return token ? sha256(token) : null;
+}
+
 export async function requireUser(): Promise<User> {
   const user = await currentUser();
   if (!user) redirect("/login");

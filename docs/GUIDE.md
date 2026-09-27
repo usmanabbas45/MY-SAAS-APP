@@ -235,6 +235,27 @@ Personal data (emails, phone numbers, card numbers, IBANs, IP addresses) is mask
 ### Weekly summary email
 With an **Alert email** set and email sending configured (Part E2), a summary arrives once a week. Turn it off in **Settings → Privacy & reports**.
 
+## Part H3: Get found on Google (SEO)
+
+The website already includes everything Google needs: titles and descriptions on every page, `sitemap.xml`, `robots.txt`, structured data (organization, software, prices, FAQ), social share images, and three keyword pages under `/solutions/`. The private dashboard is hidden from Google.
+
+### Tell Google about your site (15 minutes)
+1. Go to **https://search.google.com/search-console** → **Add property** → choose **URL prefix** → type `https://proofmyai.com` → **Continue**.
+2. Choose the **HTML tag** method → copy only the code inside `content="…"`.
+3. Railway → **Variables** → add `GOOGLE_SITE_VERIFICATION=<that code>` → **Deploy** → back in Search Console click **Verify**.
+4. Search Console → **Sitemaps** → type `sitemap.xml` → **Submit**.
+5. **URL inspection** → paste `https://proofmyai.com` → **Request indexing**. Do the same for the three `/solutions/…` pages.
+6. Also add the site to **Bing Webmaster Tools** (bing.com/webmasters → **Import from Google Search Console**).
+
+### What actually makes you rank
+- New sites need **4–12 weeks** to appear. Nobody can guarantee a #1 position; these steps give you the best chance.
+- **Backlinks:** list ProofMyAI on Product Hunt, G2, Capterra, SaaSHub, AlternativeTo and There's An AI For That, and link to it from your Upwork/Fiverr/LinkedIn profiles and automationdevel.com.
+- **Content:** each helpful article targeting one question (e.g. "How to monitor n8n workflows", "How to test an Intercom Fin chatbot") brings visitors over time. Ask me to add a blog.
+- **YouTube:** upload the tutorial video with a keyword-rich title and link to proofmyai.com.
+
+### Contact form and support email
+Set `SUPPORT_EMAIL` in Railway to the inbox where you want contact-form messages and support links to go (for example your Gmail). It needs `RESEND_API_KEY` to send.
+
 ## Part I: Troubleshooting
 
 | Problem | Fix |
@@ -247,6 +268,8 @@ With an **Alert email** set and email sending configured (Part E2), a summary ar
 | Make connection errors | Use the correct zone (eu1/eu2/us1/us2, visible in your Make URL) and a token with `scenarios:read` scope. |
 | "URL points to a private network address" | Bots and n8n must be reachable on the public internet. For local testing, set `ALLOW_PRIVATE_URLS=true`. |
 | No alerts arriving | Settings → check the webhook/email → **Send test alert**. Email alerts need `RESEND_API_KEY`. |
+| "Forgot password" email doesn't arrive | Set `RESEND_API_KEY` and `ALERT_FROM_EMAIL` (Part E2) and check spam. Reset links last 60 minutes and work once. |
+| Tab icon still old/missing | Hard-refresh (Ctrl + F5) or open in a private window; browsers cache icons for a while. |
 | Nightly tests / polling not running | Check the cron-job.org job (Part D) and that the secret matches `CRON_SECRET`. |
 | Data disappeared after a redeploy | The Railway volume is not mounted at `/data`, or `DATABASE_PATH` is wrong (Part C, steps 3–4). |
 

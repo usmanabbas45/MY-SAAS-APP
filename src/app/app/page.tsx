@@ -26,7 +26,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <nav className="lp-nav">
         <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <div className="row">
-          <span className="sub">{user.email}</span>
+          <Link href="/app/account" className="sub">👤 {user.email}</Link>
           <ThemeToggle />
           <form action={logoutAction}><button className="btn btn-ghost btn-sm">Log out</button></form>
         </div>
