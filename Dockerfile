@@ -15,9 +15,8 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 DATABASE_PATH=/data/agentproof.db
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# Railway/Docker mount the persistent disk at /data (Railway: attach a volume; compose: see docker-compose.yml)
 RUN mkdir -p /data && chown -R node:node /data /app
 USER node
-VOLUME ["/data"]
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3000/api/health || exit 1
 CMD ["node", "server.js"]
