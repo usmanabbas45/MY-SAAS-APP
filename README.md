@@ -11,6 +11,8 @@ AgentProof is a quality-monitoring SaaS for small businesses and agencies that r
 | 🚨 **Incidents & alerts** | Deduplicated incidents with Slack / Discord / Teams / Google Chat webhooks and email (Resend). |
 | 🧠 **Neural risk model** | Users mark verdicts right or wrong. A dependency-free deep neural network (2 hidden layers, Adam, early stopping) trains per project on that feedback and re-ranks answers by *that business's* notion of risk. Training data exports as JSONL for fine-tuning larger models later. |
 
+![Dashboard overview](docs/screenshots/overview.png)
+
 ## Quick start (local)
 
 Requirements: **Node.js 22.13 or newer**.
