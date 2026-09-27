@@ -8,6 +8,11 @@ ProofMyAI is a quality-monitoring SaaS for small businesses and agencies that ru
 | 🧪 **Nightly chatbot tests** | Save important questions and the facts a correct answer must contain. ProofMyAI calls your bot's HTTP endpoint every 24 h and alerts you when an answer breaks. |
 | 🤖 **AI agent monitoring** | One HTTP call per agent run. Detects loops, tool errors, runaway cost/steps/time, empty output, "success" that ended on an error, and (with the AI judge) goals not met or claims the tools never returned. |
 | ⚙️ **n8n & Make monitoring** | Connect with an API key or a webhook. Detects failures, silent failures (success with 0 output), slow runs, error-rate spikes and workflows that stopped running. |
+| 📡 **Live tracking** | `POST /api/v1/chat-events` grades chatbot answers as they happen; a live page shows every chatbot answer, agent run and workflow execution with ✓ working / ✕ problem status. |
+| 📏 **Custom rules** | "Never say …" and "always hand over to a human when the customer mentions …", enforced on every answer. |
+| 😠 **Frustration detection** | Flags customers who sound angry or frustrated (churn and escalation risk). |
+| 🔒 **Privacy** | Emails, phones, card numbers, IBANs and IPs are masked before storage or AI checking (on by default). |
+| 📄 **Client reports** | Shareable read-only report link (white-label brand name), print/PDF, CSV export, weekly summary email. |
 | 🚨 **Incidents & alerts** | Deduplicated incidents with Slack / Discord / Teams / Google Chat webhooks and email (Resend). |
 | 🧠 **Neural risk model** | Users mark verdicts right or wrong. A dependency-free deep neural network (2 hidden layers, Adam, early stopping) trains per project on that feedback and re-ranks answers by *that business's* notion of risk. Training data exports as JSONL for fine-tuning larger models later. |
 

@@ -1,9 +1,12 @@
 import { all, get, run, transaction } from "../db";
-import { buildKbIndex, featureVector, signalsFor } from "../judge/features";
+import { buildKbIndex, featureVector, signalsFor, type KbIndex } from "../judge/features";
 import { heuristicGrade } from "../judge/heuristic";
 import { JudgeError, judgeConcurrency, judgeLabel, llmAvailable, llmGradeConversation } from "../judge/llm";
-import { exchangesOf, type Conversation, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
+import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
+import type { MlpModel } from "../ml/mlp";
 import { loadModel, riskScore } from "../ml/risk";
+import { applyRules, projectRules, type Rule } from "../rules";
+import { isFrustrated } from "../sentiment";
 import { raiseIncident } from "../incidents";
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { none: 0, low: 0.3, medium: 0.6, high: 1 };
@@ -38,6 +41,23 @@ export function createAudit(projectId: number, name: string): { id: number; mode
   return { id: lastInsertRowid, mode };
 }
 
+/**
+ * Stores one graded answer: applies the business's custom rules, flags frustrated customers,
+ * computes the neural risk score. Shared by uploaded audits and live tracking. Returns the final grade.
+ */
+export function storeGradedItem(auditId: number, e: Exchange, g: Grade, index: KbIndex, model: MlpModel | null, rules: Rule[], note = ""): Grade {
+  const { grade, hit } = applyRules(e, g, rules);
+  const features = featureVector(signalsFor(e, index), grade.verdict, grade.confidence);
+  run(
+    `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, frustrated, rule_hit)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)`,
+    auditId, e.conversationId, e.turnIndex, e.question, e.answer, grade.verdict, grade.severity, grade.reason + note, grade.sourceDoc,
+    grade.confidence, JSON.stringify(features), riskScore(model, features, grade.verdict, grade.confidence),
+    isFrustrated(e.question) ? 1 : 0, hit,
+  );
+  return grade;
+}
+
 /** Grades every chatbot reply in the conversations and stores the results. Never throws; failures are stored on the audit. */
 export async function executeAudit(auditId: number, projectId: number, conversations: Conversation[]): Promise<void> {
   try {
@@ -46,6 +66,7 @@ export async function executeAudit(auditId: number, projectId: number, conversat
     const docs = kbDocs(projectId);
     const index = buildKbIndex(docs);
     const model = loadModel(projectId);
+    const rules = projectRules(projectId);
 
     const graded = await mapLimit(conversations, audit.mode === "ai" ? judgeConcurrency() : 8, async (conv) => {
       const exchanges = exchangesOf(conv);
@@ -57,14 +78,7 @@ export async function executeAudit(auditId: number, projectId: number, conversat
     const severities: Severity[] = [];
     transaction(() => {
       for (const { e, g } of graded.flat()) {
-        const features = featureVector(signalsFor(e, index), g.verdict, g.confidence);
-        severities.push(g.severity);
-        run(
-          `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-          auditId, e.conversationId, e.turnIndex, e.question, e.answer, g.verdict, g.severity, g.reason, g.sourceDoc,
-          g.confidence, JSON.stringify(features), riskScore(model, features, g.verdict, g.confidence),
-        );
+        severities.push(storeGradedItem(auditId, e, g, index, model, rules).severity);
       }
       run("UPDATE audits SET status = 'done', score = ? WHERE id = ?", scoreFromSeverities(severities), auditId);
     });

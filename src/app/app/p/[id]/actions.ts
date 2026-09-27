@@ -4,13 +4,15 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { parseTranscripts } from "@/lib/audit/parse";
 import { createAudit, executeAudit } from "@/lib/audit/run";
+import { redactConversations } from "@/lib/pii";
 import { requireUser } from "@/lib/auth";
 import { get, run } from "@/lib/db";
 import { raiseIncident } from "@/lib/incidents";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
 import { newApiKey, ownedProject, type Project } from "@/lib/projects";
-import { assertPublicUrl, encrypt } from "@/lib/security";
+import { RULE_KINDS } from "@/lib/rules";
+import { assertPublicUrl, encrypt, randomToken } from "@/lib/security";
 import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
 
@@ -82,6 +84,7 @@ export async function startAuditAction(form: FormData) {
   try {
     const text = (await fileText(form, "file")) || str(form, "pasted", MAX_UPLOAD_BYTES);
     conversations = parseTranscripts(text);
+    if (p.redact_pii) conversations = redactConversations(conversations);
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Could not read the transcripts." });
   }
@@ -114,6 +117,40 @@ export async function feedbackAction(form: FormData) {
   const back = String(form.get("back") ?? "");
   revalidatePath(`/app/p/${p.id}/chatbot/audit/${auditId}`);
   redirect(`/app/p/${p.id}/chatbot/audit/${auditId}${back.startsWith("?") ? back : ""}#item-${itemId}`);
+}
+
+// ---------- Custom rules ----------
+
+export async function addRuleAction(form: FormData) {
+  const p = await project(form);
+  const kind = str(form, "kind");
+  const pattern = str(form, "pattern", 200);
+  const path = `/app/p/${p.id}/chatbot`;
+  if (!(kind in RULE_KINDS)) done(path, { error: "Choose a rule type." });
+  if (pattern.length < 2) done(path, { error: "Type the word or phrase for the rule (at least 2 characters)." });
+  run("INSERT INTO rules (project_id, kind, pattern) VALUES (?, ?, ?)", p.id, kind, pattern);
+  done(path, { ok: "Rule added. It applies to every new audit and every live answer." });
+}
+
+export async function deleteRuleAction(form: FormData) {
+  const p = await project(form);
+  run("DELETE FROM rules WHERE id = ? AND project_id = ?", Number(form.get("ruleId")), p.id);
+  done(`/app/p/${p.id}/chatbot`, { ok: "Rule removed." });
+}
+
+// ---------- Client reports ----------
+
+export async function shareAuditAction(form: FormData) {
+  const p = await project(form);
+  const auditId = Number(form.get("auditId"));
+  const path = `/app/p/${p.id}/chatbot/audit/${auditId}`;
+  if (!get("SELECT id FROM audits WHERE id = ? AND project_id = ?", auditId, p.id)) done(`/app/p/${p.id}/chatbot`, { error: "Audit not found." });
+  if (form.get("revoke")) {
+    run("UPDATE audits SET share_token = NULL WHERE id = ?", auditId);
+    done(path, { ok: "Share link turned off. The old link no longer works." });
+  }
+  run("UPDATE audits SET share_token = ? WHERE id = ?", randomToken(18), auditId);
+  done(path, { ok: "Share link created. Anyone with the link can view this report (read-only)." });
 }
 
 // ---------- Chatbot tests ----------
@@ -252,12 +289,14 @@ export async function updateSettingsAction(form: FormData) {
     return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
   };
   run(
-    `UPDATE projects SET name = ?, alert_webhook = ?, alert_email = ?, agent_cost_budget_usd = ?, agent_max_steps = ?, agent_max_ms = ?, agent_ai_review = ? WHERE id = ?`,
+    `UPDATE projects SET name = ?, alert_webhook = ?, alert_email = ?, agent_cost_budget_usd = ?, agent_max_steps = ?, agent_max_ms = ?, agent_ai_review = ?,
+       redact_pii = ?, weekly_digest = ?, report_brand = ? WHERE id = ?`,
     str(form, "name", 100) || p.name, webhook, email,
     num("agent_cost_budget_usd", p.agent_cost_budget_usd, 0.0001, 10000),
     Math.round(num("agent_max_steps", p.agent_max_steps, 1, 100000)),
     Math.round(num("agent_max_seconds", p.agent_max_ms / 1000, 1, 86400) * 1000),
-    form.get("agent_ai_review") ? 1 : 0, p.id,
+    form.get("agent_ai_review") ? 1 : 0, form.get("redact_pii") ? 1 : 0, form.get("weekly_digest") ? 1 : 0,
+    str(form, "report_brand", 80) || null, p.id,
   );
   done(path, { ok: "Settings saved." });
 }

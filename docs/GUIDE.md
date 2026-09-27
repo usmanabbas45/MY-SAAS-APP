@@ -211,6 +211,30 @@ Follow the validation plan in `docs/market-research.md`. In short:
 
 ---
 
+## Part H2: Power features (click by click)
+
+### Live tracking
+1. Left menu → **📡 Live tracking**.
+2. Copy the code for your language and add it right after your chatbot replies. No-code option: open **"No-code: Intercom, Zendesk, Crisp, Tidio via n8n or Make"** on the same page and follow the 3 steps.
+3. Every new answer appears in the live feed within seconds: **green ✓** = working, **red ✕** = problem (and you get an alert).
+
+### Your own rules
+1. **💬 Chatbot audits** → **📏 Your rules**.
+2. Choose **"Bot must never say"** (e.g. `lifetime warranty`, a competitor's name) or **"Always hand over to a human when the customer mentions"** (e.g. `chargeback`, `allergic`).
+3. Type the word or phrase → **Add rule**. It applies to every new audit and every live answer.
+
+### Client reports (for agencies)
+1. **Settings** → **Report brand name** → type your agency name → **Save settings**.
+2. Open any audit → **🔗 Share client report** → **Copy share link** → send it to your client. No login is needed to view it.
+3. **📄 Client report / PDF** → **🖨️ Save as PDF**. Use **Stop sharing** to turn the link off.
+4. **⬇ CSV** downloads every answer and verdict for Excel or Google Sheets.
+
+### Privacy
+Personal data (emails, phone numbers, card numbers, IBANs, IP addresses) is masked automatically **before** it is stored or sent to the AI judge. You can change this in **Settings → Privacy & reports** (keep it on for real customer data).
+
+### Weekly summary email
+With an **Alert email** set and email sending configured (Part E2), a summary arrives once a week. Turn it off in **Settings → Privacy & reports**.
+
 ## Part I: Troubleshooting
 
 | Problem | Fix |

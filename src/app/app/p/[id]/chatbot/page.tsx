@@ -5,7 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 import { judgeProvider, llmAvailable } from "@/lib/judge/llm";
 import { ownedProject } from "@/lib/projects";
-import { addKbDocAction, deleteAuditAction, deleteKbDocAction, startAuditAction } from "../actions";
+import { addKbDocAction, addRuleAction, deleteAuditAction, deleteKbDocAction, deleteRuleAction, startAuditAction } from "../actions";
+import { Sparkline } from "@/components/charts";
+import { projectRules, RULE_KINDS } from "@/lib/rules";
 
 export const metadata = { title: "Chatbot audits" };
 
@@ -22,6 +24,10 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
   const docs = all<{ id: number; title: string; chars: number; updated_at: string }>(
     "SELECT id, title, LENGTH(content) AS chars, updated_at FROM kb_docs WHERE project_id = ? ORDER BY id DESC", p.id,
   );
+  const rules = projectRules(p.id);
+  const trend = all<{ score: number }>(
+    "SELECT score FROM audits WHERE project_id = ? AND status IN ('done','live') AND score IS NOT NULL ORDER BY id DESC LIMIT 12", p.id,
+  ).map((r) => Math.round(r.score)).reverse();
   const audits = all<{ id: number; name: string; mode: string; status: string; score: number | null; created_at: string; items: number; problems: number }>(
     `SELECT a.id, a.name, a.mode, a.status, a.score, a.created_at,
             (SELECT COUNT(*) FROM audit_items i WHERE i.audit_id = a.id) AS items,
@@ -115,6 +121,48 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
           {docs.length === 0 ? <p className="hint" style={{ marginTop: 10 }}>Tip: add your help articles first. Without them ProofMyAI can&apos;t tell if an answer is made up.</p> : null}
         </div>
       </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div><h3>📏 Your rules</h3><span className="sub">Your own business rules, checked on every answer (uploads and live). A broken rule is always flagged as high risk.</span></div>
+          <Badge tone={rules.length ? "brand" : "muted"}>{rules.length} rule{rules.length === 1 ? "" : "s"}</Badge>
+        </div>
+        {rules.length > 0 ? (
+          <div className="row" style={{ marginBottom: 14 }}>
+            {rules.map((r) => (
+              <form key={r.id} action={deleteRuleAction} className="badge" style={{ padding: "4px 6px 4px 12px" }}>
+                <input type="hidden" name="projectId" value={p.id} /><input type="hidden" name="ruleId" value={r.id} />
+                {r.kind === "never_say" ? "🚫 Never say" : "🙋 Hand over on"} “{r.pattern}”
+                <button className="btn btn-ghost btn-sm" style={{ padding: "0 6px", marginLeft: 6 }} aria-label={`Remove rule ${r.pattern}`}>✕</button>
+              </form>
+            ))}
+          </div>
+        ) : null}
+        <form action={addRuleAction} className="row" style={{ alignItems: "flex-end" }}>
+          <input type="hidden" name="projectId" value={p.id} />
+          <div style={{ flex: "1 1 260px" }}>
+            <label htmlFor="kind">Rule</label>
+            <select id="kind" name="kind" defaultValue="never_say">
+              {(Object.keys(RULE_KINDS) as (keyof typeof RULE_KINDS)[]).map((k) => <option key={k} value={k}>{RULE_KINDS[k].label}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: "2 1 260px" }}>
+            <label htmlFor="pattern">Word or phrase</label>
+            <input id="pattern" name="pattern" type="text" required minLength={2} maxLength={200} placeholder="lifetime warranty" />
+          </div>
+          <SubmitButton pendingText="Adding…">Add rule</SubmitButton>
+        </form>
+      </div>
+
+      {trend.length >= 2 ? (
+        <div className="card">
+          <div className="card-head">
+            <div><h3>📈 Quality trend</h3><span className="sub">Accuracy score of your last {trend.length} audits (oldest → newest)</span></div>
+            <ScoreBadge score={trend[trend.length - 1]} />
+          </div>
+          <Sparkline values={trend} color="var(--brand)" width={600} height={70} />
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="card-head"><h3>Audit history</h3></div>

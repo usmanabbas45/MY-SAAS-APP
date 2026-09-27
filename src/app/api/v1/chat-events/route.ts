@@ -1,5 +1,5 @@
 import { json, readIngest } from "@/lib/api";
-import { gradeLiveChat, LiveChatSchema, newExchanges } from "@/lib/audit/live";
+import { gradeLiveChat, LiveChatSchema, newExchanges, redactChat } from "@/lib/audit/live";
 import { VERDICT_LABELS } from "@/lib/judge/types";
 
 /**
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   }
   let exchanges;
   try {
-    exchanges = newExchanges(r.project.id, parsed.data);
+    exchanges = newExchanges(r.project.id, r.project.redact_pii ? redactChat(parsed.data) : parsed.data);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Invalid messages" }, 400);
   }

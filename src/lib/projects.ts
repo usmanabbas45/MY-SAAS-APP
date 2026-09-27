@@ -13,6 +13,10 @@ export interface Project {
   agent_max_steps: number;
   agent_max_ms: number;
   agent_ai_review: number;
+  redact_pii: number;
+  report_brand: string | null;
+  weekly_digest: number;
+  last_digest_at: string | null;
   created_at: string;
 }
 

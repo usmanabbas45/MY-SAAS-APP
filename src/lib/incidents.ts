@@ -1,4 +1,5 @@
 import { get, run } from "./db";
+import { sendEmail } from "./email";
 import { safeFetch } from "./security";
 
 export type Module = "chatbot" | "tests" | "agents" | "workflows";
@@ -50,21 +51,7 @@ async function sendAlert(projectId: number, inc: NewIncident): Promise<void> {
       }, 10000),
     );
   }
-  if (project.alert_email && process.env.RESEND_API_KEY) {
-    jobs.push(
-      fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.ALERT_FROM_EMAIL || "alerts@proofmyai.com",
-          to: [project.alert_email],
-          subject: `[ProofMyAI] ${inc.title}`,
-          text,
-        }),
-        signal: AbortSignal.timeout(10000),
-      }),
-    );
-  }
+  if (project.alert_email) jobs.push(sendEmail(project.alert_email, `[ProofMyAI] ${inc.title}`, text));
   // Alert delivery failures must never break monitoring itself.
   const results = await Promise.allSettled(jobs);
   results.forEach((r) => {

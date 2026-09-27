@@ -9,13 +9,16 @@ const FEATURES = [
   { icon: "🤖", title: "AI agent monitoring", text: "Send each agent run with one HTTP call. Catch loops, tool errors, runaway costs, empty outputs and answers the tools never supported." },
   { icon: "⚙️", title: "n8n & Make monitoring", text: "Connect n8n or Make in two minutes. Get alerted on failures, silent failures (success with zero output), error-rate spikes and workflows that stopped running." },
   { icon: "📋", title: "Fix list, not just a score", text: "Problems are grouped by the help article that caused them, so you know exactly which page to update first." },
+  { icon: "📡", title: "Live tracking", text: "Connect your bot, agents and workflows once and watch every answer and run checked in real time, with a clear ✓ working / ✕ problem feed." },
+  { icon: "🔒", title: "Privacy built in", text: "Emails, phone numbers, card numbers and IBANs are masked before anything is stored or checked by AI. Your own rules (\"never say…\") are enforced on every answer." },
+  { icon: "📄", title: "Client-ready reports", text: "Share a read-only report link or save it as a PDF, with your agency's name on it. Export everything to CSV and get a weekly summary email." },
   { icon: "🧠", title: "Learns your business", text: "Mark any verdict right or wrong. A neural network trained on your own feedback re-ranks risk so the answers that matter rise to the top." },
 ];
 
 const PLANS = [
   { name: "Starter", price: 29, featured: false, items: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "Email + Slack alerts"] },
   { name: "Growth", price: 79, featured: true, items: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "Neural risk model + training export"] },
-  { name: "Agency", price: 199, featured: false, items: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (coming soon)", "Priority support", "Everything in Growth"] },
+  { name: "Agency", price: 199, featured: false, items: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "Priority support", "Everything in Growth"] },
 ];
 
 export default async function Landing() {

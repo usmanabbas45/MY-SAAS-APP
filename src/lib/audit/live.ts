@@ -1,14 +1,16 @@
 import { z } from "zod";
 import { all, get, run, transaction } from "../db";
 import { raiseIncident } from "../incidents";
-import { buildKbIndex, featureVector, signalsFor } from "../judge/features";
+import { buildKbIndex } from "../judge/features";
 import { heuristicGrade } from "../judge/heuristic";
 import { JudgeError, judgeLabel, llmAvailable, llmGradeConversation } from "../judge/llm";
 import { exchangesOf, VERDICT_LABELS, type Exchange, type Grade, type Turn } from "../judge/types";
-import { loadModel, riskScore } from "../ml/risk";
+import { loadModel } from "../ml/risk";
+import { projectRules } from "../rules";
 import { truncate } from "../text";
+import { redactPII } from "../pii";
 import { normaliseRole } from "./parse";
-import { kbDocs, scoreFromSeverities } from "./run";
+import { kbDocs, scoreFromSeverities, storeGradedItem } from "./run";
 
 /**
  * Live chatbot monitoring: bots send each conversation (or each new reply) as it happens.
@@ -27,6 +29,16 @@ export const LiveChatSchema = z
     message: "Send either messages[] or question + answer",
   });
 export type LiveChat = z.infer<typeof LiveChatSchema>;
+
+/** Masks personal data in a live event before anything is stored or sent to the judge. */
+export function redactChat(chat: LiveChat): LiveChat {
+  return {
+    ...chat,
+    messages: chat.messages?.map((m) => ({ ...m, content: redactPII(m.content) })),
+    question: chat.question === undefined ? undefined : redactPII(chat.question),
+    answer: chat.answer === undefined ? undefined : redactPII(chat.answer),
+  };
+}
 
 export function liveAuditName(date = new Date()): string {
   return `Live chats · ${date.toISOString().slice(0, 10)}`;
@@ -100,17 +112,9 @@ export async function gradeLiveChat(projectId: number, exchanges: Exchange[]): P
 
   const auditId = liveAuditId(projectId);
   const model = loadModel(projectId);
+  const rules = projectRules(projectId);
   transaction(() => {
-    exchanges.forEach((e, i) => {
-      const g = grades[i];
-      const features = featureVector(signalsFor(e, index), g.verdict, g.confidence);
-      run(
-        `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        auditId, e.conversationId, e.turnIndex, e.question, e.answer, g.verdict, g.severity, g.reason + note, g.sourceDoc,
-        g.confidence, JSON.stringify(features), riskScore(model, features, g.verdict, g.confidence),
-      );
-    });
+    grades = exchanges.map((e, i) => storeGradedItem(auditId, e, grades[i], index, model, rules, note));
     const severities = all<{ severity: "none" | "low" | "medium" | "high" }>("SELECT severity FROM audit_items WHERE audit_id = ?", auditId).map((r) => r.severity);
     run("UPDATE audits SET score = ? WHERE id = ?", scoreFromSeverities(severities), auditId);
   });

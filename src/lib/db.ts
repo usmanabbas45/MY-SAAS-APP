@@ -163,12 +163,30 @@ CREATE TABLE IF NOT EXISTS risk_models (
 `;
 
 /** Additive migrations for databases created by older versions. */
+function addColumn(db: DatabaseSync, table: string, column: string, definition: string): void {
+  const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
 function migrate(db: DatabaseSync): void {
-  const cols = (db.prepare("PRAGMA table_info(audits)").all() as { name: string }[]).map((c) => c.name);
-  if (!cols.includes("judge")) db.exec("ALTER TABLE audits ADD COLUMN judge TEXT");
-  const itemCols = (db.prepare("PRAGMA table_info(audit_items)").all() as { name: string }[]).map((c) => c.name);
-  if (!itemCols.includes("created_at")) db.exec("ALTER TABLE audit_items ADD COLUMN created_at TEXT");
+  addColumn(db, "audits", "judge", "TEXT");
+  addColumn(db, "audits", "share_token", "TEXT");
+  addColumn(db, "audit_items", "created_at", "TEXT");
+  addColumn(db, "audit_items", "frustrated", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(db, "audit_items", "rule_hit", "TEXT");
+  addColumn(db, "projects", "redact_pii", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "projects", "report_brand", "TEXT");
+  addColumn(db, "projects", "weekly_digest", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "projects", "last_digest_at", "TEXT");
+  db.exec(`CREATE TABLE IF NOT EXISTS rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_conv ON audit_items(conversation_id, turn_index)");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_audits_share ON audits(share_token) WHERE share_token IS NOT NULL");
 }
 
 let instance: DatabaseSync | null = null;

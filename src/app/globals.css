@@ -302,3 +302,11 @@ details[open] summary { margin-bottom: 10px; }
 .live-status.live-ok { border-top: 3px solid var(--ok); }
 .live-status.live-problem { border-top: 3px solid var(--bad); }
 .live-status.live-idle { border-top: 3px solid var(--border); }
+.report-item { border-bottom: 1px dashed var(--border); padding-bottom: 12px; break-inside: avoid; }
+.report-item:last-child { border-bottom: none; }
+@media print {
+  .no-print, .sidebar, .mobile-nav { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .card { box-shadow: none !important; break-inside: avoid; }
+  .content { padding: 0 !important; }
+}
