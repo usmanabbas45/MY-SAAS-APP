@@ -23,7 +23,7 @@ cp .env.example .env        # then edit APP_SECRET and CRON_SECRET
 npm run dev                 # http://localhost:3000
 ```
 
-Without `ANTHROPIC_API_KEY` the app runs in **basic mode** (rule-based judge + neural model). Add a key from https://console.anthropic.com to turn on the Claude AI judge.
+Without an AI key the app runs in **basic mode** (rule-based judge + neural model). Add `ANTHROPIC_API_KEY` (Claude) or `GEMINI_API_KEY` (Google Gemini, free tier available) to turn on the AI judge. See `.env.example` for `JUDGE_PROVIDER` and `GEMINI_MODEL`.
 
 Try it with the files in [`examples/`](examples): upload `kb-*.txt/md` as the knowledge base and `sample-chats.csv` as an audit.
 

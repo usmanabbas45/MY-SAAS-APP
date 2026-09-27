@@ -30,8 +30,8 @@ export default async function AuditPage({ params, searchParams }: {
   const user = await requireUser();
   const { id, auditId } = await params;
   const p = ownedProject(user.id, Number(id));
-  const audit = get<{ id: number; name: string; status: string; score: number | null; error: string | null; mode: string }>(
-    "SELECT id, name, status, score, error, mode FROM audits WHERE id = ? AND project_id = ?", Number(auditId), p.id,
+  const audit = get<{ id: number; name: string; status: string; score: number | null; error: string | null; mode: string; judge: string | null }>(
+    "SELECT id, name, status, score, error, mode, judge FROM audits WHERE id = ? AND project_id = ?", Number(auditId), p.id,
   );
   if (!audit) notFound();
   const sp = await searchParams;
@@ -64,7 +64,7 @@ export default async function AuditPage({ params, searchParams }: {
     <div>
       <AutoRefresh active={audit.status === "running"} />
       <p className="sub"><Link href={`/app/p/${p.id}/chatbot`}>← All audits</Link></p>
-      <PageHeader title={audit.name} subtitle={`${audit.mode === "ai" ? "Graded by the AI judge" : "Graded in basic mode"} · ${total} answers`} />
+      <PageHeader title={audit.name} subtitle={`Graded by ${audit.judge ?? (audit.mode === "ai" ? "the AI judge" : "basic mode")} · ${total} answers`} />
 
       {audit.status === "running" ? (
         <div className="card row"><span className="spin" /> <strong>Grading answers…</strong><span className="sub">This page updates automatically. Large files take a few minutes.</span></div>

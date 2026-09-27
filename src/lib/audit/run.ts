@@ -1,13 +1,12 @@
 import { all, get, run, transaction } from "../db";
 import { buildKbIndex, featureVector, signalsFor } from "../judge/features";
 import { heuristicGrade } from "../judge/heuristic";
-import { JudgeError, llmAvailable, llmGradeConversation } from "../judge/llm";
+import { JudgeError, judgeConcurrency, judgeLabel, llmAvailable, llmGradeConversation } from "../judge/llm";
 import { exchangesOf, type Conversation, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
 import { loadModel, riskScore } from "../ml/risk";
 import { raiseIncident } from "../incidents";
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { none: 0, low: 0.3, medium: 0.6, high: 1 };
-const CONCURRENCY = 4;
 
 export function scoreFromSeverities(severities: Severity[]): number {
   if (severities.length === 0) return 100;
@@ -35,7 +34,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 
 export function createAudit(projectId: number, name: string): { id: number; mode: "ai" | "basic" } {
   const mode = llmAvailable() ? "ai" : "basic";
-  const { lastInsertRowid } = run("INSERT INTO audits (project_id, name, mode, status) VALUES (?, ?, ?, 'running')", projectId, name, mode);
+  const { lastInsertRowid } = run("INSERT INTO audits (project_id, name, mode, status, judge) VALUES (?, ?, ?, 'running', ?)", projectId, name, mode, judgeLabel());
   return { id: lastInsertRowid, mode };
 }
 
@@ -48,7 +47,7 @@ export async function executeAudit(auditId: number, projectId: number, conversat
     const index = buildKbIndex(docs);
     const model = loadModel(projectId);
 
-    const graded = await mapLimit(conversations, CONCURRENCY, async (conv) => {
+    const graded = await mapLimit(conversations, audit.mode === "ai" ? judgeConcurrency() : 8, async (conv) => {
       const exchanges = exchangesOf(conv);
       const grades: Grade[] =
         audit.mode === "ai" ? await llmGradeConversation(exchanges, docs) : exchanges.map((e) => heuristicGrade(e, index));

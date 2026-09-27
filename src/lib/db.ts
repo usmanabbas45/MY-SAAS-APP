@@ -161,6 +161,12 @@ CREATE TABLE IF NOT EXISTS risk_models (
 );
 `;
 
+/** Additive migrations for databases created by older versions. */
+function migrate(db: DatabaseSync): void {
+  const cols = (db.prepare("PRAGMA table_info(audits)").all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("judge")) db.exec("ALTER TABLE audits ADD COLUMN judge TEXT");
+}
+
 let instance: DatabaseSync | null = null;
 
 export function openDatabase(file: string): DatabaseSync {
@@ -168,6 +174,7 @@ export function openDatabase(file: string): DatabaseSync {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(SCHEMA);
+  migrate(db);
   return db;
 }
 

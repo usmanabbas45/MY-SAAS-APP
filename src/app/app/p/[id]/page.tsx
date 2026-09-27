@@ -34,7 +34,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
     <div>
       {welcome ? <div className="alert alert-info">Welcome to AgentProof! Follow the checklist below. Each step takes about 2 minutes. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
       {!llmAvailable() ? (
-        <div className="alert alert-warn">Running in <strong>basic mode</strong> (rule-based checks and the neural model). Add an <code>ANTHROPIC_API_KEY</code> to the server to turn on the full AI judge.</div>
+        <div className="alert alert-warn">Running in <strong>basic mode</strong> (rule-based checks and the neural model). Add a <code>GEMINI_API_KEY</code> (free tier available) or <code>ANTHROPIC_API_KEY</code> to the server to turn on the AI judge.</div>
       ) : null}
       <PageHeader title={p.name} subtitle="Health of every AI system in this project" />
 

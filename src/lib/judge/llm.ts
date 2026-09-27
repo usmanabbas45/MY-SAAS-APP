@@ -2,16 +2,49 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { clamp } from "../text";
+import { JudgeError } from "./errors";
+import { geminiJudge, geminiKey, geminiModel } from "./gemini";
 import { SEVERITIES, VERDICTS, type Exchange, type Grade, type KbDoc } from "./types";
 
 /** Knowledge bases above this size must be split across projects instead of being silently truncated. */
 export const MAX_KB_CHARS = 600_000;
 
-export function llmAvailable(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+export { JudgeError };
+
+export type JudgeProvider = "anthropic" | "gemini";
+
+/**
+ * Which AI judge to use. JUDGE_PROVIDER=anthropic|gemini forces one; otherwise Claude is used
+ * when an Anthropic key is set, then Gemini when GEMINI_API_KEY is set, else basic (rule-based) mode.
+ */
+export function judgeProvider(): JudgeProvider | null {
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  const hasGemini = Boolean(geminiKey());
+  const forced = (process.env.JUDGE_PROVIDER || "").trim().toLowerCase();
+  if (forced === "gemini" || forced === "google") return hasGemini ? "gemini" : null;
+  if (forced === "anthropic" || forced === "claude") return hasAnthropic ? "anthropic" : null;
+  if (hasAnthropic) return "anthropic";
+  if (hasGemini) return "gemini";
+  return null;
 }
 
-export class JudgeError extends Error {}
+export function llmAvailable(): boolean {
+  return judgeProvider() !== null;
+}
+
+/** Human-readable name of the active judge, e.g. "Claude (claude-opus-5)". */
+export function judgeLabel(): string {
+  const p = judgeProvider();
+  if (p === "anthropic") return `Claude (${model()})`;
+  if (p === "gemini") return `Gemini (${geminiModel()})`;
+  return "Basic mode (rule-based + neural model)";
+}
+
+/** How many conversations to grade in parallel; Gemini free-tier keys have low per-minute limits. */
+export function judgeConcurrency(): number {
+  if (judgeProvider() === "gemini") return Math.max(1, Math.min(8, Number(process.env.GEMINI_CONCURRENCY) || 1));
+  return 4;
+}
 
 let client: Anthropic | null = null;
 function anthropic(): Anthropic {
@@ -40,6 +73,9 @@ async function callJudge<S extends z.ZodType>(
   task: string,
   schema: S,
 ): Promise<z.infer<S>> {
+  if (judgeProvider() === "gemini") {
+    return geminiJudge(docs ? `${instructions}\n\n${kbBlock(docs)}` : instructions, task, schema);
+  }
   // Stable content (instructions, knowledge base) goes first and is cached across every
   // conversation in an audit; the per-item task is last so it never breaks the cache prefix.
   const system: Anthropic.Beta.BetaTextBlockParam[] = [{ type: "text", text: instructions }];
