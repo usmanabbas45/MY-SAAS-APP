@@ -6,7 +6,7 @@ export const metadata = { title: "Privacy Policy", description: "How ProofMyAI c
 
 export default function PrivacyPage() {
   return (
-    <PublicPage title="Privacy Policy" updated="27 September 2026">
+    <PublicPage title="Privacy Policy" updated="28 September 2026">
       <p>This policy explains what data ProofMyAI collects, why, and your choices. Contact us at <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with any privacy question.</p>
       <h2>What we collect</h2>
       <ul>
@@ -24,9 +24,10 @@ export default function PrivacyPage() {
         <li><strong>Hosting:</strong> Railway (application and database).</li>
         <li><strong>AI checking:</strong> Anthropic (Claude) or Google (Gemini), when the AI judge is enabled. Only the content needed for a check is sent.</li>
         <li><strong>Email:</strong> Resend, for alerts, summaries and password resets.</li>
+        <li><strong>Payments:</strong> Paddle.com is our online reseller and Merchant of Record. Paddle collects and processes your billing details; we never see your full card number.</li>
       </ul>
       <h2>Cookies</h2>
-      <p>We use one essential cookie to keep you logged in, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising or tracking cookies.</p>
+      <p>We use one essential cookie to keep you logged in, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful; it sets analytics cookies and IP addresses are anonymised. You can block it with any ad blocker or browser privacy setting." : null}</p>
       <h2>Retention and deletion</h2>
       <p>Your data is kept while your account exists. You can delete individual audits and projects at any time, or delete your whole account in <strong>Account → Delete account</strong>, which permanently removes all your data. Backups are overwritten within 30 days.</p>
       <h2>Your rights</h2>

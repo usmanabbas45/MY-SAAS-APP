@@ -6,7 +6,7 @@ export const metadata = { title: "Terms of Service", description: "The terms for
 
 export default function TermsPage() {
   return (
-    <PublicPage title="Terms of Service" updated="27 September 2026">
+    <PublicPage title="Terms of Service" updated="28 September 2026">
       <p>These terms apply when you use ProofMyAI (the &quot;Service&quot;) at proofmyai.com. By creating an account you agree to them. If you use the Service for a company, you confirm you may accept these terms for it.</p>
       <h2>1. The Service</h2>
       <p>ProofMyAI checks the quality of AI chatbots, AI agents and automation workflows that you connect or upload, and shows results, alerts and reports. Results are produced by automated rules and AI models and <strong>can be wrong</strong>. They help you find problems; they are not a guarantee that your AI systems are correct, safe or legally compliant.</p>
@@ -21,7 +21,7 @@ export default function TermsPage() {
       <h2>4. Acceptable use</h2>
       <p>Do not use the Service to break the law, to upload content you have no right to use, to attack or overload the Service or other systems, to scan private networks, or to resell access without our written agreement.</p>
       <h2>5. Plans and payment</h2>
-      <p>Paid plans are billed in advance each month through our payment provider. You can cancel at any time, and your plan stays active until the end of the paid period. Prices may change with at least 30 days&apos; notice. Unless the law requires otherwise, payments are not refundable.</p>
+      <p>Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders and handles customer service inquiries and returns related to payment. Paid plans are billed in advance each month. New subscriptions include a 14-day free trial; you are not charged if you cancel before it ends. You can cancel at any time, and your plan stays active until the end of the paid period. Prices may change with at least 30 days&apos; notice. Refunds follow our <Link href="/refund">Refund Policy</Link>.</p>
       <h2>6. Availability and changes</h2>
       <p>We work hard to keep the Service running, but it is provided &quot;as is&quot; without guarantees of uninterrupted availability. We may improve or change features over time.</p>
       <h2>7. Liability</h2>

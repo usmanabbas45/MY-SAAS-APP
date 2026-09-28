@@ -1,7 +1,7 @@
 /** Public site URL used for canonical links, sitemaps and social previews. */
 export const SITE_URL = (process.env.APP_URL || "https://proofmyai.com").replace(/\/+$/, "");
 export const SITE_NAME = "ProofMyAI";
-export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@proofmyai.com";
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "contact@usmanabbas.dev";
 export const SITE_DESCRIPTION =
   "ProofMyAI checks every AI chatbot answer, AI agent run and n8n/Make workflow, catches wrong answers, hallucinations and silent failures, and tells you exactly what to fix. Free AI audit.";
 
@@ -12,7 +12,7 @@ export const FAQS: { q: string; a: string }[] = [
   { q: "Do I need to write code?", a: "No. Chatbot audits only need a file upload, n8n and Make connect with an API key, and alerts go to Slack, Discord, Teams or email. Developers can use the API for live tracking of chatbots and agents." },
   { q: "Is my customers' data safe?", a: "Personal data such as emails, phone numbers, card numbers and IBANs is masked automatically before anything is stored or sent to an AI model. Stored API keys are encrypted, and you can delete your account and all data at any time." },
   { q: "Can agencies use it for clients?", a: "Yes. Create one project per client, share read-only client reports with your own agency name, export PDF and CSV, and send weekly summary emails. The Agency plan covers up to 20 client projects." },
-  { q: "How much does it cost?", a: "Plans start at $29 per month. You can start free with a one-time AI audit, no card needed." },
+  { q: "How much does it cost?", a: "Plans start at $29 per month. You can start free with a one-time AI audit, no card needed. Every paid plan has a 14-day free trial and a 14-day money-back guarantee." },
   { q: "What is a silent failure in n8n or Make?", a: "A silent failure is a workflow run that reports success but produced nothing, for example an order sync that returned zero orders because an API changed. ProofMyAI flags these, along with failed runs, slow runs, error spikes and workflows that stopped running." },
 ];
 
