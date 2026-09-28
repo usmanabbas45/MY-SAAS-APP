@@ -1,12 +1,32 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: { default: "ProofMyAI - Prove your AI works", template: "%s · ProofMyAI" },
-  description: "Quality monitoring for AI chatbots, AI agents and n8n/Make workflows. Catch wrong answers, broken agents and silent automation failures before customers do.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: "ProofMyAI · AI Chatbot, AI Agent & n8n Workflow Monitoring", template: "%s · ProofMyAI" },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "AI chatbot monitoring", "chatbot hallucination checker", "AI chatbot QA", "chatbot quality assurance",
+    "AI agent monitoring", "LLM monitoring", "n8n monitoring", "n8n error alerts", "Make.com monitoring",
+    "workflow monitoring", "AI audit", "Intercom Fin audit", "chatbot testing",
+  ],
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  category: "technology",
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US", url: "/", title: "ProofMyAI · Is your AI telling customers the truth?", description: SITE_DESCRIPTION },
+  twitter: { card: "summary_large_image", title: "ProofMyAI · Is your AI telling customers the truth?", description: SITE_DESCRIPTION },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  formatDetection: { telephone: false },
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#ffffff" }, { media: "(prefers-color-scheme: dark)", color: "#0b0e17" }],
+};
 
 // Applies the saved theme before paint to avoid a light/dark flash.
 const themeScript = `try{var t=localStorage.getItem("ap-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;

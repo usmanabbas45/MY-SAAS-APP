@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/client";
 import { ScoreRing } from "@/components/ui";
-import { currentUser } from "@/lib/auth";
+import { SiteFooter, SiteHeader } from "@/components/site";
+import { FAQS, jsonLd, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const FEATURES = [
   { icon: "💬", title: "Chatbot audits", text: "Upload transcripts from Intercom, Tidio, Crisp, Zendesk or any bot. Every answer is graded against your help docs: correct, made up, not in docs, should have escalated, off-policy." },
@@ -21,39 +21,46 @@ const PLANS = [
   { name: "Agency", price: 199, featured: false, items: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "Priority support", "Everything in Growth"] },
 ];
 
-export default async function Landing() {
-  const user = await currentUser();
+export const metadata = {
+  title: { absolute: "ProofMyAI · AI Chatbot, AI Agent & n8n Workflow Monitoring" },
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: "/" },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icon.png` },
+    { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#org` } },
+    {
+      "@type": "SoftwareApplication", name: SITE_NAME, url: SITE_URL, applicationCategory: "BusinessApplication", operatingSystem: "Web",
+      description: SITE_DESCRIPTION,
+      offers: PLANS.map((p) => ({ "@type": "Offer", name: p.name, price: p.price, priceCurrency: "USD" })),
+    },
+    { "@type": "FAQPage", mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+  ],
+};
+
+export default function Landing() {
   return (
     <div>
-      <nav className="lp-nav">
-        <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
-        <div className="row">
-          <ThemeToggle />
-          {user ? (
-            <Link href="/app" className="btn">Open dashboard</Link>
-          ) : (
-            <>
-              <Link href="/login" className="btn btn-ghost">Log in</Link>
-              <Link href="/signup" className="btn">Start free</Link>
-            </>
-          )}
-        </div>
-      </nav>
+      <SiteHeader />
 
-      <header className="lp-hero">
+      <main>
+      <section className="lp-hero">
         <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
         <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
         <p>ProofMyAI checks every chatbot answer, every AI agent run and every n8n/Make workflow, then tells you exactly what broke and how to fix it, before your customers notice.</p>
         <div className="row" style={{ justifyContent: "center" }}>
           <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
-          <a href="#how" className="btn btn-ghost btn-lg">How it works</a>
+          <a href="#features" className="btn btn-ghost btn-lg">How it works</a>
         </div>
         <div className="chip-row">
           {["Intercom", "Tidio", "Crisp", "Zendesk", "Chatbase", "Custom GPTs", "n8n", "Make", "LangChain", "OpenAI Agents", "Claude agents"].map((c) => (
             <span key={c} className="badge">{c}</span>
           ))}
         </div>
-      </header>
+      </section>
 
       <section className="lp-section">
         <div className="card" style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center" }}>
@@ -66,7 +73,7 @@ export default async function Landing() {
         </div>
       </section>
 
-      <section className="lp-section" id="how">
+      <section className="lp-section" id="features">
         <h2>Everything your AI does, checked in one place</h2>
         <p className="lp-lead">Customers are losing trust in support bots, and most bot platforms have no built-in quality control. ProofMyAI is the independent auditor that works with all of them.</p>
         <div className="grid grid-3">
@@ -115,7 +122,27 @@ export default async function Landing() {
         </div>
       </section>
 
-      <footer className="lp-foot">© {new Date().getFullYear()} ProofMyAI · Prove your AI works</footer>
+      <section className="lp-section faq" id="faq">
+        <h2>Frequently asked questions</h2>
+        <p className="lp-lead">Everything you need to know before your first AI audit.</p>
+        <div style={{ maxWidth: 820, margin: "0 auto" }}>
+          {FAQS.map((f) => (
+            <details key={f.q}>
+              <summary>{f.q}</summary>
+              <p className="sub" style={{ margin: 0 }}>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section" style={{ textAlign: "center" }}>
+        <h2>Is your AI telling customers the truth?</h2>
+        <p className="lp-lead">Find out in 5 minutes with a free AI audit.</p>
+        <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
+      </section>
+      </main>
+      <SiteFooter />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structuredData)} />
     </div>
   );
 }

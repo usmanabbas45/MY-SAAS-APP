@@ -69,8 +69,9 @@ export function ThemeToggle() {
     } catch { /* storage unavailable */ }
   };
   return (
-    <button type="button" className="btn btn-ghost btn-sm" onClick={cycle} aria-label="Change theme">
-      {theme === "dark" ? "🌙 Dark" : theme === "light" ? "☀️ Light" : "🖥️ System"}
+    <button type="button" className="btn btn-ghost btn-sm" onClick={cycle} aria-label={`Theme: ${theme}. Click to change`}>
+      <span aria-hidden>{theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️"}</span>
+      <span className="tt-label">{theme === "dark" ? "Dark" : theme === "light" ? "Light" : "System"}</span>
     </button>
   );
 }

@@ -24,6 +24,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
   const manage: NavItem[] = [
     { href: `${base}/settings`, label: "Settings & AI model", icon: "🛠️" },
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
+    { href: "/app/account", label: "Account", icon: "👤" },
   ];
 
   return (
