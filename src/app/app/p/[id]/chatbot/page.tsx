@@ -132,7 +132,7 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
             {rules.map((r) => (
               <form key={r.id} action={deleteRuleAction} className="badge" style={{ padding: "4px 6px 4px 12px" }}>
                 <input type="hidden" name="projectId" value={p.id} /><input type="hidden" name="ruleId" value={r.id} />
-                {r.kind === "never_say" ? "🚫 Never say" : "🙋 Hand over on"} “{r.pattern}”
+                {r.kind === "never_say" ? "🚫 Never say" : r.kind === "must_include" ? "✅ Must say" : "🙋 Hand over on"} “{r.pattern}”
                 <button className="btn btn-ghost btn-sm" style={{ padding: "0 6px", marginLeft: 6 }} aria-label={`Remove rule ${r.pattern}`}>✕</button>
               </form>
             ))}
@@ -147,8 +147,8 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
             </select>
           </div>
           <div style={{ flex: "2 1 260px" }}>
-            <label htmlFor="pattern">Word or phrase</label>
-            <input id="pattern" name="pattern" type="text" required minLength={2} maxLength={200} placeholder="lifetime warranty" />
+            <label htmlFor="pattern">Word or phrase <span className="hint">(for &quot;must include&quot;: topic =&gt; required words)</span></label>
+            <input id="pattern" name="pattern" type="text" required minLength={2} maxLength={200} placeholder="lifetime warranty · or · windscreen => not covered" />
           </div>
           <SubmitButton pendingText="Adding…">Add rule</SubmitButton>
         </form>

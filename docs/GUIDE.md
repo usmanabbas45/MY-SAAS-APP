@@ -235,6 +235,28 @@ Personal data (emails, phone numbers, card numbers, IBANs, IP addresses) is mask
 ### Weekly summary email
 With an **Alert email** set and email sending configured (Part E2), a summary arrives once a week. Turn it off in **Settings → Privacy & reports**.
 
+## Part H6: Notifications, missing replies, WhatsApp and conversation checks
+
+### Where and when you get alerts
+Settings → **🔔 Notifications** → **+ Add a notification channel**. Add as many as you want:
+- **Email**, **Slack**, **Discord**, **Microsoft Teams**, **Google Chat**: paste the address or incoming-webhook URL.
+- **Telegram**: create a bot with @BotFather, paste its token, message the bot once, then find your chat ID at `https://api.telegram.org/bot<token>/getUpdates`.
+- **SMS / WhatsApp**: uses your own Twilio account (Account SID, Auth token, the Twilio number to send from).
+- **Custom webhook**: JSON for Zapier, n8n or Make (fields: event, severity, module, title, detail, link).
+
+For each channel choose **how serious** (high only, e.g. SMS at night / medium + high / everything), **which parts** (chatbot, tests, agents, workflows) and whether to **also get "✅ resolved"** messages. Click **Test** to check a channel; the table shows the last delivery result. The same problem is never alerted twice while it's open.
+
+### Customers your bot never answered
+Send each customer message to `/api/v1/chat-events` as it arrives (`{"conversation_id": "...", "question": "..."}`) and the bot's reply as usual. If no reply arrives within the timeout (Settings → *Alert when the chatbot hasn't replied within*, default 120 s), you get a "bot did not reply" alert. Optional fields on any event: `latency_ms`, `cost_usd`, `error`.
+
+### WhatsApp / SMS bots on Twilio (no code)
+Live tracking → **📱 Connect WhatsApp or SMS via Twilio**: Account SID, an API key (recommended) or auth token, and the bot's number (`whatsapp:+1415…`). Every 15 minutes ProofMyAI reads the message log (read-only), grades the bot's replies, measures response times, flags failed deliveries and alerts on unanswered customers. Customer numbers are stored only as anonymous IDs.
+
+### Conversation checks (automatic)
+Besides checking answers against your help docs, every conversation is checked for: **asking again** for details the customer already gave (registration, postcode, order number, name, email), **restarting** mid-conversation, **generic fallback** replies, and **contradicting** an earlier reply. The fix list groups these as bot-behaviour fixes for your developer. Rules can now also say **"topic => must include"**, e.g. `windscreen => not covered`.
+
+Use **▶ Send test event** on the Live tracking page to see everything work with sample data.
+
 ## Part H5: Admin dashboard
 Open **proofmyai.com/app/admin** (or click **🛡️ Admin** in the menu). Only emails in `ADMIN_EMAILS` can open it; if that variable is empty, `UNLIMITED_EMAILS` is used. Everyone else gets "page not found".
 

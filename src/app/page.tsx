@@ -21,6 +21,7 @@ const PLANS = [
   { name: "Starter", price: PLANS_BY_ID.starter.price, featured: false, items: PLAN_FEATURES.starter },
   { name: "Growth", price: PLANS_BY_ID.growth.price, featured: true, items: PLAN_FEATURES.growth },
   { name: "Agency", price: PLANS_BY_ID.agency.price, featured: false, items: PLAN_FEATURES.agency },
+  { name: "Compliance", price: PLANS_BY_ID.compliance.price, featured: false, items: PLAN_FEATURES.compliance },
 ];
 
 export const metadata = {
@@ -126,27 +127,21 @@ export default function Landing() {
 
       <section className="lp-section" id="pricing">
         <h2>Simple pricing</h2>
-        <p className="lp-lead">Start free with a one-time audit of up to 100 conversations. No card needed. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
-        <div className="grid grid-3">
+        <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>, no card needed. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
+        <div className="grid grid-4">
           {PLANS.map((p) => (
             <div className={`card plan ${p.featured ? "featured" : ""}`} key={p.name}>
               <div className="row between">
                 <h3>{p.name}</h3>
-                {p.featured ? <span className="badge badge-brand">Most popular</span> : null}
+                {p.featured ? <span className="badge badge-brand">Most popular</span> : p.name === "Compliance" ? <span className="badge badge-info">Regulated</span> : null}
               </div>
               <div className="price">${p.price}<small>/month</small></div>
               <ul>{p.items.map((i) => <li key={i}>{i}</li>)}</ul>
-              <Link href="/signup" className={`btn ${p.featured ? "" : "btn-ghost"}`} style={{ width: "100%" }}>Start free</Link>
+              <Link href={p.name === "Compliance" ? "/contact" : "/signup"} className={`btn ${p.featured ? "" : "btn-ghost"}`} style={{ width: "100%" }}>{p.name === "Compliance" ? "Talk to us" : "Start free"}</Link>
             </div>
           ))}
         </div>
-        <div className="card" style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ flex: "1 1 420px" }}>
-            <h3 style={{ marginTop: 0 }}>Regulated business or strict data rules?</h3>
-            <p className="sub" style={{ margin: 0 }}>Dealerships, finance, insurance and healthcare: signed DPA, results-only storage, short retention, AI provider off, or a <strong>self-hosted</strong> ProofMyAI on your own server. <Link href="/security">See the Trust Center</Link>.</p>
-          </div>
-          <a className="btn btn-ghost" href="/contact">Talk to us</a>
-        </div>
+        <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>Strict data rules? Results-only storage, auto-delete, AI provider off, a signed DPA or a <strong>self-hosted</strong> ProofMyAI. <Link href="/security">See the Trust Center</Link>.</p>
       </section>
 
       <section className="lp-section faq" id="faq">

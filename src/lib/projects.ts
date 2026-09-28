@@ -18,6 +18,7 @@ export interface Project {
   retention_days: number;
   store_text: number;
   use_ai: number;
+  reply_timeout_sec: number;
   report_brand: string | null;
   weekly_digest: number;
   last_digest_at: string | null;

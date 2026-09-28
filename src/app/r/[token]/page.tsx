@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print";
 import { HBars, ScoreRing, SeverityBadge, VerdictBadge } from "@/components/ui";
-import { fixList } from "@/lib/audit/run";
+import { fixList, riskSummary } from "@/lib/audit/run";
 import { all, get } from "@/lib/db";
 import { VERDICT_LABELS, VERDICTS, type Verdict } from "@/lib/judge/types";
 
@@ -33,6 +33,8 @@ export default async function SharedReport({ params }: { params: Promise<{ token
       ORDER BY CASE severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, COALESCE(risk, 0) DESC LIMIT 40`, audit.id,
   );
   const fixes = fixList(audit.id);
+  const risk = riskSummary(audit.id);
+  const flagTotal = Object.values(risk.flags).reduce((a, b) => a + b, 0);
   const brand = audit.brand || "ProofMyAI";
 
   return (
@@ -53,6 +55,16 @@ export default async function SharedReport({ params }: { params: Promise<{ token
             <div className="stat"><span className="stat-label">Frustrated customers</span><span className="stat-value">{frustrated}</span></div>
           </div>
         </div>
+
+        {risk.high + risk.medium > 0 ? (
+          <div className="card">
+            <h3>⚠️ Risk avoided by catching these</h3>
+            <p style={{ margin: 0 }}>
+              <strong>{risk.high}</strong> answer{risk.high === 1 ? "" : "s"} could have created legal or financial exposure, and <strong>{risk.medium}</strong> misled or frustrated customers.
+              {flagTotal ? ` ${flagTotal} conversation problem${flagTotal === 1 ? "" : "s"} (asking again, restarting, fallbacks or contradictions) were also found.` : ""}
+            </p>
+          </div>
+        ) : null}
 
         <div className="card">
           <h3>📋 What to fix first</h3>

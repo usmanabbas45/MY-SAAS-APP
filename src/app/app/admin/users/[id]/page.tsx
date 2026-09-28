@@ -89,7 +89,7 @@ export default async function AdminUserPage({ params, searchParams }: { params: 
           {hidden}
           <div className="row" style={{ gap: 8 }}>
             <select name="plan" defaultValue={u.plan_status === "comped" ? u.plan : "growth"} aria-label="Plan">
-              <option value="starter">Starter</option><option value="growth">Growth</option><option value="agency">Agency</option><option value="free">Free (remove plan)</option>
+              <option value="starter">Starter</option><option value="growth">Growth</option><option value="agency">Agency</option><option value="compliance">Compliance</option><option value="free">Free (remove plan)</option>
             </select>
             <SubmitButton pendingText="Saving…">Apply</SubmitButton>
           </div>

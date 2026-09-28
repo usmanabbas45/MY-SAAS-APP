@@ -36,7 +36,7 @@ export function ago(value: string | null): string {
 
 export function PlanBadge({ plan, status, cancelAt, suspended, owner }: { plan: string; status: string | null; cancelAt?: string | null; suspended?: string | null; owner?: boolean }) {
   if (owner) return <span className="badge badge-info">Owner · no limits</span>;
-  const paid = ["starter", "growth", "agency"].includes(plan) && ["active", "trialing", "past_due", "comped"].includes(status ?? "");
+  const paid = ["starter", "growth", "agency", "compliance"].includes(plan) && ["active", "trialing", "past_due", "comped"].includes(status ?? "");
   const name = paid ? plan[0].toUpperCase() + plan.slice(1) : "Free";
   const extra =
     suspended ? { t: "Suspended", c: "badge-bad" }

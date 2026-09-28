@@ -6,6 +6,11 @@ import { parseTranscripts } from "@/lib/audit/parse";
 import { createAudit, executeAudit } from "@/lib/audit/run";
 import { customMatcher, redactConversations } from "@/lib/pii";
 import { RETENTION_OPTIONS } from "@/lib/retention";
+import { processLiveChat } from "@/lib/audit/live";
+import { ingestAgentRun } from "@/lib/agents/ingest";
+import { pollChatSource, type ChatSource } from "@/lib/connectors/twilio";
+import { recordWorkflowRun } from "@/lib/workflows/monitor";
+import { CHANNEL_TYPES, channelsFor, deliver, MODULES, validateChannel } from "@/lib/notify";
 import { requireUser } from "@/lib/auth";
 import { limitError } from "@/lib/billing";
 import { get, run } from "@/lib/db";
@@ -13,7 +18,7 @@ import { raiseIncident } from "@/lib/incidents";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
 import { newApiKey, ownedProject, type Project } from "@/lib/projects";
-import { RULE_KINDS } from "@/lib/rules";
+import { parseMustInclude, RULE_KINDS } from "@/lib/rules";
 import { assertPublicUrl, encrypt, randomToken } from "@/lib/security";
 import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
@@ -132,6 +137,7 @@ export async function addRuleAction(form: FormData) {
   const path = `/app/p/${p.id}/chatbot`;
   if (!(kind in RULE_KINDS)) done(path, { error: "Choose a rule type." });
   if (pattern.length < 2) done(path, { error: "Type the word or phrase for the rule (at least 2 characters)." });
+  if (kind === "must_include" && !parseMustInclude(pattern)) done(path, { error: "Write this rule as: topic => required words, e.g. windscreen => not covered" });
   run("INSERT INTO rules (project_id, kind, pattern) VALUES (?, ?, ?)", p.id, kind, pattern);
   done(path, { ok: "Rule added. It applies to every new audit and every live answer." });
 }
@@ -298,15 +304,79 @@ export async function updateSettingsAction(form: FormData) {
   };
   run(
     `UPDATE projects SET name = ?, alert_webhook = ?, alert_email = ?, agent_cost_budget_usd = ?, agent_max_steps = ?, agent_max_ms = ?, agent_ai_review = ?,
-       weekly_digest = ?, report_brand = ? WHERE id = ?`,
+       weekly_digest = ?, report_brand = ?, reply_timeout_sec = ? WHERE id = ?`,
     str(form, "name", 100) || p.name, webhook, email,
     num("agent_cost_budget_usd", p.agent_cost_budget_usd, 0.0001, 10000),
     Math.round(num("agent_max_steps", p.agent_max_steps, 1, 100000)),
     Math.round(num("agent_max_seconds", p.agent_max_ms / 1000, 1, 86400) * 1000),
     form.get("agent_ai_review") ? 1 : 0, form.get("weekly_digest") ? 1 : 0,
-    str(form, "report_brand", 80) || null, p.id,
+    str(form, "report_brand", 80) || null, Math.round(num("reply_timeout_sec", p.reply_timeout_sec, 0, 86400)), p.id,
   );
   done(path, { ok: "Settings saved." });
+}
+
+// ---------- Live tracking: test events and Twilio connector ----------
+
+export async function sendTestEventAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/live`;
+  const stamp = Date.now().toString(36);
+  // A sample conversation where the bot asks again for a registration the customer already gave.
+  await (await processLiveChat(p, {
+    conversation_id: `test-${stamp}`, bot_name: "Test",
+    messages: [
+      { role: "user", content: "Hi, my car AB12 CDE won't start. Can someone help?" },
+      { role: "assistant", content: "Sorry to hear that! What is your vehicle registration number?" },
+    ],
+    latency_ms: 1840, cost_usd: 0.0021,
+  }, { wait: true })).grades;
+  await ingestAgentRun(p.id, {
+    run_id: `test-${stamp}`, agent_name: "Test agent", goal: "Summarise today's support tickets", status: "success",
+    final_output: "3 tickets: 2 delivery questions, 1 refund request.",
+    steps: [{ type: "llm", name: "summarise", tokens: 640, cost_usd: 0.003, duration_ms: 1200 }],
+  });
+  await recordWorkflowRun(p.id, { platform: "other", workflow_id: "test-workflow", workflow_name: "Test workflow", execution_id: `test-${stamp}`, status: "success", output_items: 5, duration_ms: 2300 });
+  done(path, { ok: "Test events sent: a chatbot conversation (with a “asked again” problem), an agent run and a workflow run. They appear in the feed below." });
+}
+
+export async function addChatSourceAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/live`;
+  const accountSid = str(form, "account_sid", 64);
+  const keySid = str(form, "key_sid", 64);
+  const secret = str(form, "secret", 200);
+  const botNumber = str(form, "bot_number", 60).replace(/\s+/g, "");
+  try {
+    if (!/^AC[0-9a-f]{32}$/i.test(accountSid)) throw new Error("The Account SID starts with AC and has 34 characters (Twilio Console → Account info).");
+    if (keySid && !/^SK[0-9a-f]{32}$/i.test(keySid)) throw new Error("An API key SID starts with SK and has 34 characters.");
+    if (!secret) throw new Error("Enter the API key secret (or the auth token).");
+    if (!/^(whatsapp:)?\+\d{6,15}$/i.test(botNumber)) throw new Error("Enter the bot's number in international format, e.g. whatsapp:+14155238886 or +447700900123.");
+  } catch (err) {
+    done(path, { error: err instanceof Error ? err.message : "Invalid Twilio details." });
+  }
+  const { lastInsertRowid } = run(
+    "INSERT INTO chat_sources (project_id, platform, name, account_id, secret_enc, bot_address) VALUES (?, 'twilio', ?, ?, ?, ?)",
+    p.id, str(form, "name", 100) || "Twilio", accountSid, encrypt(JSON.stringify({ keySid: keySid || undefined, secret })), botNumber,
+  );
+  const src = get<ChatSource>("SELECT * FROM chat_sources WHERE id = ?", lastInsertRowid)!;
+  const r = await pollChatSource(src);
+  done(path, r.error
+    ? { error: `Saved, but the first check failed: ${r.error}` }
+    : { ok: `Connected! Imported ${r.replies} bot repl${r.replies === 1 ? "y" : "ies"} from the last 24 hours${r.waiting ? ` and ${r.waiting} unanswered customer message${r.waiting === 1 ? "" : "s"}` : ""}. New messages are checked every 15 minutes.` });
+}
+
+export async function pollChatSourceAction(form: FormData) {
+  const p = await project(form);
+  const src = get<ChatSource>("SELECT * FROM chat_sources WHERE id = ? AND project_id = ?", Number(form.get("sourceId")), p.id);
+  if (!src) done(`/app/p/${p.id}/live`, { error: "Connection not found." });
+  const r = await pollChatSource(src);
+  done(`/app/p/${p.id}/live`, r.error ? { error: r.error } : { ok: `Checked: ${r.replies} new repl${r.replies === 1 ? "y" : "ies"}, ${r.waiting} waiting for a reply.` });
+}
+
+export async function deleteChatSourceAction(form: FormData) {
+  const p = await project(form);
+  run("DELETE FROM chat_sources WHERE id = ? AND project_id = ?", Number(form.get("sourceId")), p.id);
+  done(`/app/p/${p.id}/live`, { ok: "Twilio connection removed." });
 }
 
 export async function updatePrivacyAction(form: FormData) {
@@ -324,12 +394,49 @@ export async function updatePrivacyAction(form: FormData) {
 
 export async function testAlertAction(form: FormData) {
   const p = await project(form);
-  if (!p.alert_webhook && !p.alert_email) done(`/app/p/${p.id}/settings`, { error: "Add a webhook URL or email first, then save." });
-  await raiseIncident(p.id, {
-    module: "workflows", code: "TEST_ALERT", severity: "medium",
-    title: "Test alert from ProofMyAI", detail: "If you can read this, alerts are working.",
+  const path = `/app/p/${p.id}/settings`;
+  const only = Number(form.get("channelId")) || null;
+  const channels = channelsFor(p.id).filter((c) => !only || c.id === only);
+  if (!channels.length && !p.alert_webhook && !p.alert_email) done(path, { error: "Add a notification channel first." });
+  const msg = { projectId: p.id, projectName: p.name, kind: "problem" as const, module: "workflows", code: "TEST_ALERT", severity: "high" as const,
+    title: "Test alert from ProofMyAI", detail: "If you can read this, alerts to this channel are working.", link: `${process.env.APP_URL ?? ""}/app/p/${p.id}/incidents` };
+  const results = await Promise.allSettled(channels.map((c) => deliver(c, msg)));
+  const failed: string[] = [];
+  results.forEach((r, i) => {
+    const status = r.status === "fulfilled" ? "ok" : String(r.reason instanceof Error ? r.reason.message : r.reason).slice(0, 200);
+    if (r.status === "rejected") failed.push(`${CHANNEL_TYPES[channels[i].type].label}: ${status}`);
+    run("UPDATE alert_channels SET last_status = ?, last_sent_at = ? WHERE id = ?", status, new Date().toISOString(), channels[i].id);
   });
-  done(`/app/p/${p.id}/settings`, { ok: "Test alert sent. Check your Slack/Discord channel or inbox." });
+  if (!only && (p.alert_webhook || p.alert_email)) {
+    await raiseIncident(p.id, { module: "workflows", code: "TEST_ALERT", severity: "medium", title: "Test alert from ProofMyAI", detail: "If you can read this, alerts are working." });
+  }
+  done(path, failed.length ? { error: `Some alerts failed. ${failed.join(" · ")}` } : { ok: "Test alert sent. Check your phone, inbox or channel." });
+}
+
+export async function addChannelAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/settings`;
+  let ch;
+  try {
+    ch = await validateChannel(str(form, "type"), str(form, "target", 2000), { token: str(form, "token", 300), sid: str(form, "sid", 64), from: str(form, "from", 40) });
+  } catch (err) {
+    done(path, { error: err instanceof Error ? err.message : "Invalid channel." });
+  }
+  if (channelsFor(p.id).length >= 20) done(path, { error: "A project can have up to 20 notification channels." });
+  const sev = str(form, "min_severity");
+  const modules = form.getAll("modules").map(String).filter((m) => (MODULES as readonly string[]).includes(m));
+  run(
+    "INSERT INTO alert_channels (project_id, type, target, secret_enc, min_severity, modules, notify_resolved) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    p.id, ch.type, ch.target, ch.secret ? encrypt(ch.secret) : null, ["low", "medium", "high"].includes(sev) ? sev : "medium",
+    modules.length === MODULES.length ? "" : modules.join(","), form.get("notify_resolved") ? 1 : 0,
+  );
+  done(path, { ok: `${CHANNEL_TYPES[ch.type].label} added. Click "Test" next to it to check it works.` });
+}
+
+export async function deleteChannelAction(form: FormData) {
+  const p = await project(form);
+  run("DELETE FROM alert_channels WHERE id = ? AND project_id = ?", Number(form.get("channelId")), p.id);
+  done(`/app/p/${p.id}/settings`, { ok: "Notification channel removed." });
 }
 
 export async function regenerateKeyAction(form: FormData) {

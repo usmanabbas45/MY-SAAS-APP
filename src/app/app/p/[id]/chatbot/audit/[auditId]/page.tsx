@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh, CopyButton, SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, HBars, PageHeader, ScoreRing, SeverityBadge, VerdictBadge } from "@/components/ui";
-import { fixList } from "@/lib/audit/run";
+import { fixList, riskSummary } from "@/lib/audit/run";
+import { FLAG_LABELS, type ConvFlag } from "@/lib/judge/conversation";
 import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
 import { VERDICT_LABELS, VERDICTS, type Verdict } from "@/lib/judge/types";
@@ -21,7 +22,7 @@ const VERDICT_COLOR: Record<Verdict, string> = {
 interface Item {
   id: number; conversation_id: string; question: string; answer: string; verdict: Verdict; severity: string;
   reason: string; source_doc: string | null; risk: number | null; feedback: string | null; corrected_verdict: Verdict | null;
-  frustrated: number; rule_hit: string | null;
+  frustrated: number; rule_hit: string | null; conv_flags: string | null; latency_ms: number | null; bot_error: string | null;
 }
 
 export default async function AuditPage({ params, searchParams }: {
@@ -36,7 +37,7 @@ export default async function AuditPage({ params, searchParams }: {
   );
   if (!audit) notFound();
   const sp = await searchParams;
-  const filter = sp.v && (sp.v === "problems" || sp.v === "frustrated" || (VERDICTS as readonly string[]).includes(sp.v)) ? sp.v : "problems";
+  const filter = sp.v && (sp.v === "problems" || sp.v === "frustrated" || sp.v === "conversation" || (VERDICTS as readonly string[]).includes(sp.v)) ? sp.v : "problems";
   const sort = sp.sort === "order" ? "order" : "risk";
   const page = Math.max(1, Number(sp.page) || 1);
   const base = `/app/p/${p.id}/chatbot/audit/${audit.id}`;
@@ -50,13 +51,17 @@ export default async function AuditPage({ params, searchParams }: {
   const reviewed = get<{ n: number }>("SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND feedback IS NOT NULL", audit.id)?.n ?? 0;
 
   const where = filter === "problems" ? "AND COALESCE(corrected_verdict, verdict) <> 'correct'"
-    : filter === "frustrated" ? "AND frustrated = 1" : "AND COALESCE(corrected_verdict, verdict) = ?";
-  const args: (string | number)[] = filter === "problems" || filter === "frustrated" ? [audit.id] : [audit.id, filter];
+    : filter === "frustrated" ? "AND frustrated = 1"
+    : filter === "conversation" ? "AND conv_flags IS NOT NULL" : "AND COALESCE(corrected_verdict, verdict) = ?";
+  const args: (string | number)[] = filter === "problems" || filter === "frustrated" || filter === "conversation" ? [audit.id] : [audit.id, filter];
+  const risk = riskSummary(audit.id);
+  const flagTotal = Object.values(risk.flags).reduce((a, b) => a + b, 0);
   const frustrated = get<{ n: number }>("SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND frustrated = 1", audit.id)?.n ?? 0;
   const shareUrl = audit.share_token ? `${process.env.APP_URL || ""}/r/${audit.share_token}` : null;
   const matching = get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ? ${where}`, ...args)?.n ?? 0;
   const items = all<Item>(
-    `SELECT id, conversation_id, question, answer, verdict, severity, reason, source_doc, risk, feedback, corrected_verdict, frustrated, rule_hit
+    `SELECT id, conversation_id, question, answer, verdict, severity, reason, source_doc, risk, feedback, corrected_verdict, frustrated, rule_hit,
+            conv_flags, latency_ms, bot_error
        FROM audit_items WHERE audit_id = ? ${where}
       ORDER BY ${sort === "risk" ? "COALESCE(risk, 0) DESC, id" : "id"} LIMIT ? OFFSET ?`,
     ...args, PAGE_SIZE, (page - 1) * PAGE_SIZE,
@@ -111,9 +116,21 @@ export default async function AuditPage({ params, searchParams }: {
             </div>
           </div>
 
+          {risk.high + risk.medium > 0 || flagTotal > 0 ? (
+            <div className="card">
+              <h3>⚠️ Business risk found</h3>
+              <div className="grid grid-3">
+                <div className="stat"><span className="stat-label">Could create legal or financial exposure</span><span className="stat-value" style={{ color: risk.high ? "var(--bad)" : undefined }}>{risk.high}</span><span className="stat-foot">high-risk answers</span></div>
+                <div className="stat"><span className="stat-label">Misled or frustrated customers</span><span className="stat-value">{risk.medium}</span><span className="stat-foot">medium-risk answers</span></div>
+                <div className="stat"><span className="stat-label">Conversation problems</span><span className="stat-value">{flagTotal}</span>
+                  <span className="stat-foot">{(Object.entries(risk.flags) as [ConvFlag, number][]).filter(([, n]) => n).map(([f, n]) => `${FLAG_LABELS[f]} × ${n}`).join(" · ") || "none"}</span></div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="card">
             <div className="card-head">
-              <div><h3>📋 Fix list</h3><span className="sub">Update these help articles first. They caused the most wrong answers.</span></div>
+              <div><h3>📋 Fix list</h3><span className="sub">Fix these first: help articles to update, and bot prompt, memory or hand-over problems for your developer.</span></div>
               <Badge tone={problems ? "bad" : "ok"}>{problems} problem answer{problems === 1 ? "" : "s"}</Badge>
             </div>
             {fixes.length === 0 ? <p className="sub">🎉 No problems found in this audit.</p> : (
@@ -150,6 +167,7 @@ export default async function AuditPage({ params, searchParams }: {
           <div className="tabs">
             <Link className={`tab ${filter === "problems" ? "active" : ""}`} href={qs({ v: "problems" })}>All problems ({problems})</Link>
             <Link className={`tab ${filter === "frustrated" ? "active" : ""}`} href={qs({ v: "frustrated" })}>😠 Frustrated customers ({frustrated})</Link>
+            <Link className={`tab ${filter === "conversation" ? "active" : ""}`} href={qs({ v: "conversation" })}>🔁 Conversation problems ({flagTotal})</Link>
             {VERDICTS.map((v) => (
               <Link key={v} className={`tab ${filter === v ? "active" : ""}`} href={qs({ v })}>{VERDICT_LABELS[v]} ({counts.find((c) => c.verdict === v)?.n ?? 0})</Link>
             ))}
@@ -167,6 +185,9 @@ export default async function AuditPage({ params, searchParams }: {
                         {it.risk != null ? <Badge tone={it.risk >= 0.7 ? "bad" : it.risk >= 0.4 ? "warn" : "ok"}>Risk {Math.round(it.risk * 100)}%</Badge> : null}
                         {it.frustrated ? <Badge tone="warn">😠 Frustrated customer</Badge> : null}
                         {it.rule_hit ? <Badge tone="bad">📏 Rule broken</Badge> : null}
+                        {(it.conv_flags?.split(",") as ConvFlag[] | undefined)?.map((f) => <Badge key={f} tone={f === "contradiction" ? "bad" : "warn"}>🔁 {FLAG_LABELS[f] ?? f}</Badge>)}
+                        {it.latency_ms != null ? <Badge tone={it.latency_ms > 10000 ? "warn" : "muted"}>⏱ {(it.latency_ms / 1000).toFixed(1)}s</Badge> : null}
+                        {it.bot_error ? <Badge tone="bad">⚠ Bot error</Badge> : null}
                         {it.feedback ? <Badge tone="brand">{it.feedback === "agree" ? "Reviewed ✓" : `Corrected (judge said ${VERDICT_LABELS[it.verdict]})`}</Badge> : null}
                       </div>
                       <span className="faint mono">#{it.conversation_id}</span>

@@ -59,7 +59,9 @@ describe("live chatbot tracking", () => {
 
   it("validates payloads", () => {
     expect(LiveChatSchema.safeParse({ conversation_id: "x" }).success).toBe(false);
-    expect(LiveChatSchema.safeParse({ conversation_id: "x", question: "q", answer: "  " }).success).toBe(false);
+    expect(LiveChatSchema.safeParse({ conversation_id: "x", question: "  ", answer: "  " }).success).toBe(false);
+    // A customer message without a reply yet is valid (used for missing-reply alerts) and has nothing to grade.
+    expect(newExchanges(projectId, LiveChatSchema.parse({ conversation_id: "x", question: "q", answer: "  " }))).toEqual([]);
     expect(() => newExchanges(projectId, LiveChatSchema.parse({ conversation_id: "x", messages: [{ role: "robot", content: "hi" }] }))).toThrow(/unknown role/);
   });
 });

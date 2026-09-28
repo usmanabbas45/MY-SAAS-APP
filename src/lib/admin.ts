@@ -22,7 +22,7 @@ export function logAdmin(admin: string, action: string, target: string | null, d
 
 const n = (sql: string, ...args: (string | number)[]) => get<{ n: number }>(sql, ...args)?.n ?? 0;
 const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString().replace("T", " ").slice(0, 19);
-const PAID = "plan IN ('starter','growth','agency')";
+const PAID = "plan IN ('starter','growth','agency','compliance')";
 
 export interface AdminStats {
   users: number;
@@ -46,7 +46,7 @@ export interface AdminStats {
 }
 
 export function adminStats(): AdminStats {
-  const byPlan = (["starter", "growth", "agency"] as PlanId[]).map((plan) => ({
+  const byPlan = (["starter", "growth", "agency", "compliance"] as PlanId[]).map((plan) => ({
     plan,
     paying: n("SELECT COUNT(*) AS n FROM users WHERE plan = ? AND plan_status IN ('active','past_due')", plan),
     trialing: n("SELECT COUNT(*) AS n FROM users WHERE plan = ? AND plan_status = 'trialing'", plan),

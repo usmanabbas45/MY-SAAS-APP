@@ -127,6 +127,10 @@ Verdicts:
 - off_policy: makes promises or commitments the business did not authorise, is rude, gives advice outside the business's scope, or leaks internal information.
 - unclear: the reply is too vague, confusing or incomplete to help.
 
+Judge each reply in the context of the whole conversation, including <earlier_turns> when given. These are problems even if the facts are right:
+asking again for details the customer already gave (registration, postcode, order number, name, email), contradicting an earlier assistant reply (off_policy, high if it could put the customer at risk or change a commitment),
+greeting or restarting as if the conversation just began, and generic fallback replies ("we'll get back to you") instead of an answer (unclear).
+
 Severity reflects business harm: high = could cost money, legal exposure or a lost customer; medium = misleading or frustrating; low = minor quality issue; none = for correct replies.
 source_doc: the exact title of the knowledge-base doc that should back this answer (or that needs fixing/adding), or null if none applies.
 reason: one or two plain-English sentences a non-technical business owner can act on.
@@ -145,11 +149,16 @@ const ChatGrades = z.object({
   ),
 });
 
+const clampText = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
+
 export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[]): Promise<Grade[]> {
   const transcript = exchanges
     .map((e) => `<exchange turn_index="${e.turnIndex}">\n<customer>${e.question || "(no customer message)"}</customer>\n<assistant>${e.answer}</assistant>\n</exchange>`)
     .join("\n");
-  const task = `<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
+  // Turns before the first reply being graded (e.g. live tracking grades only the newest reply).
+  const earlier = (exchanges[0]?.context ?? []).slice(-20)
+    .map((t) => `<${t.role === "user" ? "customer" : "assistant"}>${clampText(t.content, 1500)}</${t.role === "user" ? "customer" : "assistant"}>`).join("\n");
+  const task = `${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
   const result = await callJudge(CHAT_INSTRUCTIONS, docs, task, ChatGrades);
   const titles = new Set(docs.map((d) => d.title));
   return exchanges.map((e) => {

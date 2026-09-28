@@ -19,7 +19,7 @@ async function target(form: FormData) {
 export async function setPlanAction(form: FormData) {
   const { admin, user, back } = await target(form);
   const plan = String(form.get("plan")) as PlanId;
-  if (!["free", "starter", "growth", "agency"].includes(plan)) back({ error: "Unknown plan." });
+  if (!["free", "starter", "growth", "agency", "compliance"].includes(plan)) back({ error: "Unknown plan." });
   setPlanManually(user.id, plan);
   logAdmin(admin.email, "set_plan", user.email, plan === "free" ? "free" : `${plan} (given free)`);
   back({ ok: plan === "free" ? "Moved to the Free plan." : `Gave the ${plan} plan for free. Paddle was not charged.` });
