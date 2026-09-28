@@ -37,8 +37,8 @@ export const PLAN_FEATURES: Record<Exclude<PlanId, "free">, string[]> = {
 };
 const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects: INF, conversations: INF, bots: INF, monitors: INF };
 
-/** Subscription states that keep the paid plan active. past_due keeps access while Paddle retries the payment. */
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+/** States that keep the paid plan active. past_due keeps access while Paddle retries; comped is a free plan given by an admin. */
+const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "comped"]);
 
 // ---------- Configuration ----------
 

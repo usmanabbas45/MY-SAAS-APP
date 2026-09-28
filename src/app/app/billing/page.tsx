@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SubmitButton, ThemeToggle } from "@/components/client";
 import { Flash } from "@/components/ui";
+import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import {
   billingConfigProblems, billingEnabled, checkPaddlePrices, billingState, checkoutSignature, paddleEnv, PAID_PLANS, PLAN_FEATURES, PLANS, priceId, usage, type Resource,
@@ -33,7 +34,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const state = billingState(user.id);
   const used = usage(user.id, state.plan);
   const projects = listProjects(user.id);
-  const admin = (process.env.UNLIMITED_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).includes(user.email);
+  const admin = isAdmin(user.email);
   let problems = billingConfigProblems();
   if (admin && enabled && problems.length === 0) problems = await checkPaddlePrices().catch(() => []);
   const subscribed = ["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";

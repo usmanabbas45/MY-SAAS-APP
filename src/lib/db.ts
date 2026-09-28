@@ -186,6 +186,17 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "plan_cancel_at", "TEXT");
   addColumn(db, "users", "trial_ends_at", "TEXT");
   addColumn(db, "users", "plan_updated_at", "TEXT");
+  addColumn(db, "users", "suspended_at", "TEXT");
+  addColumn(db, "users", "last_seen_at", "TEXT");
+  addColumn(db, "users", "admin_note", "TEXT");
+  db.exec(`CREATE TABLE IF NOT EXISTS admin_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_email TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_email TEXT,
+    detail TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

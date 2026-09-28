@@ -67,9 +67,14 @@ export default function Landing() {
         <div className="card" style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center" }}>
           <ScoreRing score={72} size={150} />
           <div style={{ flex: "1 1 280px" }}>
-            <h3>Example: an online store&apos;s first audit</h3>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <span className="badge badge-warn">Illustrative example</span>
+              <span className="faint">Sample numbers, not a real customer</span>
+            </div>
+            <h3>What a first audit report looks like for an online store</h3>
             <p className="sub">412 chatbot answers checked · 31 made-up answers (mostly shipping prices) · 9 refund disputes never handed to a human · 1 n8n order-sync workflow silently returning zero orders for 3 days.</p>
             <p className="sub" style={{ margin: 0 }}>Top fix: <strong>update the &quot;Shipping rates&quot; article</strong>. It caused 22 of the 31 wrong answers.</p>
+            <p className="faint" style={{ margin: "8px 0 0" }}>These figures show the format of a ProofMyAI report. <Link href="/signup">Run a free audit</Link> to see your own numbers.</p>
           </div>
         </div>
       </section>
