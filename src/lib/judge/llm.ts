@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { get } from "../db";
 import { clamp } from "../text";
 import { JudgeError } from "./errors";
 import { geminiJudge, geminiKey, geminiModel } from "./gemini";
@@ -32,8 +33,17 @@ export function llmAvailable(): boolean {
   return judgeProvider() !== null;
 }
 
+/**
+ * Whether this project's data may be sent to the AI provider. Projects can switch AI checking off
+ * ("keep all data inside ProofMyAI"); they then use the rule-based judge and neural model only.
+ */
+export function aiForProject(projectId: number): boolean {
+  return llmAvailable() && (get<{ use_ai: number }>("SELECT use_ai FROM projects WHERE id = ?", projectId)?.use_ai ?? 1) === 1;
+}
+
 /** Human-readable name of the active judge, e.g. "Claude (claude-opus-5)". */
-export function judgeLabel(): string {
+export function judgeLabel(projectId?: number): string {
+  if (projectId !== undefined && !aiForProject(projectId)) return "Basic mode (rule-based + neural model)";
   const p = judgeProvider();
   if (p === "anthropic") return `Claude (${model()})`;
   if (p === "gemini") return `Gemini (${geminiModel()})`;

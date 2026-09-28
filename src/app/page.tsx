@@ -54,7 +54,7 @@ export default function Landing() {
       <section className="lp-hero">
         <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
         <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
-        <p>ProofMyAI checks every chatbot answer, every AI agent run and every n8n/Make workflow, then tells you exactly what broke and how to fix it, before your customers notice.</p>
+        <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
         <div className="row" style={{ justifyContent: "center" }}>
           <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
           <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the video</a>
@@ -139,6 +139,13 @@ export default function Landing() {
               <Link href="/signup" className={`btn ${p.featured ? "" : "btn-ghost"}`} style={{ width: "100%" }}>Start free</Link>
             </div>
           ))}
+        </div>
+        <div className="card" style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ flex: "1 1 420px" }}>
+            <h3 style={{ marginTop: 0 }}>Regulated business or strict data rules?</h3>
+            <p className="sub" style={{ margin: 0 }}>Dealerships, finance, insurance and healthcare: signed DPA, results-only storage, short retention, AI provider off, or a <strong>self-hosted</strong> ProofMyAI on your own server. <Link href="/security">See the Trust Center</Link>.</p>
+          </div>
+          <a className="btn btn-ghost" href="/contact">Talk to us</a>
         </div>
       </section>
 

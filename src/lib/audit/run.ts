@@ -1,7 +1,7 @@
 import { all, get, run, transaction } from "../db";
 import { buildKbIndex, featureVector, signalsFor, type KbIndex } from "../judge/features";
 import { heuristicGrade } from "../judge/heuristic";
-import { JudgeError, judgeConcurrency, judgeLabel, llmAvailable, llmGradeConversation } from "../judge/llm";
+import { aiForProject, JudgeError, judgeConcurrency, judgeLabel, llmGradeConversation } from "../judge/llm";
 import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
 import type { MlpModel } from "../ml/mlp";
 import { loadModel, riskScore } from "../ml/risk";
@@ -36,10 +36,12 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 }
 
 export function createAudit(projectId: number, name: string): { id: number; mode: "ai" | "basic" } {
-  const mode = llmAvailable() ? "ai" : "basic";
-  const { lastInsertRowid } = run("INSERT INTO audits (project_id, name, mode, status, judge) VALUES (?, ?, ?, 'running', ?)", projectId, name, mode, judgeLabel());
+  const mode = aiForProject(projectId) ? "ai" : "basic";
+  const { lastInsertRowid } = run("INSERT INTO audits (project_id, name, mode, status, judge) VALUES (?, ?, ?, 'running', ?)", projectId, name, mode, judgeLabel(projectId));
   return { id: lastInsertRowid, mode };
 }
+
+export const NOT_STORED = "(not stored: this project keeps results only)";
 
 /**
  * Stores one graded answer: applies the business's custom rules, flags frustrated customers,
@@ -48,12 +50,16 @@ export function createAudit(projectId: number, name: string): { id: number; mode
 export function storeGradedItem(auditId: number, e: Exchange, g: Grade, index: KbIndex, model: MlpModel | null, rules: Rule[], note = ""): Grade {
   const { grade, hit } = applyRules(e, g, rules);
   const features = featureVector(signalsFor(e, index), grade.verdict, grade.confidence);
+  // "Don't store transcripts" mode: keep the verdict, reason and scores, but not the chat text itself.
+  const frustrated = isFrustrated(e.question) ? 1 : 0;
+  const storeText = get<{ s: number }>("SELECT p.store_text AS s FROM audits a JOIN projects p ON p.id = a.project_id WHERE a.id = ?", auditId)?.s ?? 1;
+  if (!storeText) e = { ...e, question: NOT_STORED, answer: NOT_STORED };
   run(
     `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, frustrated, rule_hit)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)`,
     auditId, e.conversationId, e.turnIndex, e.question, e.answer, grade.verdict, grade.severity, grade.reason + note, grade.sourceDoc,
     grade.confidence, JSON.stringify(features), riskScore(model, features, grade.verdict, grade.confidence),
-    isFrustrated(e.question) ? 1 : 0, hit,
+    frustrated, hit,
   );
   return grade;
 }

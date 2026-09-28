@@ -55,7 +55,10 @@ export function SiteFooter() {
         <div>
           <h2 className="foot-h">Company</h2>
           <ul>
+            <li><Link href="/about">About</Link></li>
             <li><Link href="/contact">Contact</Link></li>
+            <li><Link href="/security">Trust Center</Link></li>
+            <li><Link href="/dpa">DPA (GDPR)</Link></li>
             <li><Link href="/privacy">Privacy Policy</Link></li>
             <li><Link href="/terms">Terms of Service</Link></li>
             <li><Link href="/refund">Refund Policy</Link></li>

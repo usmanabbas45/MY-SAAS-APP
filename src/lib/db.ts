@@ -186,6 +186,12 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "plan_cancel_at", "TEXT");
   addColumn(db, "users", "trial_ends_at", "TEXT");
   addColumn(db, "users", "plan_updated_at", "TEXT");
+  addColumn(db, "projects", "mask_terms", "TEXT");
+  addColumn(db, "projects", "retention_days", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(db, "projects", "store_text", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "projects", "use_ai", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "users", "dpa_accepted_at", "TEXT");
+  addColumn(db, "users", "dpa_company", "TEXT");
   addColumn(db, "users", "suspended_at", "TEXT");
   addColumn(db, "users", "last_seen_at", "TEXT");
   addColumn(db, "users", "admin_note", "TEXT");

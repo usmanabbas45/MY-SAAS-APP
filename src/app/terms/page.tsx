@@ -17,7 +17,7 @@ export default function TermsPage() {
         <li>Tell us straight away at <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if you think your account was misused.</li>
       </ul>
       <h2>3. Your data</h2>
-      <p>You keep all rights to the content you upload or send (chat transcripts, knowledge base articles, agent and workflow data). You give us permission to store and process it only to provide the Service to you. You confirm you have the right to share this data with us, including any notices or consents your own customers need. How we handle data is described in our <Link href="/privacy">Privacy Policy</Link>.</p>
+      <p>You keep all rights to the content you upload or send (chat transcripts, knowledge base articles, agent and workflow data). You give us permission to store and process it only to provide the Service to you. You confirm you have the right to share this data with us, including any notices or consents your own customers need. How we handle data is described in our <Link href="/privacy">Privacy Policy</Link>, and our <Link href="/dpa">Data Processing Agreement</Link> applies to personal data we process for you.</p>
       <h2>4. Acceptable use</h2>
       <p>Do not use the Service to break the law, to upload content you have no right to use, to attack or overload the Service or other systems, to scan private networks, or to resell access without our written agreement.</p>
       <h2>5. Plans and payment</h2>

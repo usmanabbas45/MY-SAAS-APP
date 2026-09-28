@@ -6,7 +6,7 @@ import { FEATURE_NAMES } from "@/lib/judge/features";
 import { judgeLabel } from "@/lib/judge/llm";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
 import { ownedProject } from "@/lib/projects";
-import { deleteProjectAction, regenerateKeyAction, retrainAction, testAlertAction, updateSettingsAction } from "../actions";
+import { deleteProjectAction, regenerateKeyAction, retrainAction, testAlertAction, updatePrivacyAction, updateSettingsAction } from "../actions";
 
 export const metadata = { title: "Settings" };
 
@@ -45,9 +45,8 @@ export default async function SettingsPage({ params, searchParams }: { params: P
             <div className="field"><label htmlFor="t">Max seconds</label><input id="t" name="agent_max_seconds" type="number" min="1" defaultValue={Math.round(p.agent_max_ms / 1000)} /></div>
           </div>
           <label className="check"><input type="checkbox" name="agent_ai_review" defaultChecked={Boolean(p.agent_ai_review)} /> AI review of agent outputs (goal achieved? grounded in tool results?)</label>
-          <h3 style={{ marginTop: 18 }}>Privacy & reports</h3>
-          <label className="check"><input type="checkbox" name="redact_pii" defaultChecked={Boolean(p.redact_pii)} /> 🔒 Mask personal data (emails, phone numbers, card numbers, IBANs, IPs) before storing or AI checking</label>
-          <label className="check" style={{ marginTop: 8 }}><input type="checkbox" name="weekly_digest" defaultChecked={Boolean(p.weekly_digest)} /> 📬 Send a weekly summary email to the alert email</label>
+          <h3 style={{ marginTop: 18 }}>Reports</h3>
+          <label className="check"><input type="checkbox" name="weekly_digest" defaultChecked={Boolean(p.weekly_digest)} /> 📬 Send a weekly summary email to the alert email</label>
           <div className="field" style={{ marginTop: 12 }}>
             <label htmlFor="brand">Report brand name <span className="hint">(agencies: your agency name on shared client reports; empty = ProofMyAI)</span></label>
             <input id="brand" name="report_brand" type="text" defaultValue={p.report_brand ?? ""} maxLength={80} placeholder="Your Agency Ltd" />
@@ -72,6 +71,38 @@ export default async function SettingsPage({ params, searchParams }: { params: P
           </div>
         </div>
       </div>
+
+      <form action={updatePrivacyAction} className="card" id="privacy">
+        {pid}
+        <div className="card-head">
+          <div><h3>🔒 Data & privacy</h3><span className="sub">Control what ProofMyAI masks, stores and sends to an AI provider for this project. See the <a href="/security" target="_blank">Trust Center</a> and <a href="/dpa" target="_blank">DPA</a>.</span></div>
+        </div>
+        <div className="grid grid-2">
+          <div>
+            <label className="check"><input type="checkbox" name="redact_pii" defaultChecked={Boolean(p.redact_pii)} /> Mask personal data before storing or AI checking: emails, phone numbers, card numbers, IBANs, IPs, UK postcodes, UK number plates and self-introduced names (&quot;my name is …&quot;)</label>
+            <div className="field" style={{ marginTop: 12 }}>
+              <label htmlFor="mask_terms">Extra words to mask <span className="hint">(one per line: customer names, account numbers, internal codes. Replaced with [masked])</span></label>
+              <textarea id="mask_terms" name="mask_terms" rows={4} defaultValue={p.mask_terms ?? ""} placeholder={"Anna Smith\nAB Dealers\nPolicy WF-"} />
+            </div>
+          </div>
+          <div>
+            <div className="field">
+              <label htmlFor="retention_days">Keep chats, agent runs and test answers for</label>
+              <select id="retention_days" name="retention_days" defaultValue={String(p.retention_days)}>
+                <option value="0">Until I delete them</option>
+                <option value="7">7 days</option>
+                <option value="30">30 days</option>
+                <option value="90">90 days</option>
+                <option value="365">1 year</option>
+              </select>
+              <span className="hint">Older data is deleted automatically every 15 minutes (with the scheduled checks).</span>
+            </div>
+            <label className="check" style={{ marginTop: 8 }}><input type="checkbox" name="store_text" defaultChecked={Boolean(p.store_text)} /> Store conversation text. Turn off to keep only results (verdict, reason, scores), never the customer&apos;s words or the bot&apos;s reply.</label>
+            <label className="check" style={{ marginTop: 8 }}><input type="checkbox" name="use_ai" defaultChecked={Boolean(p.use_ai)} /> Use the AI judge ({judgeLabel()}). Turn off to keep all data inside ProofMyAI: checks then use rules and your neural model only.</label>
+          </div>
+        </div>
+        <div className="row" style={{ marginTop: 14 }}><SubmitButton pendingText="Saving…">Save privacy settings</SubmitButton></div>
+      </form>
 
       <div className="card">
         <div className="card-head">

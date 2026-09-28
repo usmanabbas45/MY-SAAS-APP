@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { all } from "@/lib/db";
 import { sendDueDigests } from "@/lib/digest";
+import { purgeExpired } from "@/lib/retention";
 import { runDueSuites } from "@/lib/tests/runner";
 import { periodicWorkflowChecks } from "@/lib/workflows/monitor";
 import { pollAllSources } from "@/lib/workflows/pollers";
@@ -26,5 +27,6 @@ export async function GET(req: Request) {
   for (const p of projects) await periodicWorkflowChecks(p.id);
   const suites = await runDueSuites();
   const digests = await sendDueDigests();
-  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, ms: Date.now() - started });
+  const purged = purgeExpired();
+  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, purged, ms: Date.now() - started });
 }

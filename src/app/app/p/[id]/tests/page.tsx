@@ -56,6 +56,11 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
             <summary>+ Add a bot endpoint</summary>
             <form action={addTargetAction}>
               {pid}
+              <p className="alert alert-warn" style={{ marginTop: 8 }}>
+                Use a <strong>test or staging endpoint</strong> that returns the bot&apos;s answer, never a live channel webhook
+                (Twilio/WhatsApp, Messenger, SMS). Tests send real questions, so a live webhook would open real cases or message real people.
+                No test endpoint? Ask your developer for a simple &quot;dry-run&quot; URL, or use chat uploads and live tracking instead.
+              </p>
               <div className="field"><label htmlFor="tname">Name</label><input id="tname" name="name" type="text" placeholder="Website support bot" /></div>
               <div className="field"><label htmlFor="url">Endpoint URL (POST)</label><input id="url" name="url" type="url" required placeholder="https://api.yourbot.com/chat" /></div>
               <div className="field">

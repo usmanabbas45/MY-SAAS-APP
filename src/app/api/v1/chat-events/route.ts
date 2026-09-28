@@ -2,6 +2,7 @@ import { json, readIngest } from "@/lib/api";
 import { gradeLiveChat, LiveChatSchema, newExchanges, redactChat } from "@/lib/audit/live";
 import { limitError, projectOwner } from "@/lib/billing";
 import { VERDICT_LABELS } from "@/lib/judge/types";
+import { customMatcher } from "@/lib/pii";
 
 /**
  * Live chatbot monitoring. Send each conversation (full history or just the new question/answer)
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   }
   let exchanges;
   try {
-    exchanges = newExchanges(r.project.id, r.project.redact_pii ? redactChat(parsed.data) : parsed.data);
+    exchanges = newExchanges(r.project.id, r.project.redact_pii ? redactChat(parsed.data, customMatcher(r.project.mask_terms)) : parsed.data);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Invalid messages" }, 400);
   }

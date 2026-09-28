@@ -1,6 +1,7 @@
 import { get, run } from "../db";
+import { customMatcher, redactDeep, redactPII } from "../pii";
 import { raiseIncident } from "../incidents";
-import { JudgeError, llmAvailable, llmJudgeAgentRun } from "../judge/llm";
+import { aiForProject, JudgeError, llmJudgeAgentRun } from "../judge/llm";
 import { agentScore, AgentRunSchema, checkAgentRun, stepsLog, totals, type Issue } from "./checks";
 
 interface ProjectLimits {
@@ -8,6 +9,9 @@ interface ProjectLimits {
   agent_max_steps: number;
   agent_max_ms: number;
   agent_ai_review: number;
+  redact_pii: number;
+  mask_terms: string | null;
+  store_text: number;
 }
 
 export type IngestResult = { ok: true; id: number; score: number; issues: Issue[] } | { ok: false; status: number; error: string };
@@ -17,11 +21,15 @@ export async function ingestAgentRun(projectId: number, body: unknown): Promise<
   if (!parsed.success) {
     return { ok: false, status: 400, error: parsed.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ") };
   }
-  const data = parsed.data;
   const p = get<ProjectLimits>(
-    "SELECT agent_cost_budget_usd, agent_max_steps, agent_max_ms, agent_ai_review FROM projects WHERE id = ?", projectId,
+    "SELECT agent_cost_budget_usd, agent_max_steps, agent_max_ms, agent_ai_review, redact_pii, mask_terms, store_text FROM projects WHERE id = ?", projectId,
   );
   if (!p) return { ok: false, status: 404, error: "Project not found" };
+  // Personal data is masked before checks, storage and the AI review (run_id and agent_name stay as sent).
+  const custom = customMatcher(p.mask_terms);
+  const data = p.redact_pii
+    ? { ...parsed.data, goal: redactPII(parsed.data.goal, custom), final_output: redactPII(parsed.data.final_output, custom), steps: redactDeep(parsed.data.steps, custom) }
+    : parsed.data;
 
   const issues = checkAgentRun(data, { costBudgetUsd: p.agent_cost_budget_usd, maxSteps: p.agent_max_steps, maxMs: p.agent_max_ms });
   const score = agentScore(issues);
@@ -32,14 +40,17 @@ export async function ingestAgentRun(projectId: number, body: unknown): Promise<
   const { lastInsertRowid: id } = run(
     `INSERT INTO agent_runs (project_id, external_id, agent_name, goal, status, final_output, steps_json, total_cost_usd, total_ms, issues_json, score)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    projectId, data.run_id, data.agent_name, data.goal, data.status, data.final_output, JSON.stringify(data.steps),
+    projectId, data.run_id, data.agent_name,
+    p.store_text ? data.goal : "", data.status, p.store_text ? data.final_output : "",
+    // Metadata-only mode keeps step names, timings, costs and errors, but not inputs/outputs.
+    JSON.stringify(p.store_text ? data.steps : data.steps.map(({ input: _i, output: _o, ...rest }) => rest)),
     t.cost, t.ms, JSON.stringify(issues), score,
   );
 
   await alertOnIssues(projectId, data.agent_name, data.run_id, issues);
 
   // The AI review is slower; it runs after the response so the customer's agent is never blocked.
-  if (p.agent_ai_review && llmAvailable() && data.goal.trim() && data.status === "success") {
+  if (p.agent_ai_review && aiForProject(projectId) && data.goal.trim() && data.status === "success") {
     void aiReview(id, projectId, data.agent_name, data.run_id, data.goal, stepsLog(data.steps), data.final_output, issues);
   }
   return { ok: true, id, score, issues };

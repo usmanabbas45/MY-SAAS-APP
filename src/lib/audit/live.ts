@@ -3,7 +3,7 @@ import { all, get, run, transaction } from "../db";
 import { raiseIncident } from "../incidents";
 import { buildKbIndex } from "../judge/features";
 import { heuristicGrade } from "../judge/heuristic";
-import { JudgeError, judgeLabel, llmAvailable, llmGradeConversation } from "../judge/llm";
+import { aiForProject, JudgeError, judgeLabel, llmGradeConversation } from "../judge/llm";
 import { exchangesOf, VERDICT_LABELS, type Exchange, type Grade, type Turn } from "../judge/types";
 import { loadModel } from "../ml/risk";
 import { projectRules } from "../rules";
@@ -31,12 +31,12 @@ export const LiveChatSchema = z
 export type LiveChat = z.infer<typeof LiveChatSchema>;
 
 /** Masks personal data in a live event before anything is stored or sent to the judge. */
-export function redactChat(chat: LiveChat): LiveChat {
+export function redactChat(chat: LiveChat, custom: RegExp | null = null): LiveChat {
   return {
     ...chat,
-    messages: chat.messages?.map((m) => ({ ...m, content: redactPII(m.content) })),
-    question: chat.question === undefined ? undefined : redactPII(chat.question),
-    answer: chat.answer === undefined ? undefined : redactPII(chat.answer),
+    messages: chat.messages?.map((m) => ({ ...m, content: redactPII(m.content, custom) })),
+    question: chat.question === undefined ? undefined : redactPII(chat.question, custom),
+    answer: chat.answer === undefined ? undefined : redactPII(chat.answer, custom),
   };
 }
 
@@ -51,7 +51,7 @@ export function liveAuditId(projectId: number): number {
   if (existing) return existing.id;
   return run(
     "INSERT INTO audits (project_id, name, mode, status, judge) VALUES (?, ?, ?, 'live', ?)",
-    projectId, name, llmAvailable() ? "ai" : "basic", judgeLabel(),
+    projectId, name, aiForProject(projectId) ? "ai" : "basic", judgeLabel(projectId),
   ).lastInsertRowid;
 }
 
@@ -98,7 +98,7 @@ export async function gradeLiveChat(projectId: number, exchanges: Exchange[]): P
   const index = buildKbIndex(docs);
   let grades: Grade[];
   let note = "";
-  if (llmAvailable()) {
+  if (aiForProject(projectId)) {
     try {
       grades = await llmGradeConversation(exchanges, docs);
     } catch (err) {

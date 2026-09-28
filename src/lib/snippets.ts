@@ -18,20 +18,27 @@ export function agentSnippets(appUrl: string, key: string) {
     ]
   }'`,
     js: `// After your agent finishes (Node 18+, any framework: LangChain, OpenAI Agents, Claude, CrewAI...)
-await fetch("${url}", {
+// Fire-and-forget with a 2-second limit: monitoring can never slow down or break your agent.
+fetch("${url}", {
   method: "POST",
   headers: { Authorization: "Bearer ${key}", "Content-Type": "application/json" },
   body: JSON.stringify({ run_id, agent_name: "Lead researcher", goal, status: "success", final_output, steps }),
-});`,
-    python: `import requests
+  signal: AbortSignal.timeout(2000),
+}).catch(() => {}); // no await: never blocks, never throws`,
+    python: `import threading, requests
 
-requests.post(
-    "${url}",
-    headers={"Authorization": "Bearer ${key}"},
-    json={"run_id": run_id, "agent_name": "Lead researcher", "goal": goal,
-          "status": "success", "final_output": final_output, "steps": steps},
-    timeout=10,
-)`,
+def report_run(payload):
+    try:
+        requests.post("${url}",
+                      headers={"Authorization": "Bearer ${key}"},
+                      json=payload, timeout=2)
+    except Exception:
+        pass  # monitoring must never break your agent
+
+# Fire-and-forget in the background:
+threading.Thread(target=report_run, daemon=True, args=({
+    "run_id": run_id, "agent_name": "Lead researcher", "goal": goal,
+    "status": "success", "final_output": final_output, "steps": steps},)).start()`,
   };
 }
 
@@ -70,19 +77,26 @@ export function liveChatSnippets(appUrl: string, key: string) {
   -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\
   -d '{"conversation_id": "chat-8812", "question": "How much is express shipping?", "answer": "Express shipping costs $15."}'`,
-    js: `// Call after your bot replies (does not slow your bot down: grading happens in the background)
-await fetch("${url}", {
+    js: `// Call after your bot has replied. Fire-and-forget with a 2-second limit:
+// ProofMyAI answers instantly and grades in the background, and your bot never waits or fails because of it.
+fetch("${url}", {
   method: "POST",
   headers: { Authorization: "Bearer ${key}", "Content-Type": "application/json" },
   body: JSON.stringify({ conversation_id: chatId, messages }), // messages: [{ role: "user" | "assistant", content }]
-});`,
-    python: `import requests
+  signal: AbortSignal.timeout(2000),
+}).catch(() => {}); // no await: never blocks, never throws`,
+    python: `import threading, requests
 
-requests.post(
-    "${url}",
-    headers={"Authorization": "Bearer ${key}"},
-    json={"conversation_id": chat_id, "messages": messages},  # [{"role": "user"|"assistant", "content": ...}]
-    timeout=10,
-)`,
+def report_chat(chat_id, messages):
+    try:
+        requests.post("${url}",
+                      headers={"Authorization": "Bearer ${key}"},
+                      json={"conversation_id": chat_id, "messages": messages},  # [{"role": "user"|"assistant", "content": ...}]
+                      timeout=2)
+    except Exception:
+        pass  # monitoring must never break your bot
+
+# After your bot has replied (e.g. at the end of your webhook handler), in the background:
+threading.Thread(target=report_chat, args=(chat_id, messages), daemon=True).start()`,
   };
 }

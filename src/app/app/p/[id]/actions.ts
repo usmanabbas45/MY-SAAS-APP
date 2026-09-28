@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { parseTranscripts } from "@/lib/audit/parse";
 import { createAudit, executeAudit } from "@/lib/audit/run";
-import { redactConversations } from "@/lib/pii";
+import { customMatcher, redactConversations } from "@/lib/pii";
+import { RETENTION_OPTIONS } from "@/lib/retention";
 import { requireUser } from "@/lib/auth";
 import { limitError } from "@/lib/billing";
 import { get, run } from "@/lib/db";
@@ -85,7 +86,7 @@ export async function startAuditAction(form: FormData) {
   try {
     const text = (await fileText(form, "file")) || str(form, "pasted", MAX_UPLOAD_BYTES);
     conversations = parseTranscripts(text);
-    if (p.redact_pii) conversations = redactConversations(conversations);
+    if (p.redact_pii) conversations = redactConversations(conversations, customMatcher(p.mask_terms));
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Could not read the transcripts." });
   }
@@ -297,15 +298,28 @@ export async function updateSettingsAction(form: FormData) {
   };
   run(
     `UPDATE projects SET name = ?, alert_webhook = ?, alert_email = ?, agent_cost_budget_usd = ?, agent_max_steps = ?, agent_max_ms = ?, agent_ai_review = ?,
-       redact_pii = ?, weekly_digest = ?, report_brand = ? WHERE id = ?`,
+       weekly_digest = ?, report_brand = ? WHERE id = ?`,
     str(form, "name", 100) || p.name, webhook, email,
     num("agent_cost_budget_usd", p.agent_cost_budget_usd, 0.0001, 10000),
     Math.round(num("agent_max_steps", p.agent_max_steps, 1, 100000)),
     Math.round(num("agent_max_seconds", p.agent_max_ms / 1000, 1, 86400) * 1000),
-    form.get("agent_ai_review") ? 1 : 0, form.get("redact_pii") ? 1 : 0, form.get("weekly_digest") ? 1 : 0,
+    form.get("agent_ai_review") ? 1 : 0, form.get("weekly_digest") ? 1 : 0,
     str(form, "report_brand", 80) || null, p.id,
   );
   done(path, { ok: "Settings saved." });
+}
+
+export async function updatePrivacyAction(form: FormData) {
+  const p = await project(form);
+  const days = Number(form.get("retention_days"));
+  const terms = str(form, "mask_terms", 20000).split(/\r?\n/).map((t) => t.trim()).filter(Boolean).slice(0, 300).join("\n");
+  run(
+    "UPDATE projects SET redact_pii = ?, mask_terms = ?, retention_days = ?, store_text = ?, use_ai = ? WHERE id = ?",
+    form.get("redact_pii") ? 1 : 0, terms || null,
+    (RETENTION_OPTIONS as readonly number[]).includes(days) ? days : p.retention_days,
+    form.get("store_text") ? 1 : 0, form.get("use_ai") ? 1 : 0, p.id,
+  );
+  done(`/app/p/${p.id}/settings`, { ok: "Privacy settings saved. They apply to new data from now on; old data is removed by the retention setting." });
 }
 
 export async function testAlertAction(form: FormData) {
