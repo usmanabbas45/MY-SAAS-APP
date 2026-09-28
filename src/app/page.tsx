@@ -1,3 +1,4 @@
+import { PLAN_FEATURES, PLANS as PLANS_BY_ID } from "@/lib/billing";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
@@ -16,9 +17,9 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  { name: "Starter", price: 29, featured: false, items: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "Email + Slack alerts"] },
-  { name: "Growth", price: 79, featured: true, items: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "Neural risk model + training export"] },
-  { name: "Agency", price: 199, featured: false, items: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "Priority support", "Everything in Growth"] },
+  { name: "Starter", price: PLANS_BY_ID.starter.price, featured: false, items: PLAN_FEATURES.starter },
+  { name: "Growth", price: PLANS_BY_ID.growth.price, featured: true, items: PLAN_FEATURES.growth },
+  { name: "Agency", price: PLANS_BY_ID.agency.price, featured: false, items: PLAN_FEATURES.agency },
 ];
 
 export const metadata = {

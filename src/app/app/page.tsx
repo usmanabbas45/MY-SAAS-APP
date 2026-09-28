@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton, ThemeToggle } from "@/components/client";
-import { ScoreBadge } from "@/components/ui";
+import { Flash, ScoreBadge } from "@/components/ui";
+import { limitError } from "@/lib/billing";
 import { requireUser } from "@/lib/auth";
 import { projectHealth } from "@/lib/health";
 import { createProject, listProjects } from "@/lib/projects";
@@ -12,11 +13,13 @@ export const metadata = { title: "Projects" };
 async function newProjectAction(form: FormData) {
   "use server";
   const user = await requireUser();
+  const over = limitError(user.id, "projects");
+  if (over) redirect(`/app?new=1&error=${encodeURIComponent(over)}`);
   const id = createProject(user.id, String(form.get("name") ?? ""));
   redirect(`/app/p/${id}?welcome=1`);
 }
 
-export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
+export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ new?: string; error?: string }> }) {
   const user = await requireUser();
   const projects = listProjects(user.id);
   const sp = await searchParams;
@@ -26,6 +29,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <nav className="lp-nav">
         <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <div className="row">
+          <Link href="/app/billing" className="sub">💳 Billing</Link>
           <Link href="/app/account" className="sub">👤 {user.email}</Link>
           <ThemeToggle />
           <form action={logoutAction}><button className="btn btn-ghost btn-sm">Log out</button></form>
@@ -34,6 +38,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <div className="content" style={{ margin: "0 auto" }}>
         <h1>Your projects</h1>
         <p className="sub">Use one project per business or client. Agencies: create one project per client.</p>
+        <Flash error={sp.error} />
         <div className="grid grid-3" style={{ marginTop: 20 }}>
           {projects.map((p) => {
             const h = projectHealth(p.id, 7);
