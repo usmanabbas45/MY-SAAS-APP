@@ -8,7 +8,7 @@ import {
 } from "@/lib/billing";
 import { listProjects } from "@/lib/projects";
 import { logoutAction } from "../../(auth)/actions";
-import { changePlanAction, portalAction } from "./actions";
+import { autoRenewAction, changePlanAction, portalAction } from "./actions";
 import { CheckoutButton } from "./CheckoutButton";
 
 export const metadata = { title: "Plan & billing" };
@@ -37,7 +37,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const admin = isAdmin(user.email);
   let problems = billingConfigProblems();
   if (admin && enabled && problems.length === 0) problems = await checkPaddlePrices().catch(() => []);
-  const subscribed = ["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
+  const autoRenew = !state.cancelAt;
+  const subscribed =["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
 
   let status: { text: string; tone: string } | null = null;
   if (state.plan.id === "unlimited") status = { text: enabled ? "Owner account: no limits" : "Billing is not switched on: no limits", tone: "badge-info" };
@@ -90,6 +91,27 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
               );
             })}
           </div>
+          {enabled && state.subscriptionId && ["active", "trialing", "past_due"].includes(state.status ?? "") ? (
+            <div className="autorenew" style={{ marginTop: 18 }}>
+              <form action={autoRenewAction}>
+                <input type="hidden" name="on" value={autoRenew ? "0" : "1"} />
+                <SubmitButton
+                  className={`switch ${autoRenew ? "on" : ""}`}
+                  pendingText={autoRenew ? "Turning off…" : "Turning on…"}
+                  confirm={autoRenew ? `Turn off auto-renew? You keep ${state.plan.name} until ${day(state.renewsAt) || "the end of this period"}, then move to the Free plan. You won't be charged again.` : undefined}
+                >
+                  <span className="switch-knob" aria-hidden /> Auto-renew {autoRenew ? "ON" : "OFF"}
+                </SubmitButton>
+              </form>
+              <p className="sub" style={{ margin: 0 }}>
+                {autoRenew
+                  ? state.status === "trialing"
+                    ? `Your free trial becomes a paid plan on ${day(state.trialEndsAt ?? state.renewsAt)}. Turn auto-renew off before then and you won't be charged.`
+                    : `Your plan renews automatically on ${day(state.renewsAt)}.`
+                  : `Your plan ends on ${day(state.cancelAt)} and you won't be charged again. Turn auto-renew back on any time before then to keep it.`}
+              </p>
+            </div>
+          ) : null}
           {state.customerId && enabled ? (
             <form action={portalAction} style={{ marginTop: 18 }}>
               <SubmitButton className="btn btn-ghost" pendingText="Opening…">Manage billing: card, invoices, cancel</SubmitButton>

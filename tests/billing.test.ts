@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  applySubscription, billingConfigProblems, billingState, checkoutSignature, limitError, scheduledIds, usage, verifyWebhook, type PaddleSubscription,
+  applySubscription, billingConfigProblems, billingState, checkoutSignature, limitError, scheduledIds, setAutoRenew, usage, verifyWebhook, type PaddleSubscription,
 } from "@/lib/billing";
 import { run } from "@/lib/db";
 import { freshDb } from "./helpers";
@@ -101,6 +101,36 @@ describe("plans", () => {
     applySubscription(sub({ id: "sub_new", updated_at: "2026-09-28T12:00:00Z" }));
     applySubscription(sub({ id: "sub_old", status: "canceled", updated_at: "2026-09-28T13:00:00Z" }));
     expect(billingState(userId).plan.id).toBe("growth");
+  });
+});
+
+describe("auto-renew", () => {
+  it("turns off by scheduling a cancel at period end, and back on by removing it", async () => {
+    applySubscription(sub({ status: "trialing" }));
+    const calls: { url: string; method: string; body: string }[] = [];
+    const real = globalThis.fetch;
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, method: String(init.method), body: String(init.body) });
+      const cancelling = url.endsWith("/cancel");
+      return Response.json({ data: { ...sub({ status: "trialing", updated_at: `2026-09-29T00:00:0${calls.length}Z` }),
+        scheduled_change: cancelling ? { action: "cancel", effective_at: "2026-10-12T00:00:00Z" } : null } });
+    }) as typeof fetch;
+    try {
+      await setAutoRenew(userId, false);
+      expect(calls[0]).toMatchObject({ url: "https://sandbox-api.paddle.com/subscriptions/sub_1/cancel", method: "POST" });
+      expect(JSON.parse(calls[0].body)).toEqual({ effective_from: "next_billing_period" });
+      expect(billingState(userId)).toMatchObject({ cancelAt: "2026-10-12T00:00:00Z", plan: { id: "growth" } }); // keeps access until then
+      await setAutoRenew(userId, true);
+      expect(calls[1]).toMatchObject({ url: "https://sandbox-api.paddle.com/subscriptions/sub_1", method: "PATCH" });
+      expect(JSON.parse(calls[1].body)).toEqual({ scheduled_change: null });
+      expect(billingState(userId).cancelAt).toBeNull();
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+
+  it("refuses without an active subscription", async () => {
+    await expect(setAutoRenew(userId, false)).rejects.toThrow(/active subscription/);
   });
 });
 
