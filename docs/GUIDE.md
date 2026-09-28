@@ -247,6 +247,12 @@ The website already includes everything Google needs: titles and descriptions on
 5. **URL inspection** → paste `https://proofmyai.com` → **Request indexing**. Do the same for the three `/solutions/…` pages.
 6. Also add the site to **Bing Webmaster Tools** (bing.com/webmasters → **Import from Google Search Console**).
 
+### Google Analytics (visitor counts)
+1. analytics.google.com → **Admin** → **Data streams** → your web stream → copy the **Measurement ID** (`G-…`).
+2. Railway → **Variables** → add `GA_MEASUREMENT_ID=G-…` → **Deploy**.
+3. Open proofmyai.com, then Analytics → **Reports → Realtime**: you should see yourself within a minute (turn off ad blockers to test).
+Analytics only runs on public pages; the dashboard, reset links and shared client reports are never tracked. The Privacy Policy mentions it automatically when the variable is set.
+
 ### What actually makes you rank
 - New sites need **4–12 weeks** to appear. Nobody can guarantee a #1 position; these steps give you the best chance.
 - **Backlinks:** list ProofMyAI on Product Hunt, G2, Capterra, SaaSHub, AlternativeTo and There's An AI For That, and link to it from your Upwork/Fiverr/LinkedIn profiles and automationdevel.com.

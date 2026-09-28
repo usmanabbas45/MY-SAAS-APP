@@ -106,7 +106,7 @@ export default function Landing() {
 
       <section className="lp-section" id="pricing">
         <h2>Simple pricing</h2>
-        <p className="lp-lead">Start free with a one-time audit of up to 100 conversations. No card needed.</p>
+        <p className="lp-lead">Start free with a one-time audit of up to 100 conversations. No card needed. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
         <div className="grid grid-3">
           {PLANS.map((p) => (
             <div className={`card plan ${p.featured ? "featured" : ""}`} key={p.name}>
