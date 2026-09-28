@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         <li><strong>Payments:</strong> Paddle.com is our online reseller and Merchant of Record. Paddle collects and processes your billing details; we never see your full card number.</li>
       </ul>
       <h2>Cookies</h2>
-      <p>We use one essential cookie to keep you logged in, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful; it sets analytics cookies and IP addresses are anonymised. You can block it with any ad blocker or browser privacy setting." : null}</p>
+      <p>We use one essential cookie to keep you logged in, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful; it sets analytics cookies and IP addresses are anonymised. You can block it with any ad blocker or browser privacy setting." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
       <h2>Retention and deletion</h2>
       <p>Your data is kept while your account exists. You can delete individual audits and projects at any time, or delete your whole account in <strong>Account → Delete account</strong>, which permanently removes all your data. Backups are overwritten within 30 days.</p>
       <h2>Your rights</h2>

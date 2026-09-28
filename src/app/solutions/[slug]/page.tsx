@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/components/site";
-import { jsonLd, SITE_URL, SOLUTIONS } from "@/lib/seo";
+import { YouTube } from "@/components/video";
+import { jsonLd, SITE_URL, SOLUTIONS, VIDEOS, videoJsonLd } from "@/lib/seo";
 
 export function generateStaticParams() {
   return SOLUTIONS.map((s) => ({ slug: s.slug }));
@@ -24,6 +25,8 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const s = SOLUTIONS.find((x) => x.slug === slug);
   if (!s) notFound();
+  // Where each topic begins in the tutorial (chatbot pages play from the start).
+  const start = ({ "ai-agent-monitoring": 146, "n8n-workflow-monitoring": 154 } as Record<string, number>)[s.slug];
   const data = {
     "@context": "https://schema.org",
     "@graph": [
@@ -32,6 +35,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
         { "@type": "ListItem", position: 2, name: s.kicker, item: `${SITE_URL}/solutions/${s.slug}` },
       ] },
       { "@type": "FAQPage", mainEntity: s.faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+      videoJsonLd(VIDEOS.tutorial),
     ],
   };
   return (
@@ -65,6 +69,14 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
                 <p className="sub" style={{ margin: 0 }}>{st.text}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="lp-section">
+          <h2>Watch how to set it up</h2>
+          <p className="lp-lead">{start ? `The video starts at the ${s.kicker} part of the full 3-minute tutorial.` : "The full setup in 3 minutes, click by click."}</p>
+          <div className="video-wrap">
+            <YouTube id={VIDEOS.tutorial.id} title={VIDEOS.tutorial.title} start={start} />
           </div>
         </section>
 
