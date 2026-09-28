@@ -5,7 +5,15 @@ import type { Exchange, Grade } from "./judge/types";
 export const RULE_KINDS = {
   never_say: { label: "Bot must never say", hint: "e.g. a competitor's name, \"lifetime warranty\", \"guaranteed\"" },
   must_escalate: { label: "Always hand over to a human when the customer mentions", hint: "e.g. \"chargeback\", \"allergic\", \"cancel my subscription\"" },
+  must_include: { label: "When a topic comes up, the answer must include", hint: "topic => required words, e.g. \"windscreen => not covered\" or \"courtesy car => not available\"" },
 } as const;
+
+/** Splits a must_include rule "topic => required text". */
+export function parseMustInclude(pattern: string): { topic: string; required: string } | null {
+  const [topic, ...rest] = pattern.split("=>");
+  const required = rest.join("=>").trim();
+  return topic.trim() && required ? { topic: topic.trim(), required } : null;
+}
 export type RuleKind = keyof typeof RULE_KINDS;
 
 export interface Rule {
@@ -34,6 +42,15 @@ export function applyRules(ex: Exchange, grade: Grade, rules: Rule[]): { grade: 
         grade: { ...grade, verdict: "should_escalate", severity: "high", confidence: 1, reason: `Broke your rule: when a customer mentions “${r.pattern}”, the bot must hand over to a human.` },
         hit: `must_escalate:${r.pattern}`,
       };
+    }
+    if (r.kind === "must_include") {
+      const rule = parseMustInclude(r.pattern);
+      if (rule && (contains(ex.question, rule.topic) || contains(ex.answer, rule.topic)) && !contains(ex.answer, rule.required)) {
+        return {
+          grade: { ...grade, verdict: "off_policy", severity: "high", confidence: 1, reason: `Broke your rule: when “${rule.topic}” comes up, the answer must say “${rule.required}”.` },
+          hit: `must_include:${r.pattern}`,
+        };
+      }
     }
   }
   return { grade, hit: null };

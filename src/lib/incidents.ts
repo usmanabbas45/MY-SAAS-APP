@@ -1,6 +1,5 @@
-import { get, run } from "./db";
-import { sendEmail } from "./email";
-import { safeFetch } from "./security";
+import { all, get, run } from "./db";
+import { notify } from "./notify";
 
 export type Module = "chatbot" | "tests" | "agents" | "workflows";
 export type IncidentSeverity = "low" | "medium" | "high";
@@ -24,37 +23,21 @@ export async function raiseIncident(projectId: number, inc: NewIncident): Promis
     "INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
     projectId, inc.module, inc.code, inc.severity, inc.title, inc.detail, inc.dedupeKey ?? null,
   );
-  if (inc.severity !== "low") await sendAlert(projectId, inc);
+  // Each channel decides by its own severity and module settings (low-severity only reaches channels set to "all").
+  await notify({ projectId, kind: "problem", module: inc.module, code: inc.code, severity: inc.severity, title: inc.title, detail: inc.detail })
+    .catch((err) => console.error("[alerts] failed:", err));
   return true;
 }
 
+/** Closes open incidents with this key and tells channels that asked for "resolved" notices. */
 export function resolveIncidents(projectId: number, dedupeKey: string): void {
-  run("UPDATE incidents SET resolved = 1 WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", projectId, dedupeKey);
-}
-
-async function sendAlert(projectId: number, inc: NewIncident): Promise<void> {
-  const project = get<{ name: string; alert_webhook: string | null; alert_email: string | null }>(
-    "SELECT name, alert_webhook, alert_email FROM projects WHERE id = ?", projectId,
+  const open = all<{ module: Module; code: string; severity: IncidentSeverity; title: string }>(
+    "SELECT module, code, severity, title FROM incidents WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", projectId, dedupeKey,
   );
-  if (!project) return;
-  const link = `${process.env.APP_URL ?? ""}/app/p/${projectId}`;
-  const text = `[ProofMyAI · ${project.name}] ${inc.severity.toUpperCase()}: ${inc.title}\n${inc.detail}\n${link}`;
-  const jobs: Promise<unknown>[] = [];
-
-  if (project.alert_webhook) {
-    // `text` is read by Slack/Teams/Google Chat, `content` by Discord; extra fields help custom receivers.
-    jobs.push(
-      safeFetch(project.alert_webhook, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text, content: text, severity: inc.severity, module: inc.module, code: inc.code, link }),
-      }, 10000),
-    );
+  if (!open.length) return;
+  run("UPDATE incidents SET resolved = 1 WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", projectId, dedupeKey);
+  for (const inc of open) {
+    void notify({ projectId, kind: "resolved", module: inc.module, code: inc.code, severity: inc.severity, title: inc.title, detail: "This problem is no longer happening." })
+      .catch((err) => console.error("[alerts] failed:", err));
   }
-  if (project.alert_email) jobs.push(sendEmail(project.alert_email, `[ProofMyAI] ${inc.title}`, text));
-  // Alert delivery failures must never break monitoring itself.
-  const results = await Promise.allSettled(jobs);
-  results.forEach((r) => {
-    if (r.status === "rejected") console.error("[alerts] delivery failed:", r.reason);
-  });
 }

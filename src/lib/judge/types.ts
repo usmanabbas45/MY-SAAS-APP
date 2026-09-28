@@ -34,6 +34,8 @@ export interface Exchange {
   turnIndex: number;
   question: string;
   answer: string;
+  /** Earlier turns of the conversation (before `question`), used for conversation-level checks. */
+  context?: Turn[];
 }
 
 export interface Grade {
@@ -48,10 +50,14 @@ export interface Grade {
 export function exchangesOf(conv: Conversation): Exchange[] {
   const out: Exchange[] = [];
   let lastUser = "";
+  let questionStart = 0;
   conv.turns.forEach((t, i) => {
-    if (t.role === "user") lastUser = lastUser ? `${lastUser}\n${t.content}` : t.content;
-    else if (t.content.trim()) {
-      out.push({ conversationId: conv.id, turnIndex: i, question: lastUser, answer: t.content });
+    if (t.role === "user") {
+      if (!lastUser) questionStart = i;
+      lastUser = lastUser ? `${lastUser}\n${t.content}` : t.content;
+    } else if (t.content.trim()) {
+      const start = lastUser ? questionStart : i;
+      out.push({ conversationId: conv.id, turnIndex: i, question: lastUser, answer: t.content, context: conv.turns.slice(0, start) });
       lastUser = "";
     }
   });

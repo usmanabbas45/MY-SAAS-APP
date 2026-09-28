@@ -6,7 +6,7 @@ import { all, get, run } from "./db";
  * Billing is switched on only when Paddle is configured; without it every account is unlimited (self-hosting, tests).
  */
 
-export type PlanId = "free" | "starter" | "growth" | "agency";
+export type PlanId = "free" | "starter" | "growth" | "agency" | "compliance";
 export type Resource = "projects" | "conversations" | "bots" | "monitors";
 
 export interface Plan {
@@ -14,7 +14,7 @@ export interface Plan {
   name: string;
   price: number;
   projects: number;
-  conversations: number; // per calendar month (free plan: in total)
+  conversations: number; // per calendar month
   bots: number; // chatbots with nightly tests
   monitors: number; // n8n/Make connections + AI agents
 }
@@ -22,19 +22,24 @@ export interface Plan {
 const INF = Number.POSITIVE_INFINITY;
 
 export const PLANS: Record<PlanId, Plan> = {
-  free: { id: "free", name: "Free audit", price: 0, projects: 1, conversations: 100, bots: 1, monitors: 2 },
+  free: { id: "free", name: "Free", price: 0, projects: 1, conversations: 50, bots: 1, monitors: 2 },
   starter: { id: "starter", name: "Starter", price: 29, projects: 1, conversations: 500, bots: 1, monitors: 5 },
   growth: { id: "growth", name: "Growth", price: 79, projects: 3, conversations: 3000, bots: 5, monitors: INF },
   agency: { id: "agency", name: "Agency", price: 199, projects: 20, conversations: 15000, bots: 25, monitors: INF },
+  compliance: { id: "compliance", name: "Compliance", price: 249, projects: 10, conversations: 10000, bots: 25, monitors: INF },
 };
-export const PAID_PLANS: PlanId[] = ["starter", "growth", "agency"];
+export const PAID_PLANS: PlanId[] = ["starter", "growth", "agency", "compliance"];
 
 /** Marketing copy for the paid plans, shared by the pricing section and the billing page. */
 export const PLAN_FEATURES: Record<Exclude<PlanId, "free">, string[]> = {
   starter: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "Email + Slack alerts"],
   growth: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "Neural risk model + training export"],
   agency: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "Priority support", "Everything in Growth"],
+  compliance: ["For dealers, finance, insurance & healthcare", "10 projects · 10,000 conversations / month", "Signed DPA, results-only storage, auto-delete", "AI-off mode or self-hosted option", "Risk reports + onboarding call + priority support"],
 };
+
+/** Optional plans are sold only when their Paddle price is configured; otherwise shown as "Talk to us". */
+export const OPTIONAL_PLANS: PlanId[] = ["compliance"];
 const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects: INF, conversations: INF, bots: INF, monitors: INF };
 
 /** States that keep the paid plan active. past_due keeps access while Paddle retries; comped is a free plan given by an admin. */
@@ -73,6 +78,7 @@ export function billingConfigProblems(): string[] {
   if (token.startsWith("test_") && env === "production") out.push("PADDLE_CLIENT_TOKEN is a sandbox token but PADDLE_ENV is production.");
   for (const p of PAID_PLANS) {
     const id = priceId(p);
+    if (!id && OPTIONAL_PLANS.includes(p)) continue; // optional plan shown as "Talk to us"
     if (!id) out.push(`PADDLE_PRICE_${p.toUpperCase()} is missing.`);
     else if (!/^pri_\w+$/.test(id)) out.push(`PADDLE_PRICE_${p.toUpperCase()} should be a price ID starting with pri_ (not the product ID pro_).`);
   }
@@ -119,7 +125,7 @@ function monthStart(): string {
 }
 
 export function usage(userId: number, plan: Plan): Record<Resource, number> {
-  const since = plan.id === "free" ? "0000" : monthStart();
+  const since = monthStart();
   const n = (sql: string, ...args: (string | number)[]) => get<{ n: number }>(sql, ...args)?.n ?? 0;
   const agents = all<{ agent_name: string }>(
     "SELECT DISTINCT r.agent_name FROM agent_runs r JOIN projects p ON p.id = r.project_id WHERE p.user_id = ?", userId,
@@ -150,7 +156,7 @@ export function limitError(userId: number, resource: Resource, adding = 1): stri
   if (!Number.isFinite(limit)) return null;
   const used = usage(userId, plan)[resource];
   if (used + adding <= limit) return null;
-  const period = resource === "conversations" ? (plan.id === "free" ? " in total" : " per month") : "";
+  const period = resource === "conversations" ? " per month" : "";
   const left = Math.max(0, limit - used);
   const extra = resource === "conversations" && left > 0 ? ` You have ${left} left.` : "";
   return `Your ${plan.name} plan includes ${limit} ${LABELS[resource]}${period}.${extra} Upgrade on the Billing page to add more.`;

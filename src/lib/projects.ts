@@ -14,6 +14,11 @@ export interface Project {
   agent_max_ms: number;
   agent_ai_review: number;
   redact_pii: number;
+  mask_terms: string | null;
+  retention_days: number;
+  store_text: number;
+  use_ai: number;
+  reply_timeout_sec: number;
   report_brand: string | null;
   weekly_digest: number;
   last_digest_at: string | null;

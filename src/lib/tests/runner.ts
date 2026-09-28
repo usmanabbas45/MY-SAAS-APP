@@ -1,7 +1,7 @@
 import { scheduledIds } from "../billing";
 import { all, get, run, transaction } from "../db";
 import { raiseIncident, resolveIncidents } from "../incidents";
-import { JudgeError, llmAvailable, llmGradeTest } from "../judge/llm";
+import { aiForProject, JudgeError, llmGradeTest } from "../judge/llm";
 import { decrypt, safeFetch } from "../security";
 import { coverage, truncate } from "../text";
 
@@ -80,7 +80,7 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
       const answer = await askBot(target, c.question);
       let grade: { pass: boolean; reason: string };
       try {
-        grade = llmAvailable() ? await llmGradeTest(c.question, c.expected, c.must_not, answer) : basicGradeTest(c.expected, c.must_not, answer);
+        grade = aiForProject(target.project_id) ? await llmGradeTest(c.question, c.expected, c.must_not, answer) : basicGradeTest(c.expected, c.must_not, answer);
       } catch (err) {
         if (!(err instanceof JudgeError)) throw err;
         grade = basicGradeTest(c.expected, c.must_not, answer);

@@ -81,7 +81,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
               const limit = state.plan[key];
               const finite = Number.isFinite(limit);
               const pct = finite ? Math.min(100, Math.round((used[key] / Math.max(1, limit)) * 100)) : 0;
-              const period = key === "conversations" ? (state.plan.id === "free" ? " in total" : " this month") : "";
+              const period = key === "conversations" ? " this month" : "";
               return (
                 <div key={key}>
                   <div className="row between"><span className="sub" style={{ margin: 0 }}>{label}{period}</span><strong>{used[key]}{finite ? ` / ${limit.toLocaleString("en-US")}` : ""}</strong></div>
@@ -101,11 +101,22 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           <>
             <h2 style={{ marginTop: 28 }}>{subscribed ? "Change plan" : "Choose a plan"}</h2>
             <p className="sub">Every plan starts with a <strong>14-day free trial</strong>. Cancel any time. <Link href="/refund">14-day money-back guarantee</Link>. Prices in USD; local tax is added at checkout where required.</p>
-            <div className="grid grid-3">
+            <div className="grid grid-4">
               {PAID_PLANS.map((id) => {
                 const plan = PLANS[id];
                 const current = subscribed && state.plan.id === id;
                 const featured = id === "growth";
+                if (!priceId(id) && !current) {
+                  // Optional plan without a Paddle price yet: sold through a conversation.
+                  return (
+                    <div key={id} className="card plan">
+                      <h3>{plan.name}</h3>
+                      <div className="price">${plan.price}<small>/month</small></div>
+                      <ul>{PLAN_FEATURES[id as Exclude<typeof id, "free">].map((f) => <li key={f}>{f}</li>)}</ul>
+                      <Link className="btn btn-ghost" style={{ width: "100%" }} href="/contact">Talk to us</Link>
+                    </div>
+                  );
+                }
                 return (
                   <div key={id} className={`card plan ${featured ? "featured" : ""}`}>
                     <div className="row between">

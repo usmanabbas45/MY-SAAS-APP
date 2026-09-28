@@ -44,8 +44,18 @@ export function AutoRefresh({ active, ms = 3000 }: { active: boolean; ms?: numbe
   const router = useRouter();
   useEffect(() => {
     if (!active) return;
-    const t = setInterval(() => router.refresh(), ms);
-    return () => clearInterval(t);
+    // Never refresh while someone is typing in a form or a form is being submitted:
+    // a refresh would wipe their input or cancel the action's redirect (and its message).
+    let busyUntil = 0;
+    const onSubmit = () => { busyUntil = Date.now() + 30000; };
+    document.addEventListener("submit", onSubmit, true);
+    const t = setInterval(() => {
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+      if (Date.now() < busyUntil || typing) return;
+      router.refresh();
+    }, ms);
+    return () => { clearInterval(t); document.removeEventListener("submit", onSubmit, true); };
   }, [active, ms, router]);
   return null;
 }

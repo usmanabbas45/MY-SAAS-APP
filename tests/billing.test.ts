@@ -66,7 +66,7 @@ describe("plans", () => {
 
   it("starts on the free plan and owners listed in UNLIMITED_EMAILS have no limits", () => {
     expect(billingState(userId).plan.id).toBe("free");
-    expect(limitError(userId, "projects")).toMatch(/Free audit plan includes 1 project\(s\)/);
+    expect(limitError(userId, "projects")).toMatch(/Free plan includes 1 project\(s\)/);
     process.env.UNLIMITED_EMAILS = "someone@x.com, T@example.com";
     expect(billingState(userId).plan.id).toBe("unlimited");
   });
@@ -105,14 +105,23 @@ describe("plans", () => {
 });
 
 describe("limits", () => {
-  it("counts conversations in total on free and per month on paid plans", () => {
-    addConversations(95);
-    expect(usage(userId, billingState(userId).plan).conversations).toBe(95);
-    expect(limitError(userId, "conversations", 5)).toBeNull();
-    expect(limitError(userId, "conversations", 6)).toMatch(/100 audited conversations in total\. You have 5 left/);
+  it("counts conversations per month on every plan, including the free plan", () => {
+    addConversations(45);
+    run("UPDATE audit_items SET created_at = datetime('now', '-40 days') WHERE conversation_id IN ('c0', 'c1')"); // last month
+    expect(usage(userId, billingState(userId).plan).conversations).toBe(43);
+    expect(limitError(userId, "conversations", 7)).toBeNull();
+    expect(limitError(userId, "conversations", 8)).toMatch(/50 audited conversations per month\. You have 7 left/);
     applySubscription(sub({ items: [{ price: { id: "pri_starter" } }] }));
-    expect(limitError(userId, "conversations", 405)).toBeNull();
-    expect(limitError(userId, "conversations", 406)).toMatch(/500 audited conversations per month/);
+    expect(limitError(userId, "conversations", 457)).toBeNull();
+    expect(limitError(userId, "conversations", 458)).toMatch(/500 audited conversations per month/);
+  });
+
+  it("sells the optional Compliance plan only when its price exists", () => {
+    expect(billingConfigProblems()).toEqual([]); // no PADDLE_PRICE_COMPLIANCE needed
+    process.env.PADDLE_PRICE_COMPLIANCE = "pri_comp";
+    applySubscription(sub({ items: [{ price: { id: "pri_comp" } }] }));
+    expect(billingState(userId).plan).toMatchObject({ id: "compliance", projects: 10 });
+    delete process.env.PADDLE_PRICE_COMPLIANCE;
   });
 
   it("counts workflows and agents together and keeps only the oldest allowed items running", () => {

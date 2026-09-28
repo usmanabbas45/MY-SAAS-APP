@@ -17,6 +17,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const created = get<{ created_at: string }>("SELECT created_at FROM users WHERE id = ?", user.id)?.created_at ?? "";
   const projects = listProjects(user.id);
   const sessions = activeSessions(user.id);
+  const dpa = get<{ at: string | null; company: string | null }>("SELECT dpa_accepted_at AS at, dpa_company AS company FROM users WHERE id = ?", user.id);
 
   return (
     <div>
@@ -50,6 +51,15 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           </div>
           <SubmitButton pendingText="Saving…">Change password</SubmitButton>
         </form>
+
+        <div className="card">
+          <h2>Data processing agreement</h2>
+          {dpa?.at ? (
+            <p className="sub" style={{ margin: 0 }}>✅ Accepted for <strong>{dpa.company}</strong> on {dpa.at.slice(0, 10)}. <Link href="/dpa">View DPA</Link> · <Link href="/security">Trust Center</Link></p>
+          ) : (
+            <p className="sub" style={{ margin: 0 }}>Processing your customers&apos; conversations under GDPR / UK GDPR? <Link href="/dpa#accept">Accept our DPA online</Link> in one click. Privacy controls for each project are in Settings → Data &amp; privacy.</p>
+          )}
+        </div>
 
         <div className="card">
           <h2>Devices</h2>

@@ -186,6 +186,51 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "plan_cancel_at", "TEXT");
   addColumn(db, "users", "trial_ends_at", "TEXT");
   addColumn(db, "users", "plan_updated_at", "TEXT");
+  addColumn(db, "projects", "mask_terms", "TEXT");
+  addColumn(db, "projects", "retention_days", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(db, "projects", "store_text", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "projects", "use_ai", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "projects", "reply_timeout_sec", "INTEGER NOT NULL DEFAULT 120");
+  addColumn(db, "audit_items", "conv_flags", "TEXT");
+  addColumn(db, "audit_items", "latency_ms", "INTEGER");
+  addColumn(db, "audit_items", "cost_usd", "REAL");
+  addColumn(db, "audit_items", "bot_error", "TEXT");
+  db.exec(`CREATE TABLE IF NOT EXISTS pending_replies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    conversation_id TEXT NOT NULL,
+    question TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    error TEXT,
+    alerted INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(project_id, conversation_id)
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS alert_channels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    target TEXT NOT NULL,
+    secret_enc TEXT,
+    min_severity TEXT NOT NULL DEFAULT 'medium',
+    modules TEXT NOT NULL DEFAULT '',
+    notify_resolved INTEGER NOT NULL DEFAULT 0,
+    last_status TEXT,
+    last_sent_at TEXT
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS chat_sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    name TEXT NOT NULL,
+    account_id TEXT NOT NULL,
+    secret_enc TEXT NOT NULL,
+    bot_address TEXT NOT NULL,
+    cursor TEXT,
+    last_polled_at TEXT,
+    last_error TEXT
+  )`);
+  addColumn(db, "users", "dpa_accepted_at", "TEXT");
+  addColumn(db, "users", "dpa_company", "TEXT");
   addColumn(db, "users", "suspended_at", "TEXT");
   addColumn(db, "users", "last_seen_at", "TEXT");
   addColumn(db, "users", "admin_note", "TEXT");
