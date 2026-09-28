@@ -279,6 +279,19 @@ export async function changePlan(userId: number, plan: PlanId): Promise<void> {
   applySubscription(sub);
 }
 
+/**
+ * Auto-renew on/off. Off = cancel at the end of the current period (or trial), so the customer keeps
+ * access until then and is not charged again. On = remove that scheduled cancellation.
+ */
+export async function setAutoRenew(userId: number, on: boolean): Promise<void> {
+  const state = billingState(userId);
+  if (!state.subscriptionId || !["active", "trialing", "past_due"].includes(state.status ?? "")) throw new Error("You don't have an active subscription.");
+  const sub = on
+    ? await paddleApi<PaddleSubscription>(`/subscriptions/${state.subscriptionId}`, { method: "PATCH", body: { scheduled_change: null } })
+    : await paddleApi<PaddleSubscription>(`/subscriptions/${state.subscriptionId}/cancel`, { method: "POST", body: { effective_from: "next_billing_period" } });
+  applySubscription(sub);
+}
+
 /** One-time link to Paddle's customer portal (cancel, payment method, invoices). */
 export async function portalUrl(userId: number): Promise<string> {
   const state = billingState(userId);

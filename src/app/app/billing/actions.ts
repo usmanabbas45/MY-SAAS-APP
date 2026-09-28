@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { billingState, changePlan, PAID_PLANS, PLANS, portalUrl, syncTransaction, type PlanId } from "@/lib/billing";
+import { billingState, changePlan, PAID_PLANS, PLANS, portalUrl, setAutoRenew, syncTransaction, type PlanId } from "@/lib/billing";
 import { rateLimit } from "@/lib/security";
 
 function back(msg: { ok?: string; error?: string }): never {
@@ -31,6 +31,23 @@ export async function changePlanAction(form: FormData) {
     msg = { ok: `You are now on the ${PLANS[plan].name} plan.` };
   } catch (err) {
     msg = { error: err instanceof Error ? err.message : "Could not change the plan." };
+  }
+  back(msg);
+}
+
+export async function autoRenewAction(form: FormData) {
+  const user = await requireUser();
+  const on = form.get("on") === "1";
+  let msg: { ok?: string; error?: string };
+  try {
+    await setAutoRenew(user.id, on);
+    const s = billingState(user.id);
+    const until = (s.cancelAt ?? s.renewsAt ?? "").slice(0, 10);
+    msg = on
+      ? { ok: `Auto-renew is on. Your plan continues${s.renewsAt ? ` and renews on ${s.renewsAt.slice(0, 10)}` : ""}.` }
+      : { ok: `Auto-renew is off. You keep your plan until ${until || "the end of this period"} and won't be charged again.` };
+  } catch (err) {
+    msg = { error: err instanceof Error ? err.message : "Could not change auto-renew." };
   }
   back(msg);
 }
