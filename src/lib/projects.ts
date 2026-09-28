@@ -45,5 +45,6 @@ export function projectFromRequest(req: Request): Project | null {
   const header = req.headers.get("authorization") ?? "";
   const key = header.replace(/^Bearer\s+/i, "").trim() || req.headers.get("x-api-key")?.trim() || "";
   if (!key.startsWith("ap_live_")) return null;
-  return get<Project>("SELECT * FROM projects WHERE api_key = ?", key) ?? null;
+  // Projects of suspended accounts stop accepting API data.
+  return get<Project>("SELECT p.* FROM projects p JOIN users u ON u.id = p.user_id WHERE p.api_key = ? AND u.suspended_at IS NULL", key) ?? null;
 }

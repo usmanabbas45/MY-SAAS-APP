@@ -37,8 +37,8 @@ export const PLAN_FEATURES: Record<Exclude<PlanId, "free">, string[]> = {
 };
 const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects: INF, conversations: INF, bots: INF, monitors: INF };
 
-/** Subscription states that keep the paid plan active. past_due keeps access while Paddle retries the payment. */
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+/** States that keep the paid plan active. past_due keeps access while Paddle retries; comped is a free plan given by an admin. */
+const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "comped"]);
 
 // ---------- Configuration ----------
 
@@ -180,13 +180,16 @@ function signedUserId(custom: unknown): number | null {
 /** Verifies the Paddle-Signature header ("ts=...;h1=...") over the raw body. */
 export function verifyWebhook(rawBody: string, header: string | null, secret: string, nowMs = Date.now()): boolean {
   if (!header || !secret) return false;
-  const parts = Object.fromEntries(header.split(";").map((p) => p.split("=", 2) as [string, string]));
-  const ts = Number(parts.ts);
-  if (!Number.isFinite(ts) || !parts.h1 || Math.abs(nowMs / 1000 - ts) > 300) return false;
-  const expected = createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex");
-  const a = Buffer.from(parts.h1);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const parts = header.split(";").map((p) => p.trim().split("=", 2));
+  const ts = Number(parts.find(([k]) => k === "ts")?.[1]);
+  const signatures = parts.filter(([k, v]) => k === "h1" && v).map(([, v]) => v);
+  if (!Number.isFinite(ts) || !signatures.length || Math.abs(nowMs / 1000 - ts) > 300) return false;
+  const expected = Buffer.from(createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex"));
+  // Paddle may send several h1 values while a secret is being rotated; any match is valid.
+  return signatures.some((sig) => {
+    const given = Buffer.from(sig);
+    return given.length === expected.length && timingSafeEqual(given, expected);
+  });
 }
 
 export interface PaddleSubscription {
@@ -303,4 +306,31 @@ export function scheduledIds(kind: "bots" | "sources"): Set<number> | null {
     used.set(r.user_id, n + 1);
   }
   return keep;
+}
+
+/** Asks Paddle whether each configured price exists in this environment and is set up as a monthly subscription. */
+export async function checkPaddlePrices(): Promise<string[]> {
+  if (!billingEnabled()) return [];
+  const where = paddleEnv() === "production" ? "live (vendors.paddle.com)" : "sandbox (sandbox-vendors.paddle.com)";
+  const out: string[] = [];
+  for (const plan of PAID_PLANS) {
+    const id = priceId(plan);
+    if (!/^pri_\w+$/.test(id)) continue;
+    const name = `PADDLE_PRICE_${plan.toUpperCase()}`;
+    try {
+      const p = await paddleApi<{ status?: string; billing_cycle?: { interval?: string } | null; trial_period?: unknown; unit_price?: { amount?: string; currency_code?: string } }>(`/prices/${id}`);
+      if (p.status !== "active") out.push(`${name}: this price is ${p.status ?? "not active"} in Paddle. Un-archive it or create a new one.`);
+      if (!p.billing_cycle) out.push(`${name}: this price is one-time. Create a Recurring (monthly) price instead.`);
+      if (!p.trial_period) out.push(`${name}: this price has no free trial. Edit it and set Trial period = 14 days.`);
+      const dollars = Number(p.unit_price?.amount) / 100;
+      if (p.unit_price && dollars !== PLANS[plan].price) out.push(`${name}: Paddle price is ${dollars} ${p.unit_price.currency_code}, the website shows $${PLANS[plan].price}.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.startsWith("Paddle:")) return [`Could not reach Paddle to check your prices (${msg}). Reload this page to try again.`];
+      if (/authenticat|unauthori|HTTP 401/i.test(msg)) return [`PADDLE_API_KEY was rejected by Paddle ${where}. Create a new API key in that account and paste it again.`];
+      if (/forbidden|permission|HTTP 403/i.test(msg)) return [`PADDLE_API_KEY has no permission to read prices. In Paddle → Developer Tools → Authentication, give the key all permissions (or create a new one).`];
+      out.push(`${name} (${id}) was not found in your ${where} account. Copy the price ID from that account's Catalog → Products.`);
+    }
+  }
+  return out;
 }

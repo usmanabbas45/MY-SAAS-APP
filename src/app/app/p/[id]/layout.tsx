@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NavLinks, ProjectSwitcher, ThemeToggle, type NavItem } from "@/components/client";
+import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { listProjects, ownedProject } from "@/lib/projects";
@@ -26,6 +27,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
     { href: "/app/billing", label: "Plan & billing", icon: "💳" },
     { href: "/app/account", label: "Account", icon: "👤" },
+    ...(isAdmin(user.email) ? [{ href: "/app/admin", label: "Admin", icon: "🛡️" }] : []),
   ];
 
   return (

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { SubmitButton, ThemeToggle } from "@/components/client";
 import { Flash } from "@/components/ui";
+import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import {
-  billingConfigProblems, billingEnabled, billingState, checkoutSignature, paddleEnv, PAID_PLANS, PLAN_FEATURES, PLANS, priceId, usage, type Resource,
+  billingConfigProblems, billingEnabled, checkPaddlePrices, billingState, checkoutSignature, paddleEnv, PAID_PLANS, PLAN_FEATURES, PLANS, priceId, usage, type Resource,
 } from "@/lib/billing";
 import { listProjects } from "@/lib/projects";
 import { logoutAction } from "../../(auth)/actions";
@@ -33,8 +34,9 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const state = billingState(user.id);
   const used = usage(user.id, state.plan);
   const projects = listProjects(user.id);
-  const problems = billingConfigProblems();
-  const admin = (process.env.UNLIMITED_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).includes(user.email);
+  const admin = isAdmin(user.email);
+  let problems = billingConfigProblems();
+  if (admin && enabled && problems.length === 0) problems = await checkPaddlePrices().catch(() => []);
   const subscribed = ["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
 
   let status: { text: string; tone: string } | null = null;
@@ -63,8 +65,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           <div className="card" style={{ borderColor: "var(--warn)" }}>
             <h2>⚠️ Paddle setup needs attention</h2>
             <ul>{problems.map((p) => <li key={p}>{p}</li>)}</ul>
-            <p className="sub" style={{ margin: 0 }}>Fix these in Railway → Variables, then click Deploy. Only you can see this box.</p>
+            <p className="sub" style={{ margin: 0 }}>Fix these in Paddle or in Railway → Variables (then click Deploy). Only you can see this box.</p>
           </div>
+        ) : admin && enabled ? (
+          <p className="alert alert-ok">✅ Paddle check passed: the API key works and all 3 prices exist as monthly subscriptions with a free trial ({paddleEnv()} mode).</p>
         ) : null}
 
         <div className="card">

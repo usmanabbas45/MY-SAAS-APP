@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { checkLogin, createUser, endSession, startSession } from "@/lib/auth";
+import { checkLogin, createUser, endSession, isSuspended, startSession } from "@/lib/auth";
 import { requestPasswordReset, resetPassword } from "@/lib/account";
 import { createProject } from "@/lib/projects";
 import { rateLimit } from "@/lib/security";
@@ -30,6 +30,7 @@ export async function loginAction(_: AuthState, form: FormData): Promise<AuthSta
   }
   const user = checkLogin(email, String(form.get("password") ?? ""));
   if (!user) return { error: "Wrong email or password." };
+  if (isSuspended(user.id)) return { error: "This account is suspended. Contact support if you think this is a mistake." };
   await startSession(user.id);
   redirect("/app");
 }

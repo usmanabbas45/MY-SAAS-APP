@@ -235,6 +235,15 @@ Personal data (emails, phone numbers, card numbers, IBANs, IP addresses) is mask
 ### Weekly summary email
 With an **Alert email** set and email sending configured (Part E2), a summary arrives once a week. Turn it off in **Settings → Privacy & reports**.
 
+## Part H5: Admin dashboard
+Open **proofmyai.com/app/admin** (or click **🛡️ Admin** in the menu). Only emails in `ADMIN_EMAILS` can open it; if that variable is empty, `UNLIMITED_EMAILS` is used. Everyone else gets "page not found".
+
+- **Overview:** monthly revenue (MRR), paying customers, trials, sign-ups per day, active users, failed payments and cancellations.
+- **Users:** search by email, filter (paying, trial, free, payment failed, cancelling, suspended), export to CSV.
+- **User page:** plan, billing dates, links to the customer in Paddle, usage vs. limits, projects, private notes.
+- **Actions:** give a plan for free (partners, beta testers), send a password reset email, sign out all devices, suspend (blocks login and API keys) or re-activate, delete a user and all data.
+- Every admin action is recorded in **Admin activity**. For privacy, customers' transcripts and API keys are never shown.
+
 ## Part H4: Get paid with Paddle (works from Pakistan)
 Paddle is the Merchant of Record: it charges customers worldwide, handles tax, and pays you via Payoneer.
 

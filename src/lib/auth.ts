@@ -39,6 +39,11 @@ export function checkLogin(email: string, password: string): User | null {
   return { id: row.id, email: row.email };
 }
 
+/** True when an admin has suspended this account (it can't log in or use the API). */
+export function isSuspended(userId: number): boolean {
+  return Boolean(get<{ s: string | null }>("SELECT suspended_at AS s FROM users WHERE id = ?", userId)?.s);
+}
+
 export async function startSession(userId: number): Promise<void> {
   const token = randomToken();
   const expires = new Date(Date.now() + SESSION_DAYS * 86400000);
@@ -63,10 +68,14 @@ export async function endSession(): Promise<void> {
 export async function currentUser(): Promise<User | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const row = get<{ id: number; email: string; expires_at: string }>(
-    "SELECT u.id, u.email, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?", sha256(token),
+  const row = get<{ id: number; email: string; expires_at: string; suspended_at: string | null; last_seen_at: string | null }>(
+    "SELECT u.id, u.email, s.expires_at, u.suspended_at, u.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?", sha256(token),
   );
-  if (!row || Date.parse(row.expires_at) < Date.now()) return null;
+  if (!row || row.suspended_at || Date.parse(row.expires_at) < Date.now()) return null;
+  // "Last active" for the admin dashboard, written at most every 10 minutes.
+  if (!row.last_seen_at || Date.now() - Date.parse(row.last_seen_at) > 600000) {
+    run("UPDATE users SET last_seen_at = ? WHERE id = ?", new Date().toISOString(), row.id);
+  }
   return { id: row.id, email: row.email };
 }
 

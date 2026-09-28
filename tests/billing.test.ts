@@ -52,6 +52,7 @@ describe("webhook signature", () => {
     expect(verifyWebhook(body, header(now - 3600), ENV.PADDLE_WEBHOOK_SECRET, now * 1000)).toBe(false);
     expect(verifyWebhook(body, null, ENV.PADDLE_WEBHOOK_SECRET, now * 1000)).toBe(false);
     expect(verifyWebhook(body, "garbage", ENV.PADDLE_WEBHOOK_SECRET, now * 1000)).toBe(false);
+    expect(verifyWebhook(body, `ts=${now};h1=${"0".repeat(64)};${header(now).split(";")[1]}`, ENV.PADDLE_WEBHOOK_SECRET, now * 1000)).toBe(true);
   });
 });
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitButton, ThemeToggle } from "@/components/client";
 import { Flash, ScoreBadge } from "@/components/ui";
+import { isAdmin } from "@/lib/admin";
 import { limitError } from "@/lib/billing";
 import { requireUser } from "@/lib/auth";
 import { projectHealth } from "@/lib/health";
@@ -29,6 +30,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <nav className="lp-nav">
         <Link href="/" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
         <div className="row">
+          {isAdmin(user.email) ? <Link href="/app/admin" className="sub">🛡️ Admin</Link> : null}
           <Link href="/app/billing" className="sub">💳 Billing</Link>
           <Link href="/app/account" className="sub">👤 {user.email}</Link>
           <ThemeToggle />
