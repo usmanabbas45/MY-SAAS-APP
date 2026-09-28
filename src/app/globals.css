@@ -344,3 +344,14 @@ details[open] summary { margin-bottom: 10px; }
   .lp-nav .tt-label { display: none; }
   .lp-nav .row { flex-wrap: nowrap; gap: 6px; }
 }
+
+/* Click-to-play YouTube embeds */
+.video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 10px 34px rgba(20, 16, 60, 0.16); }
+.video iframe, .video-poster { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-poster { padding: 0; cursor: pointer; background: #000; }
+.video-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.video-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 72px; height: 72px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 26px; display: grid; place-items: center; padding-left: 5px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); transition: transform 0.15s; }
+.video-poster:hover .video-play, .video-poster:focus-visible .video-play { transform: translate(-50%, -50%) scale(1.08); }
+.video-wrap { max-width: 860px; margin: 0 auto; }
+/* Keep section headings visible below the sticky header when jumping to #video, #pricing, … */
+section[id] { scroll-margin-top: 88px; }

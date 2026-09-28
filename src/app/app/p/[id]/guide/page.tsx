@@ -2,6 +2,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { ownedProject } from "@/lib/projects";
+import { YouTube } from "@/components/video";
+import { VIDEOS } from "@/lib/seo";
 
 export const metadata = { title: "Setup guide" };
 
@@ -86,6 +88,16 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
   return (
     <div>
       <PageHeader title="Setup guide" subtitle="Click-by-click. Everything takes about 30 minutes in total." />
+      <div className="card">
+        <div className="row between" style={{ flexWrap: "wrap", gap: 8 }}>
+          <h3 style={{ margin: 0 }}>▶ Watch the 3-minute setup tutorial</h3>
+          <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener" className="sub">Open on YouTube ↗</a>
+        </div>
+        <p className="sub">Prefer to watch? This video walks through every step below.</p>
+        <div style={{ maxWidth: 760 }}>
+          <YouTube id={VIDEOS.tutorial.id} title={VIDEOS.tutorial.title} />
+        </div>
+      </div>
       <div className="stack">
         {steps.map((s, i) => (
           <div key={s.title} className="card guide-step">

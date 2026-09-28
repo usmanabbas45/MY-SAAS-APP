@@ -103,3 +103,36 @@ export const SOLUTIONS: Solution[] = [
 export function jsonLd(data: unknown): { __html: string } {
   return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
 }
+
+export interface Video { id: string; title: string; description: string; duration: string; uploadDate: string }
+
+export const VIDEOS = {
+  marketing: {
+    id: "1LWFQ3ROJ14",
+    title: "Is Your AI Chatbot Lying to Customers? Catch It Before They Do | ProofMyAI",
+    description: "ProofMyAI checks every AI chatbot answer, AI agent run and n8n/Make workflow, catches wrong answers and silent failures, and tells you exactly what to fix.",
+    duration: "PT1M24S",
+    uploadDate: "2026-09-28",
+  },
+  tutorial: {
+    id: "j02a0DP3lPg",
+    title: "How to Monitor Your AI Chatbot, AI Agents & n8n Workflows (Full Setup Tutorial) | ProofMyAI",
+    description: "Step-by-step setup: run your first chatbot audit, read the fix list, add rules, share client reports, turn on live tracking and nightly tests, monitor AI agents and n8n/Make, and get alerts.",
+    duration: "PT3M14S",
+    uploadDate: "2026-09-28",
+  },
+} satisfies Record<string, Video>;
+
+/** schema.org VideoObject so Google can show the video in search results. */
+export function videoJsonLd(v: Video) {
+  return {
+    "@type": "VideoObject",
+    name: v.title,
+    description: v.description,
+    thumbnailUrl: [`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`, `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`],
+    uploadDate: v.uploadDate,
+    duration: v.duration,
+    embedUrl: `https://www.youtube.com/embed/${v.id}`,
+    contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+  };
+}

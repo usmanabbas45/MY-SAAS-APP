@@ -2,7 +2,8 @@ import { PLAN_FEATURES, PLANS as PLANS_BY_ID } from "@/lib/billing";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
-import { FAQS, jsonLd, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { YouTube } from "@/components/video";
+import { FAQS, jsonLd, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, videoJsonLd } from "@/lib/seo";
 
 const FEATURES = [
   { icon: "💬", title: "Chatbot audits", text: "Upload transcripts from Intercom, Tidio, Crisp, Zendesk or any bot. Every answer is graded against your help docs: correct, made up, not in docs, should have escalated, off-policy." },
@@ -39,6 +40,8 @@ const structuredData = {
       offers: PLANS.map((p) => ({ "@type": "Offer", name: p.name, price: p.price, priceCurrency: "USD" })),
     },
     { "@type": "FAQPage", mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+    videoJsonLd(VIDEOS.marketing),
+    videoJsonLd(VIDEOS.tutorial),
   ],
 };
 
@@ -54,12 +57,23 @@ export default function Landing() {
         <p>ProofMyAI checks every chatbot answer, every AI agent run and every n8n/Make workflow, then tells you exactly what broke and how to fix it, before your customers notice.</p>
         <div className="row" style={{ justifyContent: "center" }}>
           <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
-          <a href="#features" className="btn btn-ghost btn-lg">How it works</a>
+          <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the video</a>
         </div>
         <div className="chip-row">
           {["Intercom", "Tidio", "Crisp", "Zendesk", "Chatbase", "Custom GPTs", "n8n", "Make", "LangChain", "OpenAI Agents", "Claude agents"].map((c) => (
             <span key={c} className="badge">{c}</span>
           ))}
+        </div>
+      </section>
+
+      <section className="lp-section" id="video" aria-labelledby="video-title">
+        <h2 id="video-title">See ProofMyAI in under 90 seconds</h2>
+        <p className="lp-lead">What goes wrong with AI chatbots, agents and automations, and how ProofMyAI catches it.</p>
+        <div className="video-wrap">
+          <YouTube id={VIDEOS.marketing.id} title={VIDEOS.marketing.title} />
+          <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>
+            Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
+          </p>
         </div>
       </section>
 
