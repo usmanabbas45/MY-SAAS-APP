@@ -291,6 +291,13 @@ The website already includes everything Google needs: titles and descriptions on
 5. **URL inspection** → paste `https://proofmyai.com` → **Request indexing**. Do the same for the three `/solutions/…` pages.
 6. Also add the site to **Bing Webmaster Tools** (bing.com/webmasters → **Import from Google Search Console**).
 
+### Conversion tracking (which marketing brings customers)
+With `GA_MEASUREMENT_ID` and `GA_API_SECRET` set, the server sends these events to Google Analytics: **sign_up**, **generate_lead** (contact form), **begin_trial** and **purchase** (first payment, with plan and price). They're sent from the server, so ad blockers don't hide them, and payments that happen days later through Paddle are credited to the visitor who signed up.
+1. Analytics → **Admin** → **Data streams** → your stream → **Measurement Protocol API secrets** → **Create** → name it "ProofMyAI server" → copy the **Secret value**.
+2. Railway → **Variables** → `GA_API_SECRET` = that value → **Deploy**.
+3. After the first sign-up, go to Analytics → **Admin** → **Events**. Click the ☆ star next to **sign_up**, **begin_trial**, **generate_lead** and **purchase** to mark them as **key events** (purchase is usually starred already).
+4. Reports → **Acquisition → Traffic acquisition** then shows sign-ups and purchases per source (Google, YouTube, LinkedIn…).
+
 ### Google Analytics (visitor counts)
 1. analytics.google.com → **Admin** → **Data streams** → your web stream → copy the **Measurement ID** (`G-…`).
 2. Railway → **Variables** → add `GA_MEASUREMENT_ID=G-…` → **Deploy**.

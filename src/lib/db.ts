@@ -232,6 +232,7 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "dpa_accepted_at", "TEXT");
   addColumn(db, "users", "dpa_company", "TEXT");
   addColumn(db, "users", "suspended_at", "TEXT");
+  addColumn(db, "users", "ga_client_id", "TEXT");
   addColumn(db, "users", "last_seen_at", "TEXT");
   addColumn(db, "users", "admin_note", "TEXT");
   db.exec(`CREATE TABLE IF NOT EXISTS admin_log (

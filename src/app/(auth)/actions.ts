@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { checkLogin, createUser, endSession, isSuspended, startSession } from "@/lib/auth";
 import { requestPasswordReset, resetPassword } from "@/lib/account";
 import { createProject } from "@/lib/projects";
+import { currentGaIds, rememberGaClient, trackEvent } from "@/lib/ga";
 import { rateLimit } from "@/lib/security";
 
 export interface AuthState { error?: string; ok?: string }
@@ -20,6 +21,9 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   if (!user) return { error };
   const projectId = createProject(user.id, String(form.get("company") ?? "") || "My first project");
   await startSession(user.id);
+  const ga = await currentGaIds();
+  rememberGaClient(user.id, ga);
+  void trackEvent(ga, "sign_up", { method: "email" });
   redirect(`/app/p/${projectId}?welcome=1`);
 }
 

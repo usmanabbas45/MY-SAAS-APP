@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { sendEmail } from "@/lib/email";
+import { currentGaIds, trackEvent } from "@/lib/ga";
 import { rateLimit } from "@/lib/security";
 import { SUPPORT_EMAIL } from "@/lib/seo";
 
@@ -23,5 +24,6 @@ export async function contactAction(_: ContactState, form: FormData): Promise<Co
   } catch {
     return { error: `We couldn't send your message. Please email ${SUPPORT_EMAIL} directly.` };
   }
+  void trackEvent(await currentGaIds(), "generate_lead", { form: "contact" });
   return { ok: "Thanks! Your message was sent. We usually reply within one business day." };
 }
