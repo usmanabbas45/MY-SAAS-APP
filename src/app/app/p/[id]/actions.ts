@@ -6,6 +6,7 @@ import { parseTranscripts } from "@/lib/audit/parse";
 import { createAudit, executeAudit } from "@/lib/audit/run";
 import { redactConversations } from "@/lib/pii";
 import { requireUser } from "@/lib/auth";
+import { limitError } from "@/lib/billing";
 import { get, run } from "@/lib/db";
 import { raiseIncident } from "@/lib/incidents";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
@@ -88,6 +89,8 @@ export async function startAuditAction(form: FormData) {
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Could not read the transcripts." });
   }
+  const over = limitError(p.user_id, "conversations", conversations.length);
+  if (over) done(path, { error: `This file has ${conversations.length} conversations. ${over}` });
   const name = str(form, "name", 120) || `Audit ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
   const { id } = createAudit(p.id, name);
   void executeAudit(id, p.id, conversations); // runs in the background; the page auto-refreshes
@@ -163,6 +166,8 @@ export async function addTargetAction(form: FormData) {
   const template = str(form, "body_template", 10000) || '{"message":"{{question}}"}';
   const responsePath = str(form, "response_path", 300);
   const headersRaw = str(form, "headers", 5000);
+  const over = limitError(p.user_id, "bots");
+  if (over) done(path, { error: over });
   try {
     await assertPublicUrl(url);
     if (!template.includes("{{question}}")) throw new Error("The request body must contain {{question}}.");
@@ -229,6 +234,8 @@ export async function addWorkflowSourceAction(form: FormData) {
   const apiKey = str(form, "api_key", 2000);
   const scenarios = str(form, "scenario_ids", 1000);
   const interval = Number(str(form, "expected_interval_min")) || null;
+  const over = limitError(p.user_id, "monitors");
+  if (over) done(path, { error: over });
   try {
     await assertPublicUrl(baseUrl);
     if (!apiKey) throw new Error("API key is required.");

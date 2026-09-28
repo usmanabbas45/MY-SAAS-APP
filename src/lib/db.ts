@@ -178,6 +178,14 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "projects", "report_brand", "TEXT");
   addColumn(db, "projects", "weekly_digest", "INTEGER NOT NULL DEFAULT 1");
   addColumn(db, "projects", "last_digest_at", "TEXT");
+  addColumn(db, "users", "plan", "TEXT NOT NULL DEFAULT 'free'");
+  addColumn(db, "users", "plan_status", "TEXT");
+  addColumn(db, "users", "paddle_customer_id", "TEXT");
+  addColumn(db, "users", "paddle_subscription_id", "TEXT");
+  addColumn(db, "users", "plan_renews_at", "TEXT");
+  addColumn(db, "users", "plan_cancel_at", "TEXT");
+  addColumn(db, "users", "trial_ends_at", "TEXT");
+  addColumn(db, "users", "plan_updated_at", "TEXT");
   db.exec(`CREATE TABLE IF NOT EXISTS rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

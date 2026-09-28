@@ -235,6 +235,19 @@ Personal data (emails, phone numbers, card numbers, IBANs, IP addresses) is mask
 ### Weekly summary email
 With an **Alert email** set and email sending configured (Part E2), a summary arrives once a week. Turn it off in **Settings → Privacy & reports**.
 
+## Part H4: Get paid with Paddle (works from Pakistan)
+Paddle is the Merchant of Record: it charges customers worldwide, handles tax, and pays you via Payoneer.
+
+1. **Sandbox (test mode):** sandbox-vendors.paddle.com → Catalog → Products → create Starter ($29), Growth ($79), Agency ($199), each with a **Recurring, monthly** price and a **14-day trial**.
+2. Checkout → Checkout settings → Default payment link: `https://proofmyai.com/app`.
+3. Developer Tools → Authentication → create an **API key** and a **client-side token**.
+4. Developer Tools → Notifications → New destination → URL `https://proofmyai.com/api/paddle/webhook`, tick all `subscription.*` events → copy the **secret key**.
+5. Railway → Variables: `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_STARTER`, `PADDLE_PRICE_GROWTH`, `PADDLE_PRICE_AGENCY` (price IDs start with `pri_`), and `UNLIMITED_EMAILS=<your email>` → Deploy.
+6. Test: sign up with a **second** email → **Plan & billing** → Start 14-day free trial → card `4242 4242 4242 4242`, any future date, CVC `100`. The plan should switch within seconds.
+7. **Going live** (after Paddle approves your account): repeat steps 1–4 in the live dashboard (vendors.paddle.com), put the live values in Railway, and set `PADDLE_ENV=production`.
+
+**Plan limits** (only when Paddle is configured): Free = 1 project, 100 conversations in total, 1 bot, 2 workflows/agents. Paid plans follow the pricing table. Nothing is deleted on a downgrade; only adding more is blocked, and scheduled checks keep running for the oldest items within the limit. Your own account in `UNLIMITED_EMAILS` has no limits. The Billing page shows setup mistakes to you only.
+
 ## Part H3: Get found on Google (SEO)
 
 The website already includes everything Google needs: titles and descriptions on every page, `sitemap.xml`, `robots.txt`, structured data (organization, software, prices, FAQ), social share images, and three keyword pages under `/solutions/`. The private dashboard is hidden from Google.
@@ -243,7 +256,7 @@ The website already includes everything Google needs: titles and descriptions on
 1. Go to **https://search.google.com/search-console** → **Add property** → choose **URL prefix** → type `https://proofmyai.com` → **Continue**.
 2. Choose the **HTML tag** method → copy only the code inside `content="…"`.
 3. Railway → **Variables** → add `GOOGLE_SITE_VERIFICATION=<that code>` → **Deploy** → back in Search Console click **Verify**.
-4. Search Console → **Sitemaps** → type `sitemap.xml` → **Submit**.
+4. Search Console → **Sitemaps** → type only `sitemap.xml` (not the home page address) → **Submit**.
 5. **URL inspection** → paste `https://proofmyai.com` → **Request indexing**. Do the same for the three `/solutions/…` pages.
 6. Also add the site to **Bing Webmaster Tools** (bing.com/webmasters → **Import from Google Search Console**).
 

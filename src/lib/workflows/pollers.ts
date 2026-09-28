@@ -1,3 +1,4 @@
+import { scheduledIds } from "../billing";
 import { all, run } from "../db";
 import { decrypt, safeFetch } from "../security";
 import { recordWorkflowRun, type WorkflowRunInput } from "./monitor";
@@ -105,5 +106,6 @@ export async function pollAllSources(projectId?: number): Promise<void> {
   const sources = projectId
     ? all<Source>("SELECT * FROM workflow_sources WHERE project_id = ?", projectId)
     : all<Source>("SELECT * FROM workflow_sources");
-  for (const s of sources) await pollSource(s);
+  const allowed = projectId ? null : scheduledIds("sources");
+  for (const s of sources) if (!allowed || allowed.has(s.id)) await pollSource(s);
 }

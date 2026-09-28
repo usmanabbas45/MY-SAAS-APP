@@ -1,5 +1,6 @@
 import { json, readIngest } from "@/lib/api";
 import { gradeLiveChat, LiveChatSchema, newExchanges, redactChat } from "@/lib/audit/live";
+import { limitError, projectOwner } from "@/lib/billing";
 import { VERDICT_LABELS } from "@/lib/judge/types";
 
 /**
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Invalid messages" }, 400);
   }
+  const over = exchanges.length ? limitError(projectOwner(r.project.id), "conversations") : null;
+  if (over) return json({ error: over }, 402);
   if (new URL(req.url).searchParams.get("wait") === "1") {
     const grades = await gradeLiveChat(r.project.id, exchanges);
     return json({

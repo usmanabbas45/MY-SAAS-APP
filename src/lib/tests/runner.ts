@@ -1,3 +1,4 @@
+import { scheduledIds } from "../billing";
 import { all, get, run, transaction } from "../db";
 import { raiseIncident, resolveIncidents } from "../incidents";
 import { JudgeError, llmAvailable, llmGradeTest } from "../judge/llm";
@@ -124,8 +125,10 @@ export async function runDueSuites(): Promise<number> {
       WHERE (t.last_run_at IS NULL OR t.last_run_at <= datetime('now', '-24 hours'))
         AND EXISTS (SELECT 1 FROM test_cases c WHERE c.project_id = t.project_id)`,
   );
+  const allowed = scheduledIds("bots");
   let count = 0;
   for (const t of due) {
+    if (allowed && !allowed.has(t.id)) continue;
     try {
       await runSuite(t.id);
       count++;
