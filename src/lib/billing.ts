@@ -180,13 +180,16 @@ function signedUserId(custom: unknown): number | null {
 /** Verifies the Paddle-Signature header ("ts=...;h1=...") over the raw body. */
 export function verifyWebhook(rawBody: string, header: string | null, secret: string, nowMs = Date.now()): boolean {
   if (!header || !secret) return false;
-  const parts = Object.fromEntries(header.split(";").map((p) => p.split("=", 2) as [string, string]));
-  const ts = Number(parts.ts);
-  if (!Number.isFinite(ts) || !parts.h1 || Math.abs(nowMs / 1000 - ts) > 300) return false;
-  const expected = createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex");
-  const a = Buffer.from(parts.h1);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const parts = header.split(";").map((p) => p.trim().split("=", 2));
+  const ts = Number(parts.find(([k]) => k === "ts")?.[1]);
+  const signatures = parts.filter(([k, v]) => k === "h1" && v).map(([, v]) => v);
+  if (!Number.isFinite(ts) || !signatures.length || Math.abs(nowMs / 1000 - ts) > 300) return false;
+  const expected = Buffer.from(createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex"));
+  // Paddle may send several h1 values while a secret is being rotated; any match is valid.
+  return signatures.some((sig) => {
+    const given = Buffer.from(sig);
+    return given.length === expected.length && timingSafeEqual(given, expected);
+  });
 }
 
 export interface PaddleSubscription {
