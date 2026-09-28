@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { syncCheckoutAction } from "./actions";
 
-interface PaddleEvent { name?: string; data?: { transaction_id?: string } }
+interface PaddleEvent { name?: string; data?: { transaction_id?: string }; error?: { detail?: string; code?: string } }
 interface PaddleJs {
   Environment: { set(env: string): void };
   Initialize(opts: { token: string; eventCallback: (e: PaddleEvent) => void }): void;
@@ -53,6 +53,9 @@ export function CheckoutButton(props: {
           }
           P.Checkout.close();
           window.location.href = "/app/billing?ok=" + encodeURIComponent("Thank you! Your plan is active.");
+        } else if (e.name === "checkout.error") {
+          console.error("[paddle] checkout error", e);
+          setError(`Checkout error: ${e.error?.detail ?? e.error?.code ?? "see the browser console (F12) for details"}`);
         } else if (e.name === "checkout.closed") {
           setState((s) => (s === "activating" ? s : "idle"));
         }

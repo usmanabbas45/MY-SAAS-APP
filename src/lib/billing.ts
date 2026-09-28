@@ -304,3 +304,30 @@ export function scheduledIds(kind: "bots" | "sources"): Set<number> | null {
   }
   return keep;
 }
+
+/** Asks Paddle whether each configured price exists in this environment and is set up as a monthly subscription. */
+export async function checkPaddlePrices(): Promise<string[]> {
+  if (!billingEnabled()) return [];
+  const where = paddleEnv() === "production" ? "live (vendors.paddle.com)" : "sandbox (sandbox-vendors.paddle.com)";
+  const out: string[] = [];
+  for (const plan of PAID_PLANS) {
+    const id = priceId(plan);
+    if (!/^pri_\w+$/.test(id)) continue;
+    const name = `PADDLE_PRICE_${plan.toUpperCase()}`;
+    try {
+      const p = await paddleApi<{ status?: string; billing_cycle?: { interval?: string } | null; trial_period?: unknown; unit_price?: { amount?: string; currency_code?: string } }>(`/prices/${id}`);
+      if (p.status !== "active") out.push(`${name}: this price is ${p.status ?? "not active"} in Paddle. Un-archive it or create a new one.`);
+      if (!p.billing_cycle) out.push(`${name}: this price is one-time. Create a Recurring (monthly) price instead.`);
+      if (!p.trial_period) out.push(`${name}: this price has no free trial. Edit it and set Trial period = 14 days.`);
+      const dollars = Number(p.unit_price?.amount) / 100;
+      if (p.unit_price && dollars !== PLANS[plan].price) out.push(`${name}: Paddle price is ${dollars} ${p.unit_price.currency_code}, the website shows $${PLANS[plan].price}.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.startsWith("Paddle:")) return [`Could not reach Paddle to check your prices (${msg}). Reload this page to try again.`];
+      if (/authenticat|unauthori|HTTP 401/i.test(msg)) return [`PADDLE_API_KEY was rejected by Paddle ${where}. Create a new API key in that account and paste it again.`];
+      if (/forbidden|permission|HTTP 403/i.test(msg)) return [`PADDLE_API_KEY has no permission to read prices. In Paddle → Developer Tools → Authentication, give the key all permissions (or create a new one).`];
+      out.push(`${name} (${id}) was not found in your ${where} account. Copy the price ID from that account's Catalog → Products.`);
+    }
+  }
+  return out;
+}
