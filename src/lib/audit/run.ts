@@ -124,7 +124,7 @@ export async function executeAudit(auditId: number, projectId: number, conversat
       await raiseIncident(projectId, {
         module: "chatbot", code: "HIGH_SEVERITY_ANSWERS", severity: "high",
         title: `${high} high-risk chatbot answer${high > 1 ? "s" : ""} found`,
-        detail: `Audit #${auditId} found ${high} answers that could cost money, customers or create legal exposure.`,
+        detail: `Audit #${auditId} found ${high} answer${high === 1 ? "" : "s"} that could cost money, customers or create legal exposure.`,
         dedupeKey: `audit:${auditId}`,
       });
     }

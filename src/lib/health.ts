@@ -62,10 +62,10 @@ export function projectHealth(projectId: number, days = 14): ProjectHealth {
       ? { score: Math.round((test.passed / Math.max(1, test.passed + test.failed)) * 100), label: "Test pass rate", detail: `${test.passed}/${test.passed + test.failed} passing` }
       : { score: null, label: "Test pass rate", detail: "Add a bot endpoint and tests" },
     agents: agents && agents.n > 0
-      ? { score: Math.round(agents.avg ?? 0), label: "Agent reliability", detail: `${agents.n} runs in 7 days` }
+      ? { score: Math.round(agents.avg ?? 0), label: "Agent reliability", detail: `${agents.n} run${agents.n === 1 ? "" : "s"} in 7 days` }
       : { score: null, label: "Agent reliability", detail: "Send your first agent run" },
     workflows: wf && wf.n > 0
-      ? { score: Math.round(((wf.ok ?? 0) / wf.n) * 100), label: "Workflow success", detail: `${wf.n} executions in 7 days` }
+      ? { score: Math.round(((wf.ok ?? 0) / wf.n) * 100), label: "Workflow success", detail: `${wf.n} execution${wf.n === 1 ? "" : "s"} in 7 days` }
       : { score: null, label: "Workflow success", detail: "Connect n8n or Make" },
   };
 
