@@ -24,6 +24,8 @@ export default function PrivacyPage() {
       <p>Only to provide the Service: grading answers, running checks, sending alerts and reports you set up, account emails (such as password resets) and security. We do not sell your data and do not use it for advertising.</p>
       <h2>Support requests</h2>
       <p>When you submit a support ticket we store your name (optional), email, the issue you describe and the page it happened on, so we can reply and you can track it. Tickets are deleted with your account, or on request. If you choose to message us on WhatsApp, WhatsApp (Meta) processes that conversation under its own privacy policy.</p>
+      <h2>Feedback and testimonials</h2>
+      <p>If you send feedback from your dashboard we store it with the name, role and company you enter. It is only shown on our website if you ticked the permission box and we approved it, exactly as you wrote it. Ask us any time and we remove it; it is also deleted with your account.</p>
       <h2>Service providers</h2>
       <ul>
         <li><strong>Hosting:</strong> Railway (application and database){HOSTING_REGION ? `, ${HOSTING_REGION}` : ""}.</li>
@@ -31,8 +33,8 @@ export default function PrivacyPage() {
         <li><strong>Email:</strong> Resend, for alerts, summaries and password resets.</li>
         <li><strong>Payments:</strong> Paddle.com is our online reseller and Merchant of Record. Paddle collects and processes your billing details; we never see your full card number.</li>
       </ul>
-      <h2>Cookies</h2>
-      <p>We use one essential cookie to keep you logged in, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful; it sets analytics cookies and IP addresses are anonymised. You can block it with any ad blocker or browser privacy setting. When you sign up, send the contact form, start a trial or pay, our server tells Google Analytics that this happened (with the analytics ID from that cookie, the plan and price, never your name, email or any content) so we can see which marketing works." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
+      <h2 id="cookies">Cookies</h2>
+      <p>We use one essential cookie to keep you logged in, one to remember your cookie choice, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful, but only if you click Accept on the cookie banner. It then sets analytics cookies and IP addresses are anonymised. You can change your choice any time with the \"Cookie settings\" link at the bottom of every page; rejecting deletes the analytics cookies. If you accepted analytics cookies and then sign up, send a form, start a trial or pay, our server tells Google Analytics that this happened (with the analytics ID from that cookie, the plan and price, never your name, email or any content) so we can see which marketing works." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
       <h2>Retention and deletion</h2>
       <p>Your data is kept while your account exists, or for the shorter period you set per project. You can delete individual audits and projects at any time, or delete your whole account in <strong>Account → Delete account</strong>, which permanently removes all your data. Backups are overwritten within 30 days.</p>
       <h2>Your rights</h2>

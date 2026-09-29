@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { all } from "@/lib/db";
 import { sendDueDigests } from "@/lib/digest";
 import { purgeExpired } from "@/lib/retention";
+import { recordCronRun } from "@/lib/status";
 import { alertMissingReplies } from "@/lib/audit/live";
 import { pollAllChatSources } from "@/lib/connectors/twilio";
 import { runDueSuites } from "@/lib/tests/runner";
@@ -24,6 +25,15 @@ function authorised(req: Request): boolean {
 export async function GET(req: Request) {
   if (!authorised(req)) return Response.json({ error: "Unauthorised" }, { status: 401 });
   const started = Date.now();
+  try {
+    return await runAll(started);
+  } catch (err) {
+    recordCronRun(false, err instanceof Error ? err.message : String(err));
+    throw err;
+  }
+}
+
+async function runAll(started: number) {
   await pollAllSources();
   const projects = all<{ id: number }>("SELECT id FROM projects");
   for (const p of projects) await periodicWorkflowChecks(p.id);
@@ -32,5 +42,6 @@ export async function GET(req: Request) {
   const chatSources = await pollAllChatSources();
   const noReply = await alertMissingReplies();
   const purged = purgeExpired();
+  recordCronRun(true);
   return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, chatSources, unansweredAlerted: noReply, purged, ms: Date.now() - started });
 }

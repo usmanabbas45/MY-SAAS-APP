@@ -24,7 +24,10 @@ export function parseGaCookies(all: { name: string; value: string }[], measureme
 
 export async function currentGaIds(): Promise<GaIds | null> {
   try {
-    return parseGaCookies((await cookies()).getAll());
+    const jar = await cookies();
+    // Only visitors who accepted analytics cookies are tracked.
+    if (jar.get("pma_consent")?.value !== "granted") return null;
+    return parseGaCookies(jar.getAll());
   } catch {
     return null; // outside a request (webhooks, cron)
   }
