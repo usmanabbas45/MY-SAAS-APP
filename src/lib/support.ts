@@ -1,5 +1,6 @@
 import { all, get, run } from "./db";
-import { sendEmail } from "./email";
+import { sendMail } from "./email";
+import { internalEmail, ticketReceivedEmail, ticketReplyEmail } from "./emails";
 import { SUPPORT_EMAIL } from "./seo";
 import { truncate } from "./text";
 
@@ -18,7 +19,6 @@ export const CATEGORIES = {
   question: "Question about a feature",
   feature: "Feature request",
   developer: "I need a developer (custom work)",
-  founding: "Founding customer application",
 } as const;
 export type Category = keyof typeof CATEGORIES;
 
@@ -55,9 +55,13 @@ export async function createTicket(input: { userId: number | null; email: string
     input.subject.trim().slice(0, 150), input.message.trim().slice(0, 5000), input.page?.slice(0, 300) || null,
   );
   const code = ticketCode(id);
-  const body = `${code} · ${CATEGORIES[input.category]}\nFrom: ${input.name ?? ""} <${input.email}>${input.userId ? ` (user #${input.userId})` : ""}\nPage: ${input.page ?? "-"}\n\n${input.subject}\n\n${input.message}\n\nReply in the admin inbox: ${process.env.APP_URL ?? ""}/app/admin/support`;
   // Email delivery is best-effort: the ticket is saved and visible in the admin inbox either way.
-  await sendEmail(SUPPORT_EMAIL, `[ProofMyAI support] ${code}: ${truncate(input.subject, 80)}`, body, input.email).catch(() => false);
+  await sendMail(SUPPORT_EMAIL, internalEmail(
+    `[ProofMyAI support] ${code}: ${truncate(input.subject, 80)}`, `New ticket ${code}: ${input.subject}`,
+    [["🏷️ Type", CATEGORIES[input.category]], ["👤 From", `${input.name ?? ""} <${input.email}>`.trim()], ["🆔 Account", input.userId ? `User #${input.userId}` : "Not logged in"], ["🔗 Page", input.page || "-"]],
+    input.message, { label: "Reply in the admin inbox", url: `${process.env.APP_URL ?? ""}/app/admin/support` },
+  ), { replyTo: input.email }).catch(() => false);
+  await sendMail(input.email, ticketReceivedEmail(code, input.subject, input.name?.trim() || null)).catch(() => false);
   const whatsapp = `Hi, I submitted support ticket ${code} on ProofMyAI: "${truncate(input.subject, 80)}". ${truncate(input.message, 300)}`;
   return { id, code, whatsapp };
 }
@@ -86,8 +90,8 @@ export async function replyToTicket(id: number, reply: string, close: boolean): 
   const t = getTicket(id);
   if (!t) throw new Error("Ticket not found.");
   run("UPDATE support_tickets SET reply = ?, replied_at = ?, status = ? WHERE id = ?", reply.trim().slice(0, 5000), new Date().toISOString(), close ? "closed" : "answered", id);
-  const text = `Hi${t.name ? ` ${t.name}` : ""},\n\n${reply.trim()}\n\n— ProofMyAI support\n\nYour ticket ${ticketCode(id)}: "${t.subject}"\nView it any time: ${process.env.APP_URL ?? ""}/app/support\nWhatsApp: ${whatsappLink(`About ticket ${ticketCode(id)}`)}`;
-  return sendEmail(t.email, `Re: ${ticketCode(id)} ${truncate(t.subject, 80)}`, text, SUPPORT_EMAIL).catch(() => false);
+  const mail = ticketReplyEmail(ticketCode(id), t.subject, t.name, reply.trim(), close, whatsappLink(`About ticket ${ticketCode(id)}`));
+  return sendMail(t.email, mail, { fromName: "ProofMyAI Support" }).catch(() => false);
 }
 
 export function setTicketStatus(id: number, status: "open" | "answered" | "closed"): void {

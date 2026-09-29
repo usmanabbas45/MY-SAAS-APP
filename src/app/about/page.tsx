@@ -14,18 +14,18 @@ export default function AboutPage() {
   return (
     <PublicPage title="About ProofMyAI">
       <p>ProofMyAI is built by <strong>{LEGAL_NAME}</strong>, an independent developer in {LEGAL_COUNTRY} who builds AI chatbots and n8n automations for businesses.</p>
-      <h2>Why it exists</h2>
+      <h2>💡 Why it exists</h2>
       <p>Businesses now let AI talk to their customers and run their operations, but almost nobody checks what it actually says and does. Chatbots make up prices and policies, agents loop and burn money, and automations report &quot;success&quot; while doing nothing. The business usually finds out from an angry customer. ProofMyAI is the independent check that catches these problems first and shows exactly what to fix.</p>
-      <h2>How we work</h2>
+      <h2>🤝 How we work</h2>
       <ul>
         <li><strong>Privacy first:</strong> personal data is masked by default, and every project controls retention, results-only storage and whether an AI provider is used. See the <Link href="/security">Trust Center</Link>.</li>
         <li><strong>Honest numbers:</strong> examples on our website are labelled as illustrative. Your own audit shows your real results.</li>
         <li><strong>No lock-in:</strong> export your results any time and delete everything with one click.</li>
         <li><strong>Transparency with clients:</strong> agencies and freelancers who recommend ProofMyAI to their own clients should tell them if they have a business relationship with it. We do the same.</li>
       </ul>
-      <h2>Hire the developer</h2>
+      <h2>👨‍💻 Hire the developer</h2>
       <p>Need a custom AI chatbot, an AI agent, n8n or Make automations, or help fixing what ProofMyAI found? See my work and get in touch at <a href={DEVELOPER_URL} target="_blank" rel="noopener">{DEVELOPER_NAME}</a> or on <a href={whatsappLink("Hi! I'd like to hire you for a development project.")} target="_blank" rel="noopener">WhatsApp</a>.</p>
-      <h2>Company details</h2>
+      <h2>🏢 Company details</h2>
       <p>Operator: {OPERATOR}. Payments are handled by Paddle.com, our Merchant of Record. Email: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. You can also use the <Link href="/contact">contact form</Link>.</p>
     </PublicPage>
   );

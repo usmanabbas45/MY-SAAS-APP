@@ -24,7 +24,7 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   const ga = await currentGaIds();
   rememberGaClient(user.id, ga);
   void trackEvent(ga, "sign_up", { method: "email" });
-  redirect(`/app/p/${projectId}?welcome=1`);
+  redirect(form.get("founding") === "1" ? "/app/founding" : `/app/p/${projectId}?welcome=1`);
 }
 
 export async function loginAction(_: AuthState, form: FormData): Promise<AuthState> {
@@ -36,7 +36,7 @@ export async function loginAction(_: AuthState, form: FormData): Promise<AuthSta
   if (!user) return { error: "Wrong email or password." };
   if (isSuspended(user.id)) return { error: "This account is suspended. Contact support if you think this is a mistake." };
   await startSession(user.id);
-  redirect("/app");
+  redirect(form.get("founding") === "1" ? "/app/founding" : "/app");
 }
 
 export async function logoutAction(): Promise<void> {

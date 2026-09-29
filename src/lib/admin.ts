@@ -175,8 +175,8 @@ export function recentAdminLog(limit = 15): { admin_email: string; action: strin
 
 /** Gives a user a plan without payment ("comped"), or takes it back to free. Paddle billing is not touched. */
 export function setPlanManually(userId: number, plan: PlanId): void {
-  if (plan === "free") run("UPDATE users SET plan = 'free', plan_status = NULL, plan_cancel_at = NULL, trial_ends_at = NULL WHERE id = ?", userId);
-  else run("UPDATE users SET plan = ?, plan_status = 'comped', plan_cancel_at = NULL, trial_ends_at = NULL WHERE id = ?", plan, userId);
+  if (plan === "free") run("UPDATE users SET plan = 'free', plan_status = NULL, plan_cancel_at = NULL, trial_ends_at = NULL, comp_ends_at = NULL WHERE id = ?", userId);
+  else run("UPDATE users SET plan = ?, plan_status = 'comped', plan_cancel_at = NULL, trial_ends_at = NULL, comp_ends_at = NULL WHERE id = ?", plan, userId);
 }
 
 export function setSuspended(userId: number, suspended: boolean): void {

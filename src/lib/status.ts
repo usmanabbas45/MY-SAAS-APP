@@ -9,6 +9,7 @@ const RUNS_PER_DAY = (24 * 60) / CRON_INTERVAL_MIN;
 export type Health = "operational" | "degraded" | "outage" | "not_configured";
 
 export interface Component {
+  icon: string;
   name: string;
   description: string;
   health: Health;
@@ -44,12 +45,12 @@ export function components(now = new Date()): Component[] {
   } catch {
     dbOk = false;
   }
-  out.push({ name: "Website & dashboard", description: "proofmyai.com and the app", health: "operational", detail: "Responding" });
-  out.push({ name: "Data API", description: "Chat events, agent runs and workflow runs", health: dbOk ? "operational" : "outage", detail: dbOk ? "Accepting data" : "Cannot store data right now" });
-  out.push({ name: "Database", description: "Stores your results", health: dbOk ? (dbMs > 500 ? "degraded" : "operational") : "outage", detail: dbOk ? `Query time ${Math.max(1, Math.round(dbMs))} ms` : "Not reachable" });
+  out.push({ icon: "🌐", name: "Website & dashboard", description: "proofmyai.com and the app", health: "operational", detail: "Responding" });
+  out.push({ icon: "🔌", name: "Data API", description: "Chat events, agent runs and workflow runs", health: dbOk ? "operational" : "outage", detail: dbOk ? "Accepting data" : "Cannot store data right now" });
+  out.push({ icon: "🗄️", name: "Database", description: "Stores your results", health: dbOk ? (dbMs > 500 ? "degraded" : "operational") : "outage", detail: dbOk ? `Query time ${Math.max(1, Math.round(dbMs))} ms` : "Not reachable" });
 
   const hb = dbOk ? get<{ last_run_at: string; ok: number; detail: string | null }>("SELECT last_run_at, ok, detail FROM heartbeats WHERE name = 'cron'") : undefined;
-  let bg: Component = { name: "Background checks", description: "n8n/Make polling, nightly bot tests, missing-reply alerts", health: "not_configured", detail: "Waiting for the first scheduled run" };
+  let bg: Component = { icon: "⏱️", name: "Background checks", description: "n8n/Make polling, nightly bot tests, missing-reply alerts", health: "not_configured", detail: "Waiting for the first scheduled run" };
   if (hb) {
     const ago = minutesAgo(hb.last_run_at, now);
     const when = ago < 1 ? "just now" : ago < 90 ? `${Math.round(ago)} min ago` : `${Math.round(ago / 60)} h ago`;
@@ -63,17 +64,17 @@ export function components(now = new Date()): Component[] {
 
   const ai = judgeProvider();
   out.push({
-    name: "AI answer checking", description: "Grading answers against your help articles",
+    icon: "🧠", name: "AI answer checking", description: "Grading answers against your help articles",
     health: ai ? "operational" : "degraded",
     detail: ai ? `Running (${ai === "anthropic" ? "Anthropic Claude" : "Google Gemini"})` : "AI checking unavailable: rule-based checks only",
   });
   out.push({
-    name: "Email alerts", description: "Alerts, reports and password resets",
+    icon: "📧", name: "Email alerts", description: "Alerts, reports and password resets",
     health: process.env.RESEND_API_KEY ? "operational" : "degraded",
     detail: process.env.RESEND_API_KEY ? "Sending" : "Email delivery paused: use Slack, Teams, Telegram or webhook alerts",
   });
   out.push({
-    name: "Billing", description: "Checkout and subscriptions (Paddle)",
+    icon: "💳", name: "Billing", description: "Checkout and subscriptions (Paddle)",
     health: billingEnabled() ? "operational" : "not_configured",
     detail: billingEnabled() ? "Operational" : "Checkout not available",
   });

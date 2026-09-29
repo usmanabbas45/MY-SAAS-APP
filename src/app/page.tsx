@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { YouTube } from "@/components/video";
+import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { FAQS, jsonLd, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, videoJsonLd } from "@/lib/seo";
 
@@ -49,50 +50,58 @@ const structuredData = {
   ],
 };
 
+function FoundingOffer() {
+  const left = foundingSpotsLeft();
+  if (left <= 0) return null;
+  return (
+    <section className="lp-section" id="founding">
+      <div className="card founding">
+        <div className="founding-icon" aria-hidden>🚀</div>
+        <h2>Become a founding customer</h2>
+        <p className="lp-lead" style={{ marginTop: 8 }}>
+          ProofMyAI is new, so our first {FOUNDING_OFFER.spots} businesses running AI chatbots, agents or n8n/Make automations get
+          <strong> {FOUNDING_OFFER.reward}</strong> and direct WhatsApp access to the developer. No card needed, no automatic charge. We ask for {FOUNDING_OFFER.ask}.
+        </p>
+        <div className="row" style={{ justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>
+          <Link href="/signup?founding=1" className="btn">🎉 Claim a founding spot</Link>
+        </div>
+        <p className="faint" style={{ marginTop: 10 }}>{left} of {FOUNDING_OFFER.spots} spots left · activates instantly</p>
+      </div>
+    </section>
+  );
+}
+
 function SocialProof() {
   const quotes = publishedTestimonials(6);
   const rating = ratingSummary();
-  if (quotes.length === 0) {
-    return (
-      <section className="lp-section" id="founding">
-        <div className="card founding">
-          <h2>Become a founding customer</h2>
-          <p className="lp-lead" style={{ marginTop: 8 }}>
-            ProofMyAI is new, so we&apos;re looking for our first {FOUNDING_OFFER.spots} businesses running AI chatbots, agents or n8n/Make automations.
-            You get <strong>{FOUNDING_OFFER.reward}</strong> and direct WhatsApp access to the developer. We ask for {FOUNDING_OFFER.ask}.
-          </p>
-          <div className="row" style={{ justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>
-            <Link href="/support?topic=founding#ticket" className="btn">Apply to be a founding customer</Link>
-            <Link href="/signup" className="btn btn-ghost">Or start free now</Link>
-          </div>
+  if (quotes.length === 0) return <FoundingOffer />;
+  return (
+    <>
+      <section className="lp-section" id="customers" aria-labelledby="customers-title">
+        <h2 id="customers-title">💬 What customers say</h2>
+        <p className="lp-lead">
+          Real feedback from ProofMyAI users, shown with their permission.
+          {rating ? <> Average rating <strong>{rating.avg.toFixed(1)} / 5</strong> from {rating.count} customers.</> : null}
+        </p>
+        <div className="testimonials">
+          {quotes.map((t) => (
+            <figure key={t.id} className="card testimonial">
+              <div className="stars" aria-label={`${t.rating} out of 5`}>{"★".repeat(t.rating)}{"☆".repeat(5 - t.rating)}</div>
+              <blockquote>&ldquo;{t.quote}&rdquo;</blockquote>
+              {t.result ? <div className="result">✓ {t.result}</div> : null}
+              <figcaption>
+                <strong>{t.name}</strong>
+                <div className="faint">
+                  {[t.role, t.company].filter(Boolean).join(", ")}
+                  {t.website ? <> · <a href={t.website} target="_blank" rel="noopener nofollow">{t.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a></> : null}
+                </div>
+              </figcaption>
+            </figure>
+          ))}
         </div>
       </section>
-    );
-  }
-  return (
-    <section className="lp-section" id="customers" aria-labelledby="customers-title">
-      <h2 id="customers-title">What customers say</h2>
-      <p className="lp-lead">
-        Real feedback from ProofMyAI users, shown with their permission.
-        {rating ? <> Average rating <strong>{rating.avg.toFixed(1)} / 5</strong> from {rating.count} customers.</> : null}
-      </p>
-      <div className="testimonials">
-        {quotes.map((t) => (
-          <figure key={t.id} className="card testimonial">
-            <div className="stars" aria-label={`${t.rating} out of 5`}>{"★".repeat(t.rating)}{"☆".repeat(5 - t.rating)}</div>
-            <blockquote>&ldquo;{t.quote}&rdquo;</blockquote>
-            {t.result ? <div className="result">✓ {t.result}</div> : null}
-            <figcaption>
-              <strong>{t.name}</strong>
-              <div className="faint">
-                {[t.role, t.company].filter(Boolean).join(", ")}
-                {t.website ? <> · <a href={t.website} target="_blank" rel="noopener nofollow">{t.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a></> : null}
-              </div>
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-    </section>
+      <FoundingOffer />
+    </>
   );
 }
 

@@ -11,14 +11,14 @@ export const metadata = {
 const API = `${SITE_URL}/api/v1`;
 
 const TOC = [
-  ["quick-start", "Quick start"],
-  ["no-code", "Connect without code"],
-  ["auth", "Authentication"],
-  ["chat-events", "POST /chat-events (live chatbot)"],
-  ["agent-runs", "POST /agent-runs (AI agents)"],
-  ["workflow-runs", "POST /workflow-runs (n8n, Make, Zapier)"],
-  ["errors", "Errors & limits"],
-  ["privacy", "Privacy & data"],
+  ["quick-start", "🚀 Quick start"],
+  ["no-code", "🧩 Connect without code"],
+  ["auth", "🔑 Authentication"],
+  ["chat-events", "💬 POST /chat-events (live chatbot)"],
+  ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
+  ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
+  ["errors", "⚠️ Errors & limits"],
+  ["privacy", "🔒 Privacy & data"],
 ] as const;
 
 function Code({ children }: { children: string }) {
@@ -41,11 +41,11 @@ export default function DocsPage() {
     <PublicPage title="Docs & API reference">
       <p>Everything you need to connect your AI chatbot, AI agents and n8n/Make automations to ProofMyAI. Most setups take under 10 minutes and many need no code at all. Prefer video? Watch the <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">3-minute setup tutorial ↗</a>.</p>
       <nav className="card docs-toc" aria-label="On this page">
-        <strong>On this page</strong>
+        <strong>📚 On this page</strong>
         <ol>{TOC.map(([id, label]) => <li key={id}><a href={`#${id}`}>{label}</a></li>)}</ol>
       </nav>
 
-      <h2 id="quick-start">Quick start</h2>
+      <h2 id="quick-start">🚀 Quick start</h2>
       <ol>
         <li><Link href="/signup">Create a free account</Link> (50 conversations a month free, no card).</li>
         <li>Open your project → <strong>Settings</strong> and copy your <strong>API key</strong> (it starts with <code>ap_live_</code>). Each project has its own key.</li>
@@ -53,7 +53,7 @@ export default function DocsPage() {
         <li>Add a Slack, email, Telegram or webhook channel under <strong>Settings → Notifications</strong> so you hear about problems.</li>
       </ol>
 
-      <h2 id="no-code">Connect without code</h2>
+      <h2 id="no-code">🧩 Connect without code</h2>
       <ul>
         <li><strong>Chat transcripts:</strong> export conversations from Intercom, Tidio, Crisp, Zendesk or any bot as CSV/JSON and upload them in <em>Chatbot audits</em>. Add your help articles first so answers are checked against them.</li>
         <li><strong>Nightly bot tests:</strong> in <em>Chatbot tests</em>, paste your bot&apos;s HTTP endpoint and a list of questions with the facts a right answer must include. ProofMyAI asks your bot every night.</li>
@@ -62,14 +62,14 @@ export default function DocsPage() {
         <li><strong>Twilio / WhatsApp:</strong> in <em>Live tracking</em>, connect Twilio with a read-only API key to check bot replies on SMS and WhatsApp.</li>
       </ul>
 
-      <h2 id="auth">Authentication</h2>
+      <h2 id="auth">🔑 Authentication</h2>
       <p>Send your project API key with every request, in either header:</p>
       <Code>{`Authorization: Bearer ap_live_xxxxxxxxxxxxxxxx
 # or
 X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
       <p>Base URL: <code>{API}</code>. Bodies are JSON (<code>Content-Type: application/json</code>), up to 2 MB. Keep the key on your server; don&apos;t put it in browser code. You can regenerate it in Settings at any time.</p>
 
-      <h2 id="chat-events">POST /chat-events: live chatbot monitoring</h2>
+      <h2 id="chat-events">💬 POST /chat-events: live chatbot monitoring</h2>
       <p>Send each conversation as it happens, either the full message history or just the newest question and answer. Personal data is masked before anything is stored or checked. Replies are graded in the background against your help articles and rules.</p>
       <Fields rows={[
         ["conversation_id", "string, required", "Your ID for the conversation. Sending the same ID again adds only the new turns."],
@@ -97,7 +97,7 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
       <p>Verdicts: <code>correct</code>, <code>unsupported</code> (not in your docs), <code>hallucination</code> (made up), <code>should_escalate</code>, <code>off_policy</code>, <code>unclear</code>.</p>
       <p><strong>Tip:</strong> call the API without waiting for it (fire-and-forget) so your bot never slows down. The <em>Live tracking</em> page in your dashboard has ready-made cURL, JavaScript and Python snippets that do this safely, plus no-code steps for Intercom, Zendesk, Crisp and Tidio through n8n or Make.</p>
 
-      <h2 id="agent-runs">POST /agent-runs: AI agent monitoring</h2>
+      <h2 id="agent-runs">🤖 POST /agent-runs: AI agent monitoring</h2>
       <p>Send one request when an agent run finishes. ProofMyAI checks it for loops, tool errors, runaway cost, slow runs, empty output and answers the tools didn&apos;t support.</p>
       <Fields rows={[
         ["run_id", "string, required", "Unique ID of this run. Sending the same run_id twice returns 409."],
@@ -127,7 +127,7 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
   {"code": "ENDED_ON_ERROR", "severity": "medium", "message": "The last step failed but the run still reported success."}]}`}</Code>
       <p>Issue codes: <code>RUN_FAILED</code>, <code>TOOL_ERRORS</code>, <code>LOOP_DETECTED</code>, <code>TOO_MANY_STEPS</code>, <code>OVER_BUDGET</code>, <code>SLOW_RUN</code>, <code>EMPTY_OUTPUT</code>, <code>ENDED_ON_ERROR</code>, plus from the AI review <code>GOAL_NOT_MET</code> and <code>UNGROUNDED_OUTPUT</code>. Set your step, cost and time limits in project Settings.</p>
 
-      <h2 id="workflow-runs">POST /workflow-runs: n8n, Make and Zapier</h2>
+      <h2 id="workflow-runs">⚙️ POST /workflow-runs: n8n, Make and Zapier</h2>
       <p>Most people connect n8n or Make with an API key instead (see above). Use this endpoint for Zapier, self-built pipelines, or to push runs yourself. Send one run or an array of up to 500.</p>
       <Fields rows={[
         ["workflow_id", "string, required", "Your workflow or scenario ID."],
@@ -147,7 +147,7 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
         "execution_id": "ex_99121", "status": "success", "output_items": 0, "duration_ms": 2400}]'`}</Code>
       <p>Response <code>201</code>: <code>{`{"received": 1, "created": 1, "duplicates": 0}`}</code></p>
 
-      <h2 id="errors">Errors &amp; limits</h2>
+      <h2 id="errors">⚠️ Errors &amp; limits</h2>
       <div className="table-wrap">
         <table>
           <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
@@ -163,7 +163,7 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
       </div>
       <p>Errors look like <code>{`{"error": "conversation_id: Required"}`}</code>. A service health check is available at <code>{SITE_URL}/api/health</code>, and live status at <Link href="/status">/status</Link>.</p>
 
-      <h2 id="privacy">Privacy &amp; data</h2>
+      <h2 id="privacy">🔒 Privacy &amp; data</h2>
       <p>Emails, phone numbers, card numbers, IBANs, IP addresses and names are masked before storage or AI checks. Per project you can turn on results-only storage, set auto-delete, add your own words to mask, or switch AI checking off. Details in the <Link href="/security">Trust Center</Link>.</p>
 
       <p className="sub" style={{ marginTop: 28 }}>Stuck? <Link href="/support">Open a support ticket</Link> or message us on WhatsApp. See what&apos;s new in the <Link href="/changelog">changelog</Link>.</p>

@@ -276,6 +276,9 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "ga_client_id", "TEXT");
   addColumn(db, "users", "last_seen_at", "TEXT");
   addColumn(db, "users", "admin_note", "TEXT");
+  addColumn(db, "users", "founding_at", "TEXT");
+  addColumn(db, "users", "comp_ends_at", "TEXT");
+  addColumn(db, "users", "comp_reminded_at", "TEXT");
   db.exec(`CREATE TABLE IF NOT EXISTS admin_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_email TEXT NOT NULL,

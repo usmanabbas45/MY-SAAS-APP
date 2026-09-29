@@ -19,7 +19,7 @@ export default function ChangelogPage() {
           <article key={`${r.date}-${r.title}`} className="changelog-entry">
             <div className="faint"><time dateTime={r.date}>{fmt(r.date)}</time></div>
             <div>
-              <h2><span className={`badge ${r.tag === "New" ? "badge-ok" : r.tag === "Fixed" ? "badge-warn" : ""}`}>{r.tag}</span> {r.title}</h2>
+              <h2><span className={`badge ${r.tag === "New" ? "badge-ok" : r.tag === "Fixed" ? "badge-warn" : ""}`}>{r.tag === "New" ? "✨" : r.tag === "Fixed" ? "🐛" : "🔧"} {r.tag}</span> {r.title}</h2>
               <ul>{r.items.map((i) => <li key={i}>{i}</li>)}</ul>
             </div>
           </article>

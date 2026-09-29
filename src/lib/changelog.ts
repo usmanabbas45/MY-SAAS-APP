@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-29", title: "Redesigned emails and instant founding offer", tag: "Improved",
+    items: [
+      "Every email (alerts, weekly summary, password reset, support replies) has a new clear, branded design with the key facts at a glance and a one-click button.",
+      "Support tickets now get an instant confirmation email.",
+      "Founding customers can claim their free Growth plan in one click. It starts right away and ends automatically, with a reminder a week before.",
+    ],
+  },
+  {
     date: "2026-09-29", title: "Docs, status page, cookie choices and customer stories", tag: "New",
     items: [
       "Public docs and API reference at /docs.",
