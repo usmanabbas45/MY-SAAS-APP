@@ -1,8 +1,29 @@
 import { all, get, run } from "./db";
-import { sendEmail } from "./email";
+import { sendMail } from "./email";
+import { digestEmail, type DigestData } from "./emails";
 import { projectHealth } from "./health";
 
 interface DigestProject { id: number; name: string; alert_email: string }
+
+export function digestData(projectId: number, name: string): DigestData {
+  const h = projectHealth(projectId, 7);
+  const since = "datetime('now', '-7 days')";
+  const n = (sql: string) => get<{ n: number }>(sql, projectId)?.n ?? 0;
+  return {
+    projectId, projectName: name, score: h.overall,
+    modules: [
+      ["💬 Chatbot accuracy", h.modules.chatbot.score, h.modules.chatbot.detail],
+      ["🧪 Chatbot tests", h.modules.tests.score, h.modules.tests.detail],
+      ["🤖 AI agents", h.modules.agents.score, h.modules.agents.detail],
+      ["⚙️ n8n & Make", h.modules.workflows.score, h.modules.workflows.detail],
+    ],
+    answers: n(`SELECT COUNT(*) AS n FROM audit_items i JOIN audits a ON a.id = i.audit_id WHERE a.project_id = ? AND i.created_at >= ${since}`),
+    bad: n(`SELECT COUNT(*) AS n FROM audit_items i JOIN audits a ON a.id = i.audit_id WHERE a.project_id = ? AND i.created_at >= ${since} AND COALESCE(i.corrected_verdict, i.verdict) <> 'correct'`),
+    newIncidents: n(`SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND created_at >= ${since}`),
+    openIncidents: h.openIncidents,
+    top: all<{ title: string }>("SELECT title FROM incidents WHERE project_id = ? AND resolved = 0 ORDER BY CASE severity WHEN 'high' THEN 0 ELSE 1 END, id DESC LIMIT 3", projectId).map((t) => t.title),
+  };
+}
 
 export function digestText(projectId: number, name: string, appUrl: string): string {
   const h = projectHealth(projectId, 7);
@@ -42,7 +63,7 @@ export async function sendDueDigests(): Promise<number> {
   let sent = 0;
   for (const p of due) {
     try {
-      await sendEmail(p.alert_email, `Your weekly AI quality summary · ${p.name}`, digestText(p.id, p.name, process.env.APP_URL || ""));
+      await sendMail(p.alert_email, digestEmail(digestData(p.id, p.name)));
       run("UPDATE projects SET last_digest_at = datetime('now') WHERE id = ?", p.id);
       sent++;
     } catch (err) {

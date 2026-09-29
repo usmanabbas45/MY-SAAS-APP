@@ -1,5 +1,6 @@
 import { all, get, run, transaction } from "./db";
-import { sendEmail } from "./email";
+import { sendMail } from "./email";
+import { passwordResetEmail } from "./emails";
 import { hashPassword, randomToken, sha256, verifyPassword } from "./security";
 
 export const RESET_MINUTES = 60;
@@ -23,18 +24,7 @@ export async function requestPasswordReset(email: string, appUrl: string): Promi
   run("INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, ?)",
     sha256(token), user.id, new Date(Date.now() + RESET_MINUTES * 60000).toISOString());
   const link = `${appUrl.replace(/\/+$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
-  await sendEmail(user.email, "Reset your ProofMyAI password", [
-    "Hi,",
-    "",
-    "Someone (hopefully you) asked to reset the password for your ProofMyAI account.",
-    `Click this link to choose a new password (valid for ${RESET_MINUTES} minutes, works once):`,
-    "",
-    link,
-    "",
-    "If you didn't ask for this, you can ignore this email. Your password won't change.",
-    "",
-    "- The ProofMyAI team",
-  ].join("\n"));
+  await sendMail(user.email, passwordResetEmail(link, RESET_MINUTES));
   return { token };
 }
 

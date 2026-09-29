@@ -1,3 +1,4 @@
+import { foundingStatus } from "@/lib/founding";
 import Link from "next/link";
 import { SubmitButton, ThemeToggle } from "@/components/client";
 import { Flash } from "@/components/ui";
@@ -38,6 +39,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   let problems = billingConfigProblems();
   if (admin && enabled && problems.length === 0) problems = await checkPaddlePrices().catch(() => []);
   const autoRenew = !state.cancelAt;
+  const founding = foundingStatus(user.id);
   const subscribed =["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
 
   let status: { text: string; tone: string } | null = null;
@@ -46,6 +48,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   else if (state.status === "trialing") status = { text: `Free trial until ${day(state.trialEndsAt ?? state.renewsAt)}`, tone: "badge-brand" };
   else if (state.status === "past_due") status = { text: "Payment failed: update your card", tone: "badge-bad" };
   else if (state.status === "active") status = { text: `Renews on ${day(state.renewsAt)}`, tone: "badge-ok" };
+  else if (state.status === "comped" && founding.active && founding.endsAt) status = { text: `🎉 Founding customer: free until ${day(founding.endsAt)}`, tone: "badge-ok" };
+  else if (state.status === "comped") status = { text: "Free plan upgrade from ProofMyAI", tone: "badge-ok" };
   else if (state.status === "paused" || state.status === "canceled") status = { text: `Subscription ${state.status}`, tone: "badge-warn" };
 
   return (

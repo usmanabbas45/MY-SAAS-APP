@@ -40,7 +40,7 @@ export default function StatusPage() {
         {list.map((c) => (
           <div key={c.name} className="status-row">
             <div>
-              <strong>{c.name}</strong>
+              <strong><span aria-hidden>{c.icon} </span>{c.name}</strong>
               <div className="faint">{c.description}</div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -51,7 +51,7 @@ export default function StatusPage() {
         ))}
       </div>
 
-      <h2>Background checks, last 30 days</h2>
+      <h2>📈 Background checks, last 30 days</h2>
       <p className="sub">Share of scheduled checks (every 15 minutes: n8n/Make polling, nightly tests, missing-reply alerts) that ran successfully.{avg !== null ? <> Average: <strong>{avg.toFixed(2)}%</strong>.</> : " History starts with the first scheduled run."}</p>
       <div className="uptime-bars" aria-label="Daily background check uptime">
         {history.map((d) => (
@@ -64,7 +64,7 @@ export default function StatusPage() {
       </div>
       <div className="row between faint" style={{ fontSize: 12 }}><span>30 days ago</span><span>Today</span></div>
 
-      <h2>Get notified</h2>
+      <h2>🔔 Get notified</h2>
       <p>Problems that affect your own projects are sent through your alert channels (Settings → Notifications). For platform-wide issues, check this page or <Link href="/support">contact support</Link>. Developers can poll <code>/api/health</code>, which returns <code>200</code> when the service is up. See the <Link href="/changelog">changelog</Link> for recent updates.</p>
     </PublicPage>
   );

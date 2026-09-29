@@ -1,5 +1,6 @@
 import { all, get, run } from "./db";
-import { sendEmail } from "./email";
+import { sendMail } from "./email";
+import { alertEmail } from "./emails";
 import { assertPublicUrl, decrypt, safeFetch } from "./security";
 import { truncate } from "./text";
 
@@ -73,7 +74,7 @@ export async function deliver(ch: Channel, msg: AlertMessage, fetcher: Fetcher =
   let res: Response | null = null;
   switch (ch.type) {
     case "email":
-      if (!(await sendEmail(ch.target, `[ProofMyAI] ${msg.kind === "resolved" ? "Resolved: " : ""}${msg.title}`, text))) throw new Error("Email is not set up on the server (RESEND_API_KEY).");
+      if (!(await sendMail(ch.target, alertEmail(msg, ch.target), { fromName: "ProofMyAI Alerts" }))) throw new Error("Email is not set up on the server (RESEND_API_KEY).");
       return;
     case "slack":
     case "teams":

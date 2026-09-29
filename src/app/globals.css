@@ -431,3 +431,4 @@ section[id] { scroll-margin-top: 88px; }
 .founding { text-align: center; border: 2px dashed var(--brand); background: var(--brand-soft); }
 .founding h2 { margin-top: 0; }
 .testimonials > .card { margin: 0; }
+.founding-icon { font-size: 40px; line-height: 1; margin-bottom: 10px; }

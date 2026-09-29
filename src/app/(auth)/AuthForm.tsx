@@ -35,8 +35,8 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
   );
 }
 
-export function AuthForm({ mode, action, notice }: {
-  mode: "login" | "signup"; action: (s: AuthState, f: FormData) => Promise<AuthState>; notice?: string;
+export function AuthForm({ mode, action, notice, founding }: {
+  mode: "login" | "signup"; action: (s: AuthState, f: FormData) => Promise<AuthState>; notice?: string; founding?: boolean;
 }) {
   const [state, formAction] = useActionState(action, {});
   const signup = mode === "signup";
@@ -47,7 +47,9 @@ export function AuthForm({ mode, action, notice }: {
     >
       {notice ? <div className="alert alert-ok" role="status">{notice}</div> : null}
       {state.error ? <div className="alert alert-bad" role="alert">{state.error}</div> : null}
+      {founding ? <div className="alert alert-info" role="status">🎉 {signup ? "Create your account" : "Log in"} to claim your founding-customer spot: the Growth plan free for 3 months.</div> : null}
       <form action={formAction}>
+        {founding ? <input type="hidden" name="founding" value="1" /> : null}
         {signup ? (
           <div className="field">
             <label htmlFor="company">Company or project name</label>
@@ -72,7 +74,7 @@ export function AuthForm({ mode, action, notice }: {
         ) : null}
       </form>
       <p className="sub" style={{ marginTop: 16 }}>
-        {signup ? <>Already have an account? <Link href="/login">Log in</Link></> : <>New here? <Link href="/signup">Create a free account</Link></>}
+        {signup ? <>Already have an account? <Link href={founding ? "/login?founding=1" : "/login"}>Log in</Link></> : <>New here? <Link href={founding ? "/signup?founding=1" : "/signup"}>Create a free account</Link></>}
       </p>
     </AuthShell>
   );

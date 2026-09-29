@@ -1,5 +1,5 @@
 import { all, get, run } from "./db";
-import { sendEmail } from "./email";
+import { sendMail } from "./email";
 import { SUPPORT_EMAIL } from "./seo";
 
 /**
@@ -26,6 +26,8 @@ export interface Testimonial {
 /** Launch offer shown on the homepage until the first testimonials are approved. Change it here. */
 export const FOUNDING_OFFER = {
   spots: 20,
+  plan: "growth" as const,
+  days: 90,
   reward: "the Growth plan free for 3 months",
   ask: "honest feedback, and a short quote if ProofMyAI helps you",
 };
@@ -58,11 +60,12 @@ export async function submitTestimonial(userId: number | null, i: TestimonialInp
     i.quote.trim().slice(0, 600), clean(i.result, 160), Math.round(i.rating), i.consent ? 1 : 0, source,
   );
   if (source === "in_app") {
-    await sendEmail(
-      SUPPORT_EMAIL,
-      `[ProofMyAI] New ${i.rating}★ feedback from ${i.name}`,
-      `"${i.quote}"\n\n${i.name}${i.role ? `, ${i.role}` : ""}${i.company ? ` at ${i.company}` : ""}\nMay be shown on the website: ${i.consent ? "yes" : "no"}\n\nReview it: ${process.env.APP_URL ?? ""}/app/admin/testimonials`,
-    ).catch(() => false);
+    const { internalEmail } = await import("./emails");
+    await sendMail(SUPPORT_EMAIL, internalEmail(
+      `[ProofMyAI] New ${i.rating}★ feedback from ${i.name}`, `New ${"★".repeat(i.rating)} feedback`,
+      [["👤 From", [i.name, i.role, i.company].filter(Boolean).join(", ")], ["🌐 May publish", i.consent ? "Yes" : "No (private feedback)"]],
+      i.quote, { label: "Review feedback", url: `${process.env.APP_URL ?? ""}/app/admin/testimonials` },
+    )).catch(() => false);
   }
   return id;
 }
