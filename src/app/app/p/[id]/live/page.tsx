@@ -129,7 +129,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
         ))}
         <p className="sub">
           <strong>Catch messages your bot never answers:</strong> also send each customer message as it arrives, with just <code>{`{"conversation_id": "...", "question": "..."}`}</code>.
-          If no reply for that conversation arrives within {p.reply_timeout_sec || 120} seconds, you get an alert. Optional fields: <code>latency_ms</code>, <code>cost_usd</code>, <code>error</code>.
+          If no reply for that conversation arrives within {p.reply_timeout_sec || 120} seconds, you get an alert, usually within a minute after that. Optional fields: <code>latency_ms</code>, <code>cost_usd</code>, <code>error</code>.
         </p>
         <details>
           <summary>No-code: Intercom, Zendesk, Crisp, Tidio via n8n or Make</summary>

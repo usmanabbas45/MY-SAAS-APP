@@ -41,7 +41,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
             <input id="em" name="alert_email" type="email" defaultValue={p.alert_email ?? ""} placeholder="you@company.com" />
           </div>
           <div className="field">
-            <label htmlFor="rt">Alert when the chatbot hasn&apos;t replied within <span className="hint">(seconds; 0 = off. Needs customer messages sent to live tracking or a Twilio connection)</span></label>
+            <label htmlFor="rt">Alert when the chatbot hasn&apos;t replied within <span className="hint">(seconds; 0 = off. Checked every minute for live tracking, every 15 minutes for Twilio)</span></label>
             <input id="rt" name="reply_timeout_sec" type="number" min="0" max="86400" defaultValue={p.reply_timeout_sec} />
           </div>
           <h3 style={{ marginTop: 18 }}>AI agent limits</h3>

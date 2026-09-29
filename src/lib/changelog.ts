@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-29", title: "Must-say rules and faster missing-reply alerts", tag: "Fixed",
+    items: [
+      "\"When a topic comes up, the answer must include\" rules now understand alternatives (\"pricing or plans\"), word forms and everyday wording, and are checked on every answer, even when the AI already flagged it for something else.",
+      "Missing-reply alerts are now checked every minute, so you hear about an unanswered customer about a minute after your reply-time limit.",
+    ],
+  },
+  {
     date: "2026-09-29", title: "Redesigned emails and instant founding offer", tag: "Improved",
     items: [
       "Every email (alerts, weekly summary, password reset, support replies) has a new clear, branded design with the key facts at a glance and a one-click button.",

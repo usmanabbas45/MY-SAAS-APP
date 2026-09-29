@@ -173,7 +173,7 @@ export function fixList(auditId: number): FixGroup[] {
   for (const r of rows) {
     // Problems caused by the bot's behaviour are fixed in its prompt, code or hand-over logic, not in a help article.
     const flag = r.conv_flags?.split(",")[0] as ConvFlag | undefined;
-    const doc = r.rule_hit ? `Bot prompt/logic: rule "${r.rule_hit.split(":").slice(1).join(":")}" broken`
+    const doc = r.rule_hit ? `Bot prompt/logic: rule "${r.rule_hit.split("\n")[0].split(":").slice(1).join(":")}" broken`
       : flag && !r.source_doc ? BEHAVIOUR_FIX[flag]
       : r.verdict === "should_escalate" && !r.source_doc ? "Bot hand-over logic: escalate these cases to a human"
       : r.source_doc ?? "Missing documentation (write a new article)";

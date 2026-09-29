@@ -67,7 +67,7 @@ export const SOLUTIONS: Solution[] = [
     steps: [
       { title: "Connect", text: "Paste your n8n URL and API key, or your Make API token and scenario IDs. Or send executions by webhook." },
       { title: "Automatic checks", text: "Every 15 minutes ProofMyAI checks for failures, silent failures, slow runs, error-rate spikes and missing runs." },
-      { title: "Instant alerts", text: "Get one clear alert in Slack, Discord, Teams or email, and it resolves itself when the workflow recovers." },
+      { title: "Fast alerts", text: "Get one clear alert in Slack, Discord, Teams or email within minutes (seconds with the optional webhook), and it resolves itself when the workflow recovers." },
     ],
     features: ["Failed and crashed execution alerts", "Silent failure detection (success with 0 output)", "“Stopped running” heartbeat alerts", "Error-rate spike detection", "Slow run detection vs. normal duration", "Per-workflow success rates"],
     faqs: [
