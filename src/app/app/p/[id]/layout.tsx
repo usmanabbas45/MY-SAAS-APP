@@ -27,6 +27,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
     { href: "/app/billing", label: "Plan & billing", icon: "💳" },
     { href: "/app/account", label: "Account", icon: "👤" },
+    { href: "/app/support", label: "Help & support", icon: "🛟" },
     ...(isAdmin(user.email) ? [{ href: "/app/admin", label: "Admin", icon: "🛡️" }] : []),
   ];
 

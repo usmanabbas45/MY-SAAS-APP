@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PublicPage } from "@/components/site";
 import { LEGAL_COUNTRY, LEGAL_NAME, OPERATOR } from "@/lib/legal";
 import { SUPPORT_EMAIL } from "@/lib/seo";
+import { DEVELOPER_NAME, DEVELOPER_URL, whatsappLink } from "@/lib/support";
 
 export const metadata = {
   title: "About ProofMyAI",
@@ -22,6 +23,8 @@ export default function AboutPage() {
         <li><strong>No lock-in:</strong> export your results any time and delete everything with one click.</li>
         <li><strong>Transparency with clients:</strong> agencies and freelancers who recommend ProofMyAI to their own clients should tell them if they have a business relationship with it. We do the same.</li>
       </ul>
+      <h2>Hire the developer</h2>
+      <p>Need a custom AI chatbot, an AI agent, n8n or Make automations, or help fixing what ProofMyAI found? See my work and get in touch at <a href={DEVELOPER_URL} target="_blank" rel="noopener">{DEVELOPER_NAME}</a> or on <a href={whatsappLink("Hi! I'd like to hire you for a development project.")} target="_blank" rel="noopener">WhatsApp</a>.</p>
       <h2>Company details</h2>
       <p>Operator: {OPERATOR}. Payments are handled by Paddle.com, our Merchant of Record. Email: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. You can also use the <Link href="/contact">contact form</Link>.</p>
     </PublicPage>

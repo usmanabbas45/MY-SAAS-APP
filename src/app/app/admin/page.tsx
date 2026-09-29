@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Flash } from "@/components/ui";
 import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, type Segment } from "@/lib/admin";
 import { PLANS } from "@/lib/billing";
+import { ticketCounts } from "@/lib/support";
 import { SignupChart } from "./SignupChart";
 import { AdminShell, ago, PlanBadge } from "./ui";
 
@@ -30,6 +31,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <h1>Admin dashboard</h1>
       <p className="sub">Everything about your customers in one place. Revenue here is calculated from active plans; Paddle is the source of truth for payouts.</p>
       <Flash ok={sp.ok} error={sp.error} />
+      <p><Link className="btn btn-ghost btn-sm" href="/app/admin/support">🎫 Support tickets ({ticketCounts().open} open)</Link></p>
 
       <div className="grid grid-4">
         <div className="card stat"><span className="stat-label">Monthly revenue (MRR)</span><span className="stat-value">{money(s.mrr)}</span><span className="stat-foot">{money(s.mrr * 12)} per year</span></div>
