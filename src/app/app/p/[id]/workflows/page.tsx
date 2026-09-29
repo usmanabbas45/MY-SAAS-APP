@@ -94,7 +94,7 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
         </div>
 
         <div className="card">
-          <div className="card-head"><div><h3>Instant alerts via webhook</h3><span className="sub">Optional. Gets errors to you within seconds and works with Zapier or any tool.</span></div></div>
+          <div className="card-head"><div><h3>Faster alerts via webhook</h3><span className="sub">Optional. Gets errors to you within seconds and works with Zapier or any tool.</span></div></div>
           <p><strong>Webhook URL:</strong> <code>{sn.url}</code> <CopyButton text={sn.url} /></p>
           <p><strong>Header:</strong> <code>Authorization: Bearer {p.api_key.slice(0, 12)}…</code> <CopyButton text={`Bearer ${p.api_key}`} label="Copy header value" /></p>
           <details>
