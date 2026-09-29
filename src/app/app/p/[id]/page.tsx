@@ -6,6 +6,9 @@ import { all, get } from "@/lib/db";
 import { projectHealth } from "@/lib/health";
 import { llmAvailable } from "@/lib/judge/llm";
 import { ownedProject } from "@/lib/projects";
+import { userHasGivenFeedback } from "@/lib/testimonials";
+import { cookies } from "next/headers";
+import { dismissFeedbackPromptAction } from "../../feedback/actions";
 
 export const metadata = { title: "Overview" };
 
@@ -28,6 +31,8 @@ export default async function Overview({ params, searchParams }: { params: Promi
     { done: Boolean(p.alert_webhook || p.alert_email), text: "Turn on Slack/Discord/email alerts", href: `${base}/settings` },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
+  const daysSinceSignup = (Date.now() - new Date(`${get<{ c: string }>("SELECT created_at AS c FROM users WHERE id = ?", user.id)?.c ?? ""}Z`).getTime()) / 86400000;
+  const askFeedback = doneSteps >= 1 && daysSinceSignup >= 3 && !(await cookies()).get("pma_fb_dismissed") && !userHasGivenFeedback(user.id);
   const moduleLinks = { chatbot: `${base}/chatbot`, tests: `${base}/tests`, agents: `${base}/agents`, workflows: `${base}/workflows` } as const;
 
   return (
@@ -35,6 +40,15 @@ export default async function Overview({ params, searchParams }: { params: Promi
       {welcome ? <div className="alert alert-info">Welcome to ProofMyAI! Follow the checklist below. Each step takes about 2 minutes. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
       {!llmAvailable() ? (
         <div className="alert alert-warn">Running in <strong>basic mode</strong> (rule-based checks and the neural model). Add a <code>GEMINI_API_KEY</code> (free tier available) or <code>ANTHROPIC_API_KEY</code> to the server to turn on the AI judge.</div>
+      ) : null}
+      {askFeedback ? (
+        <div className="alert alert-info row between" style={{ flexWrap: "wrap", gap: 10 }}>
+          <span>⭐ You&apos;ve been using ProofMyAI for a few days. Is it useful? Two minutes of honest feedback helps a lot.</span>
+          <span className="row">
+            <Link href="/app/feedback" className="btn btn-sm">Share feedback</Link>
+            <form action={dismissFeedbackPromptAction}><input type="hidden" name="back" value={base} /><button className="btn btn-ghost btn-sm">Not now</button></form>
+          </span>
+        </div>
       ) : null}
       <PageHeader title={p.name} subtitle="Health of every AI system in this project" />
 

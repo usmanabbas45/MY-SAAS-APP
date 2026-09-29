@@ -5,6 +5,7 @@ import { requestPasswordReset } from "@/lib/account";
 import { logAdmin, requireAdmin, setPlanManually, setSuspended } from "@/lib/admin";
 import type { PlanId } from "@/lib/billing";
 import { get, run } from "@/lib/db";
+import { deleteTestimonial, setTestimonialStatus, submitTestimonial, validateTestimonial } from "@/lib/testimonials";
 import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
 
 async function target(form: FormData) {
@@ -87,4 +88,29 @@ export async function ticketStatusAction(form: FormData) {
   const status = String(form.get("status"));
   if (["open", "answered", "closed"].includes(status)) setTicketStatus(id, status as "open" | "answered" | "closed");
   redirect(`/app/admin/support?ok=${encodeURIComponent(`${ticketCode(id)} marked ${status}.`)}`);
+}
+
+export async function testimonialStatusAction(form: FormData) {
+  const admin = await requireAdmin();
+  const id = Number(form.get("id"));
+  const status = String(form.get("status"));
+  let problem: string | null = null;
+  if (status === "delete") deleteTestimonial(id);
+  else if (status === "approved" || status === "hidden" || status === "pending") problem = setTestimonialStatus(id, status);
+  logAdmin(admin.email, `testimonial_${status}`, null, `#${id}`);
+  redirect(`/app/admin/testimonials?${new URLSearchParams(problem ? { error: problem } : { ok: status === "approved" ? "Published on the homepage." : status === "delete" ? "Deleted." : `Marked ${status}.` })}`);
+}
+
+export async function addTestimonialAction(form: FormData) {
+  const admin = await requireAdmin();
+  const s = (k: string) => String(form.get(k) ?? "");
+  const input = { name: s("name"), role: s("role"), company: s("company"), website: s("website"), quote: s("quote"), result: s("result"), rating: Number(form.get("rating")), consent: form.get("consent") === "1" };
+  const back = (q: Record<string, string>): never => redirect(`/app/admin/testimonials?${new URLSearchParams(q)}`);
+  if (!input.consent) back({ error: "Only add quotes the customer agreed (in writing) to have published." });
+  const problem = validateTestimonial(input);
+  if (problem) back({ error: problem });
+  const id = await submitTestimonial(null, input, "manual");
+  setTestimonialStatus(id, "approved");
+  logAdmin(admin.email, "testimonial_add", null, input.name);
+  back({ ok: "Added and published on the homepage." });
 }

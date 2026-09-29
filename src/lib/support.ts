@@ -18,6 +18,7 @@ export const CATEGORIES = {
   question: "Question about a feature",
   feature: "Feature request",
   developer: "I need a developer (custom work)",
+  founding: "Founding customer application",
 } as const;
 export type Category = keyof typeof CATEGORIES;
 

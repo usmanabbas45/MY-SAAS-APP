@@ -219,6 +219,33 @@ function migrate(db: DatabaseSync): void {
     replied_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS testimonials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    role TEXT,
+    company TEXT,
+    website TEXT,
+    quote TEXT NOT NULL,
+    result TEXT,
+    rating INTEGER NOT NULL DEFAULT 5,
+    consent INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'in_app',
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    approved_at TEXT
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS heartbeats (
+    name TEXT PRIMARY KEY,
+    last_run_at TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    detail TEXT
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS uptime_days (
+    day TEXT PRIMARY KEY,
+    cron_runs INTEGER NOT NULL DEFAULT 0,
+    cron_failures INTEGER NOT NULL DEFAULT 0
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS alert_channels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
