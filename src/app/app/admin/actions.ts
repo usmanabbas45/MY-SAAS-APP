@@ -5,6 +5,7 @@ import { requestPasswordReset } from "@/lib/account";
 import { logAdmin, requireAdmin, setPlanManually, setSuspended } from "@/lib/admin";
 import type { PlanId } from "@/lib/billing";
 import { get, run } from "@/lib/db";
+import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
 
 async function target(form: FormData) {
   const admin = await requireAdmin();
@@ -62,4 +63,28 @@ export async function deleteUserAction(form: FormData) {
   run("DELETE FROM users WHERE id = ?", user.id);
   logAdmin(admin.email, "delete_user", user.email, user.paddle_subscription_id ? `had Paddle subscription ${user.paddle_subscription_id} (${user.plan_status})` : "");
   redirect(`/app/admin?ok=${encodeURIComponent(`Deleted ${user.email} and all their data.`)}`);
+}
+
+export async function replyTicketAction(form: FormData) {
+  const admin = await requireAdmin();
+  const id = Number(form.get("ticketId"));
+  const reply = String(form.get("reply") ?? "").trim();
+  const back = (msg: Record<string, string>): never => redirect(`/app/admin/support?${new URLSearchParams(msg)}#t${id}`);
+  if (reply.length < 2) back({ error: "Write a reply first." });
+  let emailed = false;
+  try {
+    emailed = await replyToTicket(id, reply, form.get("close") === "1");
+  } catch (err) {
+    back({ error: err instanceof Error ? err.message : "Could not save the reply." });
+  }
+  logAdmin(admin.email, "ticket_reply", getTicket(id)?.email ?? null, ticketCode(id));
+  back(emailed ? { ok: `Reply saved and emailed (${ticketCode(id)}).` } : { ok: `Reply saved; the customer sees it under Help & support. Email not sent (check RESEND_API_KEY).` });
+}
+
+export async function ticketStatusAction(form: FormData) {
+  await requireAdmin();
+  const id = Number(form.get("ticketId"));
+  const status = String(form.get("status"));
+  if (["open", "answered", "closed"].includes(status)) setTicketStatus(id, status as "open" | "answered" | "closed");
+  redirect(`/app/admin/support?ok=${encodeURIComponent(`${ticketCode(id)} marked ${status}.`)}`);
 }

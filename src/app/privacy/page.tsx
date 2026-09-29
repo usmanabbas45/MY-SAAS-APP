@@ -22,6 +22,8 @@ export default function PrivacyPage() {
       <p>By default, emails, phone numbers, card numbers, IBANs, IP addresses, UK postcodes, UK number plates and self-introduced names inside transcripts and agent runs are masked <strong>before</strong> they are stored or sent to an AI model. Each project can add its own words to mask, keep results only (no conversation text), switch the AI provider off, and delete data automatically after 7 to 365 days (Settings → Data &amp; privacy).</p>
       <h2>How we use data</h2>
       <p>Only to provide the Service: grading answers, running checks, sending alerts and reports you set up, account emails (such as password resets) and security. We do not sell your data and do not use it for advertising.</p>
+      <h2>Support requests</h2>
+      <p>When you submit a support ticket we store your name (optional), email, the issue you describe and the page it happened on, so we can reply and you can track it. Tickets are deleted with your account, or on request. If you choose to message us on WhatsApp, WhatsApp (Meta) processes that conversation under its own privacy policy.</p>
       <h2>Service providers</h2>
       <ul>
         <li><strong>Hosting:</strong> Railway (application and database){HOSTING_REGION ? `, ${HOSTING_REGION}` : ""}.</li>

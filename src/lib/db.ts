@@ -205,6 +205,20 @@ function migrate(db: DatabaseSync): void {
     alerted INTEGER NOT NULL DEFAULT 0,
     UNIQUE(project_id, conversation_id)
   )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS support_tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    name TEXT,
+    category TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    page TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    reply TEXT,
+    replied_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS alert_channels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
