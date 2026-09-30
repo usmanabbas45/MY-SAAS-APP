@@ -111,7 +111,16 @@ export interface AdminUserRow {
 
 export const PAGE_SIZE = 50;
 
-export function listUsers(opts: { q?: string; segment?: Segment; page?: number; all?: boolean }): { rows: AdminUserRow[]; total: number } {
+export const SORTS = {
+  newest: { label: "Newest", order: "u.id DESC" },
+  oldest: { label: "Oldest", order: "u.id ASC" },
+  active: { label: "Last active", order: "u.last_seen_at IS NULL, u.last_seen_at DESC" },
+  inactive: { label: "Longest inactive", order: "u.last_seen_at IS NOT NULL, u.last_seen_at ASC" },
+  usage: { label: "Most usage", order: "conversations DESC, u.id DESC" },
+} as const;
+export type Sort = keyof typeof SORTS;
+
+export function listUsers(opts: { q?: string; segment?: Segment; page?: number; all?: boolean; sort?: Sort }): { rows: AdminUserRow[]; total: number } {
   const seg = SEGMENTS[opts.segment ?? "all"] ?? SEGMENTS.all;
   const q = (opts.q ?? "").trim().toLowerCase();
   const where = `${seg.where}${q ? " AND email LIKE ? ESCAPE '\\'" : ""}`;
@@ -126,7 +135,7 @@ export function listUsers(opts: { q?: string; segment?: Segment; page?: number; 
        (SELECT COUNT(DISTINCT i.audit_id || ':' || i.conversation_id) FROM audit_items i
           JOIN audits a ON a.id = i.audit_id JOIN projects p ON p.id = a.project_id
           WHERE p.user_id = u.id AND COALESCE(i.created_at, a.created_at) >= ?) AS conversations
-     FROM users u WHERE ${where} ORDER BY u.id DESC${limit}`,
+     FROM users u WHERE ${where} ORDER BY ${(SORTS[opts.sort ?? "newest"] ?? SORTS.newest).order}${limit}`,
     month, ...args,
   );
   return { rows, total };

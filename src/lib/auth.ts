@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { isBlocked } from "./blocklist";
 import { redirect } from "next/navigation";
 import { get, run } from "./db";
 import { hashPassword, randomToken, sha256, verifyPassword } from "./security";
@@ -27,6 +28,7 @@ export function createUser(email: string, password: string): { user?: User; erro
   const problem = validateCredentials(e, password);
   if (problem) return { error: problem };
   if (get("SELECT id FROM users WHERE email = ?", e)) return { error: "An account with this email already exists. Log in instead." };
+  if (isBlocked(e)) return { error: "This email address can't be used to create an account. Contact support if you think this is a mistake." };
   const { lastInsertRowid } = run("INSERT INTO users (email, password_hash) VALUES (?, ?)", e, hashPassword(password));
   return { user: { id: lastInsertRowid, email: e } };
 }
@@ -74,7 +76,9 @@ export async function currentUser(): Promise<User | null> {
   if (!row || row.suspended_at || Date.parse(row.expires_at) < Date.now()) return null;
   // "Last active" for the admin dashboard, written at most every 10 minutes.
   if (!row.last_seen_at || Date.now() - Date.parse(row.last_seen_at) > 600000) {
-    run("UPDATE users SET last_seen_at = ? WHERE id = ?", new Date().toISOString(), row.id);
+    const now = new Date().toISOString();
+    run("UPDATE users SET last_seen_at = ? WHERE id = ?", now, row.id);
+    run("INSERT OR IGNORE INTO user_activity (user_id, day) VALUES (?, ?)", row.id, now.slice(0, 10));
   }
   return { id: row.id, email: row.email };
 }

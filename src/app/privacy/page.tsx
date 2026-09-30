@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PublicPage } from "@/components/site";
-import { aiTrainingStatement, HOSTING_REGION, OPERATOR } from "@/lib/legal";
+import { aiProviderName, aiTrainingStatement, HOSTING_REGION, OPERATOR } from "@/lib/legal";
 import { SUPPORT_EMAIL } from "@/lib/seo";
 
 export const metadata = { title: "Privacy Policy", description: "How ProofMyAI collects, uses and protects your data.", alternates: { canonical: "/privacy" } };
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
       <h2>Service providers</h2>
       <ul>
         <li><strong>Hosting:</strong> Railway (application and database){HOSTING_REGION ? `, ${HOSTING_REGION}` : ""}.</li>
-        <li><strong>AI checking:</strong> Anthropic (Claude) or Google (Gemini), only for projects with AI checking on. Only the masked content needed for a check is sent. {aiTrainingStatement()}</li>
+        <li><strong>AI checking:</strong> {aiProviderName() ? <>{aiProviderName()}, only for projects with AI checking on. Only the masked content needed for a check is sent. {aiTrainingStatement()}</> : aiTrainingStatement()} If we change AI provider, we update this page and the <a href="/security">Trust Center</a> first.</li>
         <li><strong>Email:</strong> Resend, for alerts, summaries and password resets.</li>
         <li><strong>Payments:</strong> Paddle.com is our online reseller and Merchant of Record. Paddle collects and processes your billing details; we never see your full card number.</li>
       </ul>

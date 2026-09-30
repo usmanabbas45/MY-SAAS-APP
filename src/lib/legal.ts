@@ -9,6 +9,13 @@ export const HOSTING_REGION = process.env.HOSTING_REGION?.trim() || "";
 
 export interface Subprocessor { name: string; purpose: string; data: string; location: string; active: boolean }
 
+/** The AI provider actually in use, for legal copy ("Anthropic (Claude)"), or null when none is configured. */
+export function aiProviderName(): string | null {
+  const judge = judgeProvider();
+  return judge === "anthropic" ? "Anthropic (Claude)" : judge === "gemini" ? "Google (Gemini)" : null;
+}
+
+/** Service providers that process customer data. AI providers are listed only when they are actually in use. */
 export function subprocessors(): Subprocessor[] {
   const judge = judgeProvider();
   const geminiPaid = process.env.GEMINI_PAID_TIER === "1";
@@ -22,9 +29,10 @@ export function subprocessors(): Subprocessor[] {
       name: `Google LLC (Gemini API${geminiPaid ? ", paid tier" : ""})`, purpose: "AI judge, only for projects with AI checking on", data: "Masked chat text, agent runs, help articles",
       location: "United States / global", active: judge === "gemini",
     },
+  ].filter((s) => s.active || !s.purpose.startsWith("AI judge")).concat([
     { name: "Resend, Inc.", purpose: "Emails (alerts, summaries, password resets)", data: "Account email, alert summaries", location: "United States", active: Boolean(process.env.RESEND_API_KEY) },
     { name: "Paddle.com Market Ltd", purpose: "Payments and invoicing (Merchant of Record)", data: "Billing name, email, payment details", location: "United Kingdom", active: Boolean(process.env.PADDLE_API_KEY) },
-  ];
+  ]);
 }
 
 /** Plain-language statement about whether the active AI provider may use submitted content. */

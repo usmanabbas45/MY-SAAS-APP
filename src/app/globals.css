@@ -442,3 +442,21 @@ section[id] { scroll-margin-top: 88px; }
 .cost-bar small { font-size: 10px; color: var(--faint); margin-top: 4px; }
 tr.row-bad td { background: var(--bad-soft); }
 tr.row-warn td { background: var(--warn-soft); }
+
+/* Admin bulk actions */
+.bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
+.bulk-bar.active { border-style: solid; border-color: var(--brand); background: var(--brand-soft); }
+.bulk-bar select, .bulk-bar input { padding: 6px 10px; width: auto; }
+
+/* Admin analytics */
+.funnel-row { display: grid; grid-template-columns: minmax(180px, 1.2fr) 2fr minmax(150px, 1fr); gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.funnel-row:first-child { border-top: 0; }
+.funnel-label { display: flex; flex-direction: column; font-size: 14px; }
+.funnel-label .faint { font-size: 12px; }
+.funnel-bar { height: 22px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.funnel-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); border-radius: 6px; }
+.funnel-num { text-align: right; font-size: 14px; }
+table.cohort td, table.cohort th { text-align: center; white-space: nowrap; }
+table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
+@media (max-width: 700px) { .funnel-row { grid-template-columns: 1fr; gap: 6px; } .funnel-num { text-align: left; } }
+.analytics > h2 { margin: 28px 0 12px; }

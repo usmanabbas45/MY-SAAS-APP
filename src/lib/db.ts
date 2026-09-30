@@ -252,6 +252,29 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS ai_usage_created ON ai_usage (created_at)");
+  // One row per user per day they used the app: powers retention cohorts.
+  db.exec(`CREATE TABLE IF NOT EXISTS user_activity (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    day TEXT NOT NULL,
+    PRIMARY KEY (user_id, day)
+  )`);
+  // Daily business snapshot (MRR history), written by the cron and the analytics page.
+  db.exec(`CREATE TABLE IF NOT EXISTS metrics_daily (
+    day TEXT PRIMARY KEY,
+    users INTEGER NOT NULL,
+    paying INTEGER NOT NULL,
+    trialing INTEGER NOT NULL,
+    mrr REAL NOT NULL,
+    ai_cost REAL NOT NULL DEFAULT 0
+  )`);
+  // Emails ("name@x.com") or whole domains ("@x.com") that may not sign up.
+  db.exec(`CREATE TABLE IF NOT EXISTS blocklist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL UNIQUE,
+    reason TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS heartbeats (
     name TEXT PRIMARY KEY,
     last_run_at TEXT NOT NULL,
@@ -296,6 +319,9 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "founding_at", "TEXT");
   addColumn(db, "users", "comp_ends_at", "TEXT");
   addColumn(db, "users", "comp_reminded_at", "TEXT");
+  // Backfill from what we already know (sign-up day and last active day); runs harmlessly on every start.
+  db.exec("INSERT OR IGNORE INTO user_activity (user_id, day) SELECT id, substr(created_at, 1, 10) FROM users");
+  db.exec("INSERT OR IGNORE INTO user_activity (user_id, day) SELECT id, substr(last_seen_at, 1, 10) FROM users WHERE last_seen_at IS NOT NULL");
   db.exec(`CREATE TABLE IF NOT EXISTS admin_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_email TEXT NOT NULL,

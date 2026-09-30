@@ -4,6 +4,7 @@ import { sendDueDigests } from "@/lib/digest";
 import { purgeExpired } from "@/lib/retention";
 import { recordCronRun } from "@/lib/status";
 import { processFoundingPeriods } from "@/lib/founding";
+import { recordDailyMetrics } from "@/lib/analytics";
 import { alertMissingReplies } from "@/lib/audit/live";
 import { pollAllChatSources } from "@/lib/connectors/twilio";
 import { runDueSuites } from "@/lib/tests/runner";
@@ -44,6 +45,7 @@ async function runAll(started: number) {
   const noReply = await alertMissingReplies();
   const purged = purgeExpired();
   const founding = await processFoundingPeriods();
+  recordDailyMetrics();
   recordCronRun(true);
   return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, chatSources, unansweredAlerted: noReply, purged, founding, ms: Date.now() - started });
 }

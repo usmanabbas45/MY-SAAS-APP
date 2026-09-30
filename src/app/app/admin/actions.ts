@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { requestPasswordReset } from "@/lib/account";
-import { logAdmin, requireAdmin, setPlanManually, setSuspended } from "@/lib/admin";
+import { isAdmin, logAdmin, requireAdmin, setPlanManually, setSuspended } from "@/lib/admin";
+import { addBlock, removeBlock } from "@/lib/blocklist";
 import type { PlanId } from "@/lib/billing";
-import { get, run } from "@/lib/db";
+import { all, get, run } from "@/lib/db";
 import { deleteTestimonial, setTestimonialStatus, submitTestimonial, validateTestimonial } from "@/lib/testimonials";
 import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
 
@@ -113,4 +114,68 @@ export async function addTestimonialAction(form: FormData) {
   setTestimonialStatus(id, "approved");
   logAdmin(admin.email, "testimonial_add", null, input.name);
   back({ ok: "Added and published on the homepage." });
+}
+
+const BULK = {
+  suspend: "Suspend (block login and API)",
+  unsuspend: "Re-activate",
+  signout: "Sign out everywhere",
+  delete: "Delete account and all data",
+  block_delete: "Block email and delete account",
+} as const;
+export type BulkAction = keyof typeof BULK;
+
+export async function bulkUserAction(form: FormData) {
+  const admin = await requireAdmin();
+  const action = String(form.get("action")) as BulkAction;
+  const back = String(form.get("back") ?? "/app/admin").startsWith("/app/admin") ? String(form.get("back")) : "/app/admin";
+  const go = (msg: Record<string, string>): never => redirect(`${back}${back.includes("?") ? "&" : "?"}${new URLSearchParams(msg)}#users`);
+  if (!(action in BULK)) go({ error: "Choose an action." });
+  const ids = form.getAll("ids").map(Number).filter(Number.isInteger);
+  if (!ids.length) go({ error: "Tick at least one user first." });
+  if ((action === "delete" || action === "block_delete") && String(form.get("confirm") ?? "").trim() !== "DELETE") {
+    go({ error: "To delete accounts, type DELETE in the confirmation box." });
+  }
+  const users = all<{ id: number; email: string; plan_status: string | null; paddle_subscription_id: string | null }>(
+    `SELECT id, email, plan_status, paddle_subscription_id FROM users WHERE id IN (${ids.map(() => "?").join(",")})`, ...ids,
+  );
+  let done = 0;
+  const skipped: string[] = [];
+  for (const u of users) {
+    if (isAdmin(u.email) || u.email === admin.email) { skipped.push(`${u.email} (admin)`); continue; }
+    const subscribed = u.paddle_subscription_id && ["active", "trialing", "past_due"].includes(u.plan_status ?? "");
+    if ((action === "delete" || action === "block_delete") && subscribed) { skipped.push(`${u.email} (has a Paddle subscription: cancel it in Paddle first)`); continue; }
+    if (action === "suspend") setSuspended(u.id, true);
+    if (action === "unsuspend") setSuspended(u.id, false);
+    if (action === "signout") run("DELETE FROM sessions WHERE user_id = ?", u.id);
+    if (action === "block_delete") addBlock(u.email, "Blocked and deleted from admin", admin.email, isAdmin);
+    if (action === "delete" || action === "block_delete") run("DELETE FROM users WHERE id = ?", u.id);
+    logAdmin(admin.email, `bulk_${action}`, u.email);
+    done++;
+  }
+  go(done ? { ok: `${BULK[action]}: done for ${done} account${done === 1 ? "" : "s"}.${skipped.length ? ` Skipped: ${skipped.join(", ")}.` : ""}` } : { error: `Nothing changed. Skipped: ${skipped.join(", ")}.` });
+}
+
+export async function addBlockAction(form: FormData) {
+  const admin = await requireAdmin();
+  const r = addBlock(String(form.get("pattern") ?? ""), String(form.get("reason") ?? ""), admin.email, isAdmin);
+  if (r.error) redirect(`/app/admin/blocklist?error=${encodeURIComponent(r.error)}`);
+  logAdmin(admin.email, "block", r.pattern!, r.suspended!.length ? `suspended ${r.suspended!.join(", ")}` : "");
+  redirect(`/app/admin/blocklist?ok=${encodeURIComponent(`Blocked ${r.pattern}.${r.suspended!.length ? ` Suspended ${r.suspended!.length} existing account${r.suspended!.length === 1 ? "" : "s"}.` : ""}`)}`);
+}
+
+export async function removeBlockAction(form: FormData) {
+  const admin = await requireAdmin();
+  const pattern = removeBlock(Number(form.get("id")));
+  if (pattern) logAdmin(admin.email, "unblock", pattern);
+  redirect(`/app/admin/blocklist?ok=${encodeURIComponent(`${pattern ?? "Entry"} can sign up again. Suspended accounts stay suspended until you re-activate them.`)}`);
+}
+
+export async function blockUserAction(form: FormData) {
+  const { admin, user, back } = await target(form);
+  if (isAdmin(user.email)) back({ error: "You can't block an admin account." });
+  const r = addBlock(user.email, String(form.get("reason") ?? "Blocked from user page"), admin.email, isAdmin);
+  if (r.error) back({ error: r.error });
+  logAdmin(admin.email, "block", user.email);
+  back({ ok: "Email blocked: the account is suspended and this email can't sign up again." });
 }
