@@ -29,6 +29,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
   const statuses = sourceStatuses(p.id);
   const feed = liveFeed(p.id, 80).filter((e) => !only || e.source === only || (only === "problems" && !e.ok));
   const snippets = liveChatSnippets(process.env.APP_URL || "http://localhost:3000", p.api_key);
+  const waUrl = snippets.url.replace(/\/chat-events$/, "/whatsapp/waha");
   const base = `/app/p/${p.id}/live`;
   const iso = (ms: number) => new Date(ms).toISOString();
 
@@ -139,6 +140,37 @@ export default async function LivePage({ params, searchParams }: { params: Promi
             <li>JSON body: <code>{`{"conversation_id": "<conversation id>", "question": "<customer message>", "answer": "<bot reply>"}`}</code></li>
           </ol>
         </details>
+      </div>
+
+      <div className="card" id="whatsapp">
+        <div className="card-head">
+          <div>
+            <h3>📱 WhatsApp bot: connect in 2 minutes</h3>
+            <span className="sub">Every customer message and every bot reply is checked, with alerts for wrong answers and customers who get no reply. Customer phone numbers are never stored: chats are identified by an anonymous code.</span>
+          </div>
+        </div>
+        <details open>
+          <summary><strong>WAHA (WhatsApp HTTP API): paste one webhook, no code</strong></summary>
+          <ol className="sub">
+            <li>Open your WAHA dashboard → <strong>Sessions</strong> → your bot&apos;s session → <strong>Configure / Webhooks</strong> → <strong>Add webhook</strong> (this doesn&apos;t replace your bot&apos;s own webhook).</li>
+            <li><strong>URL:</strong></li>
+          </ol>
+          <div className="row" style={{ gap: 8, marginBottom: 8 }}><code style={{ wordBreak: "break-all" }}>{waUrl}</code><CopyButton text={waUrl} /></div>
+          <ol className="sub" start={3}>
+            <li><strong>Events:</strong> tick <code>message.any</code> (it includes your bot&apos;s replies).</li>
+            <li><strong>Custom header:</strong> name <code>X-Api-Key</code>, value: your project API key <CopyButton text={p.api_key} /> (or add <code>?key=</code> + the key to the URL if your WAHA version has no custom headers).</li>
+            <li>Save, then send your bot a WhatsApp message. It appears in the feed above within seconds.</li>
+          </ol>
+        </details>
+        <details>
+          <summary><strong>WhatsApp Cloud API, WATI, Interakt or 360dialog bots built in n8n / Make</strong></summary>
+          <ol className="sub">
+            <li>In the workflow that answers WhatsApp, right after the <strong>WhatsApp trigger</strong>, add an <strong>HTTP Request</strong> node: POST <code>{snippets.url}</code>, header <code>Authorization: Bearer {p.api_key.slice(0, 12)}…</code>, JSON body <code>{`{"conversation_id": "{{ $json.contacts[0].wa_id }}", "question": "{{ $json.messages[0].text.body }}"}`}</code>. This starts the missing-reply clock.</li>
+            <li>Right after the node that <strong>sends the bot&apos;s reply</strong>, add a second HTTP Request with the same URL and header, body <code>{`{"conversation_id": "<same id>", "question": "<customer message>", "answer": "<bot reply>"}`}</code>.</li>
+            <li>Tip: set both HTTP nodes to <strong>Continue on fail</strong> so monitoring can never break your bot.</li>
+          </ol>
+        </details>
+        <p className="faint" style={{ marginTop: 8 }}>Want ProofMyAI to test your WhatsApp bot every night with just its number? Go to <a href={`/app/p/${p.id}/tests`}>Chatbot tests</a> → <strong>Add a WhatsApp bot</strong>.</p>
       </div>
 
       <div className="card" id="twilio">

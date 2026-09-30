@@ -9,6 +9,7 @@ import { loadModel } from "../ml/risk";
 import { projectRules } from "../rules";
 import { truncate } from "../text";
 import { customMatcher, redactPII } from "../pii";
+import { sha256 } from "../security";
 import { normaliseRole } from "./parse";
 import { kbDocs, NOT_STORED, scoreFromSeverities, storeGradedItem, type ReplyMeta } from "./run";
 
@@ -34,10 +35,17 @@ export const LiveChatSchema = z
   });
 export type LiveChat = z.infer<typeof LiveChatSchema>;
 
+/** Conversation ids that are phone numbers or WhatsApp ids ("923001234567", "+44 7700…", "92300…@c.us") are hashed. */
+export function anonymiseConversationId(id: string): string {
+  const phoneLike = /^\+?\d[\d\s().-]{6,}$/.test(id.trim()) || /@(c\.us|s\.whatsapp\.net|lid)$/.test(id.trim());
+  return phoneLike ? `tel-${sha256(`conv:${id.replace(/[^\d@a-z.]/gi, "")}`).slice(0, 12)}` : id;
+}
+
 /** Masks personal data in a live event before anything is stored or sent to the judge. */
 export function redactChat(chat: LiveChat, custom: RegExp | null = null): LiveChat {
   return {
     ...chat,
+    conversation_id: anonymiseConversationId(chat.conversation_id),
     messages: chat.messages?.map((m) => ({ ...m, content: redactPII(m.content, custom) })),
     question: chat.question === undefined ? undefined : redactPII(chat.question, custom),
     answer: chat.answer === undefined ? undefined : redactPII(chat.answer, custom),

@@ -59,6 +59,8 @@ export default function DocsPage() {
         <li><strong>Nightly bot tests:</strong> in <em>Chatbot tests</em>, paste your bot&apos;s HTTP endpoint and a list of questions with the facts a right answer must include. ProofMyAI asks your bot every night.</li>
         <li><strong>n8n:</strong> n8n → Settings → n8n API → create a key. In ProofMyAI open <em>n8n &amp; Make</em> → Connect n8n and paste your n8n URL and key. Executions are pulled every 15 minutes.</li>
         <li><strong>Make:</strong> Make → Profile → API access → add a token with <code>scenarios:read</code>. Connect Make in ProofMyAI with your scenario IDs.</li>
+        <li><strong>WhatsApp bot by number:</strong> in <em>Chatbot tests</em>, choose <em>Add a WhatsApp bot</em> and enter the bot&apos;s number. ProofMyAI messages it like a customer every night and checks the replies.</li>
+        <li><strong>WhatsApp live monitoring (WAHA):</strong> add the webhook <code>{API}/whatsapp/waha</code> to your WAHA session with the event <code>message.any</code> and header <code>X-Api-Key</code> set to your project key. Customer messages and bot replies are paired and checked; phone numbers are replaced with anonymous codes.</li>
         <li><strong>Twilio / WhatsApp:</strong> in <em>Live tracking</em>, connect Twilio with a read-only API key to check bot replies on SMS and WhatsApp.</li>
       </ul>
 

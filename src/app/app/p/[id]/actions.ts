@@ -19,8 +19,9 @@ import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
 import { newApiKey, ownedProject, type Project } from "@/lib/projects";
 import { parseMustInclude, RULE_KINDS } from "@/lib/rules";
-import { assertPublicUrl, encrypt, randomToken } from "@/lib/security";
-import { renderBody, runSuite } from "@/lib/tests/runner";
+import { assertPublicUrl, encrypt, randomToken, rateLimit } from "@/lib/security";
+import { normalisePhone, wahaConfigured, whatsappChatId } from "@/lib/whatsapp";
+import { renderBody, runSuite, startSuiteInBackground } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -195,6 +196,29 @@ export async function addTargetAction(form: FormData) {
   done(path, { ok: `Bot "${name}" connected. Add test questions, then click Run tests.` });
 }
 
+export async function addWhatsAppTargetAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/tests`;
+  if (!wahaConfigured()) done(path, { error: "WhatsApp testing isn't available yet. Use an HTTP endpoint or contact support." });
+  const phone = normalisePhone(str(form, "phone", 40));
+  if (!phone) done(path, { error: "Enter the bot's WhatsApp number with country code, e.g. +92 300 1234567." });
+  const over = limitError(p.user_id, "bots");
+  if (over) done(path, { error: over });
+  if (get("SELECT 1 FROM bot_targets t JOIN projects pr ON pr.id = t.project_id WHERE t.kind = 'whatsapp' AND t.phone = ? AND pr.user_id <> ?", phone, p.user_id)) {
+    done(path, { error: "This number is already being tested by another account. Contact support if it's yours." });
+  }
+  if (form.get("confirm") !== "1") done(path, { error: "Please confirm that this is your own bot's number." });
+  try {
+    await whatsappChatId(phone!);
+  } catch (err) {
+    done(path, { error: err instanceof Error ? err.message : "Could not check this number." });
+  }
+  const name = str(form, "name", 120) || "WhatsApp bot";
+  run("INSERT INTO bot_targets (project_id, name, url, body_template, response_path, kind, phone) VALUES (?, ?, ?, '', '', 'whatsapp', ?)",
+    p.id, name, `whatsapp:+${phone}`, phone);
+  done(path, { ok: `WhatsApp bot +${phone} connected. Add test questions, then click Run tests.` });
+}
+
 export async function deleteTargetAction(form: FormData) {
   const p = await project(form);
   run("DELETE FROM bot_targets WHERE id = ? AND project_id = ?", Number(form.get("targetId")), p.id);
@@ -220,7 +244,15 @@ export async function runTestsAction(form: FormData) {
   const p = await project(form);
   const targetId = Number(form.get("targetId"));
   const path = `/app/p/${p.id}/tests`;
-  if (!get("SELECT id FROM bot_targets WHERE id = ? AND project_id = ?", targetId, p.id)) done(path, { error: "Bot not found." });
+  const target = get<{ kind: string }>("SELECT kind FROM bot_targets WHERE id = ? AND project_id = ?", targetId, p.id);
+  if (!target) done(path, { error: "Bot not found." });
+  if (target!.kind === "whatsapp") {
+    if (!rateLimit(`wa-run:${targetId}`, 3, 86400000)) done(path, { error: "WhatsApp tests can be started by hand 3 times a day (they also run automatically every night)." });
+    if (!get("SELECT 1 FROM test_cases WHERE project_id = ?", p.id)) done(path, { error: "Add at least one test question first." });
+    done(path, startSuiteInBackground(targetId)
+      ? { ok: "WhatsApp test started. ProofMyAI is messaging your bot now; results appear here in a few minutes." }
+      : { error: "A test for this bot is already running. Results appear here in a few minutes." });
+  }
   let msg: { ok?: string; error?: string };
   try {
     const r = await runSuite(targetId);
