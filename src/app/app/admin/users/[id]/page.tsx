@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { userMonthCost } from "@/lib/aicost";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/client";
 import { Flash } from "@/components/ui";
@@ -64,6 +65,15 @@ export default async function AdminUserPage({ params, searchParams }: { params: 
               </div>
             );
           })}
+          {(() => {
+            const c = userMonthCost(u.id);
+            return (
+              <div className="row between" style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                <span className="sub" style={{ margin: 0 }}>💰 AI cost this month</span>
+                <strong><Link href="/app/admin/costs">${c.cost.toFixed(2)}</Link> <span className="faint">({c.calls.toLocaleString()} checks)</span></strong>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

@@ -80,7 +80,7 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
       const answer = await askBot(target, c.question);
       let grade: { pass: boolean; reason: string };
       try {
-        grade = aiForProject(target.project_id) ? await llmGradeTest(c.question, c.expected, c.must_not, answer) : basicGradeTest(c.expected, c.must_not, answer);
+        grade = aiForProject(target.project_id) ? await llmGradeTest(c.question, c.expected, c.must_not, answer, { projectId: target.project_id, kind: "test" }) : basicGradeTest(c.expected, c.must_not, answer);
       } catch (err) {
         if (!(err instanceof JudgeError)) throw err;
         grade = basicGradeTest(c.expected, c.must_not, answer);

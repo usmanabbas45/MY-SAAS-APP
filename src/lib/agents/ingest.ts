@@ -71,7 +71,7 @@ export async function aiReview(
   id: number, projectId: number, agent: string, runId: string, goal: string, log: string, output: string, issues: Issue[],
 ): Promise<void> {
   try {
-    const verdict = await llmJudgeAgentRun(goal, log, output);
+    const verdict = await llmJudgeAgentRun(goal, log, output, { projectId, kind: "agent" });
     const extra: Issue[] = [];
     if (!verdict.goal_achieved) extra.push({ code: "GOAL_NOT_MET", severity: "high", message: `AI review: ${verdict.reason}` });
     if (!verdict.grounded) extra.push({ code: "UNGROUNDED_OUTPUT", severity: "high", message: `AI review: the output claims things the tools never returned. ${verdict.reason}` });

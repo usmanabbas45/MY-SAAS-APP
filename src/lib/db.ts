@@ -235,6 +235,23 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     approved_at TEXT
   )`);
+  // AI usage per call: token counts and dollar cost only, never any customer text. No foreign keys, so
+  // the cost history survives when a project or account is deleted.
+  db.exec(`CREATE TABLE IF NOT EXISTS ai_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER,
+    user_id INTEGER,
+    kind TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+    cost_usd REAL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS ai_usage_created ON ai_usage (created_at)");
   db.exec(`CREATE TABLE IF NOT EXISTS heartbeats (
     name TEXT PRIMARY KEY,
     last_run_at TEXT NOT NULL,
