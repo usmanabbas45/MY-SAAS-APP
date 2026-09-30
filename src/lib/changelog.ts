@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-30", title: "WhatsApp bots: test by number and live monitoring", tag: "New",
+    items: [
+      "Test any WhatsApp bot with just its number: ProofMyAI messages it like a customer every night and checks the replies.",
+      "WAHA users can monitor every real WhatsApp conversation by adding one webhook, with reply-time and missing-reply alerts.",
+      "Customer phone numbers used as chat ids are now replaced with anonymous codes.",
+    ],
+  },
+  {
     date: "2026-09-30", title: "Guides for AI chatbot and automation quality", tag: "New",
     items: [
       "New guides: testing chatbot accuracy, catching hallucinations, monitoring n8n, Make and AI agents, and a chatbot QA checklist.",
