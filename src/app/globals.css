@@ -460,3 +460,14 @@ table.cohort td, table.cohort th { text-align: center; white-space: nowrap; }
 table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 @media (max-width: 700px) { .funnel-row { grid-template-columns: 1fr; gap: 6px; } .funnel-num { text-align: left; } }
 .analytics > h2 { margin: 28px 0 12px; }
+
+/* Blog */
+.blog h1 { line-height: 1.25; }
+.post-list { display: grid; gap: 16px; margin-top: 20px; }
+.post-card h2 { margin: 6px 0 8px; font-size: 1.25rem; }
+.post-card h2 a { color: var(--text); }
+.answer-box { margin: 16px 0 22px; padding: 16px 18px; border-left: 4px solid var(--brand); background: var(--brand-soft); border-radius: 8px; line-height: 1.6; }
+.callout { margin: 16px 0; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft); line-height: 1.6; }
+.takeaways { margin-top: 28px; }
+.blog details { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.blog details summary { font-weight: 650; cursor: pointer; }

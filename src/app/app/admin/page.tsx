@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Flash } from "@/components/ui";
 import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, SORTS, type Segment, type Sort } from "@/lib/admin";
-import { bulkUserAction } from "./actions";
+import { bulkUserAction, indexNowAction } from "./actions";
 import { BulkBar } from "./BulkBar";
 import { PLANS } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
@@ -43,6 +43,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <Link className="btn btn-ghost btn-sm" href="/app/admin/blocklist">🚫 Blocklist</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>
         <Link className="btn btn-ghost btn-sm" href="/status">🟢 Status page</Link>
+        <form action={indexNowAction}><button className="btn btn-ghost btn-sm" title="Ask Bing (and ChatGPT search, Copilot) to re-crawl every public page now">📣 Notify search engines</button></form>
       </p>
 
       <div className="grid grid-4 grid-5">
