@@ -243,3 +243,25 @@ export function foundingEndedEmail(): Mail {
     cta: { label: "See plans", url: `${appUrl()}/app/billing` },
   });
 }
+
+// ── Security ────────────────────────────────────────────────────────────────
+
+/** Alerts about account security events (new sign-in, password changed, 2FA on/off). */
+export function securityEmail(kind: "new_login" | "password_changed" | "2fa_on" | "2fa_off" | "recovery_used", details: [string, string][]): Mail {
+  const copy = {
+    new_login: { icon: "🔐", title: "New sign-in to your account", subject: "New sign-in to your ProofMyAI account", text: "Your ProofMyAI account was just signed in to from a device we haven't seen before." },
+    password_changed: { icon: "🔑", title: "Your password was changed", subject: "Your ProofMyAI password was changed", text: "The password for your ProofMyAI account was just changed, and other devices were signed out." },
+    "2fa_on": { icon: "🛡️", title: "Two-factor authentication is on", subject: "Two-factor authentication turned on", text: "Two-factor authentication was turned on for your ProofMyAI account. Keep your recovery codes somewhere safe." },
+    "2fa_off": { icon: "⚠️", title: "Two-factor authentication was turned off", subject: "Two-factor authentication turned off", text: "Two-factor authentication was turned off for your ProofMyAI account." },
+    recovery_used: { icon: "🧯", title: "A recovery code was used", subject: "A recovery code was used to sign in", text: "Someone signed in to your ProofMyAI account with one of your two-factor recovery codes." },
+  }[kind];
+  return compose(copy.subject, copy.text, {
+    icon: copy.icon,
+    badge: { text: "SECURITY", color: "#b42335", bg: "#fde8eb" },
+    title: copy.title,
+    paragraphs: [copy.text],
+    facts: details,
+    cta: { label: "Review account security", url: `${appUrl()}/app/account` },
+    after: ["Was this you? Then you don't need to do anything.", `Not you? Reset your password now at ${appUrl()}/forgot-password and contact ${SUPPORT_EMAIL}.`],
+  }, "You're receiving this security notice because it concerns your ProofMyAI account.");
+}

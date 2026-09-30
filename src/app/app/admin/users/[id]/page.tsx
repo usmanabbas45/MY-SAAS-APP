@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { userMonthCost } from "@/lib/aicost";
 import { isBlocked } from "@/lib/blocklist";
+import { twoFactorEnabled } from "@/lib/twofactor";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/client";
 import { Flash } from "@/components/ui";
 import { isAdmin, requireAdmin, userDetail } from "@/lib/admin";
 import { paddleEnv, type Resource } from "@/lib/billing";
-import { blockUserAction, deleteUserAction, saveNoteAction, sendResetAction, setPlanAction, signOutUserAction, suspendAction } from "../../actions";
+import { adminDisableTwoFactorAction, blockUserAction, deleteUserAction, saveNoteAction, sendResetAction, setPlanAction, signOutUserAction, suspendAction } from "../../actions";
 import { AdminShell, ago, PlanBadge } from "../../ui";
 
 export const metadata = { title: "Admin · User" };
@@ -118,6 +119,9 @@ export default async function AdminUserPage({ params, searchParams }: { params: 
         <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
           <form action={sendResetAction}>{hidden}<SubmitButton className="btn btn-ghost" pendingText="Sending…">✉ Send password reset email</SubmitButton></form>
           <form action={signOutUserAction}>{hidden}<SubmitButton className="btn btn-ghost" pendingText="Signing out…">Sign out all devices</SubmitButton></form>
+          {twoFactorEnabled(u.id) ? (
+            <form action={adminDisableTwoFactorAction}>{hidden}<SubmitButton className="btn btn-ghost" pendingText="Removing…" confirm={`Remove two-factor authentication for ${u.email}? Only do this after confirming their identity (e.g. they lost their phone).`}>🛡️ Remove 2FA (lost phone)</SubmitButton></form>
+          ) : null}
           {self ? null : u.suspended_at ? (
             <form action={suspendAction}>{hidden}<input type="hidden" name="suspend" value="0" /><SubmitButton pendingText="Saving…">Re-activate account</SubmitButton></form>
           ) : (

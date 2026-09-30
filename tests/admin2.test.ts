@@ -20,7 +20,7 @@ describe("blocklist", () => {
   });
 
   it("blocks sign-ups by email and by domain (including subdomains) and suspends existing accounts", () => {
-    const u = createUser("abuser@spam.com", "password123").user!;
+    const u = createUser("abuser@spam.com", "Blue-Tiger-42x").user!;
     run("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ('t', ?, '2999-01-01')", u.id);
     const r = addBlock("@spam.com", "fake sign-ups", "boss@x.com", notAdmin);
     expect(r).toMatchObject({ pattern: "@spam.com", suspended: ["abuser@spam.com"] });
@@ -28,21 +28,21 @@ describe("blocklist", () => {
     expect(get("SELECT 1 FROM sessions WHERE user_id = ?", u.id)).toBeUndefined();
     expect(isBlocked("new@mail.spam.com")).toBe(true);
     expect(isBlocked("fine@nospam.com")).toBe(false);
-    expect(createUser("another@spam.com", "password123").error).toMatch(/can't be used/);
+    expect(createUser("another@spam.com", "Blue-Tiger-42x").error).toMatch(/can't be used/);
     expect(addBlock("@spam.com", "", "boss@x.com", notAdmin).error).toMatch(/already/);
     removeBlock(listBlocks()[0].id);
-    expect(createUser("another@spam.com", "password123").user).toBeTruthy();
+    expect(createUser("another@spam.com", "Blue-Tiger-42x").user).toBeTruthy();
   });
 
   it("never blocks an admin", () => {
-    createUser("boss@company.com", "password123");
+    createUser("boss@company.com", "Blue-Tiger-42x");
     expect(addBlock("@company.com", "", "boss@company.com", (e) => e === "boss@company.com").error).toMatch(/admin/);
   });
 });
 
 describe("analytics", () => {
   it("builds the funnel from real usage", () => {
-    const u2 = createUser("trial@x.com", "password123").user!;
+    const u2 = createUser("trial@x.com", "Blue-Tiger-42x").user!;
     run("UPDATE users SET plan = 'growth', plan_status = 'active', trial_ends_at = '2020-01-01T00:00:00Z' WHERE id = ?", u2.id);
     run("INSERT INTO kb_docs (project_id, title, content) VALUES (?, 'A', 'b')", projectId);
     const steps = funnel(null);

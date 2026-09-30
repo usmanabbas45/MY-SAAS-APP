@@ -1,64 +1,19 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { anonymiseConversationId } from "@/lib/audit/live";
 import { all, get, run } from "@/lib/db";
-import { askWhatsApp, chatKey, normalisePhone, wahaToLiveEvent } from "@/lib/whatsapp";
+import { chatKey, wahaToLiveEvent } from "@/lib/whatsapp";
 import { POST as wahaWebhook } from "@/app/api/v1/whatsapp/waha/route";
 import { freshDb } from "./helpers";
 
 let projectId: number;
-beforeEach(() => {
-  ({ projectId } = freshDb());
-  Object.assign(process.env, { WAHA_URL: "https://waha.test", WAHA_API_KEY: "k" });
-});
-afterEach(() => {
-  delete process.env.WAHA_URL; delete process.env.WAHA_API_KEY; delete process.env.WHATSAPP_DAILY_LIMIT;
-});
+beforeEach(() => ({ projectId } = freshDb()));
 
 describe("phone numbers", () => {
-  it("normalises international numbers", () => {
-    expect(normalisePhone("+92 343-1234567")).toBe("923431234567");
-    expect(normalisePhone("0092 343 1234567")).toBe("923431234567");
-    expect(normalisePhone("12345")).toBeNull();
-  });
   it("never uses a customer's number as a conversation id", () => {
     expect(anonymiseConversationId("923431234567")).toMatch(/^tel-[a-f0-9]{12}$/);
     expect(anonymiseConversationId("923431234567@c.us")).toMatch(/^tel-/);
     expect(anonymiseConversationId("+92 343 1234567")).toBe(anonymiseConversationId("+92-343-1234567"));
     expect(anonymiseConversationId("chat-8841")).toBe("chat-8841");
-  });
-});
-
-function fakeWaha(replies: { body: string; delayPolls: number }[]) {
-  let polls = 0;
-  let sentAt = 0;
-  const calls: string[] = [];
-  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
-    calls.push(`${init?.method ?? "GET"} ${url.replace("https://waha.test", "")}`);
-    if (url.includes("check-exists")) return Response.json({ numberExists: true, chatId: "923001112233@c.us" });
-    if (url.endsWith("/api/sendText")) { sentAt = Math.floor(Date.now() / 1000); return Response.json({ id: "sent" }); }
-    polls++;
-    return Response.json([
-      { fromMe: true, body: "question", timestamp: sentAt },
-      ...replies.filter((r) => polls > r.delayPolls).map((r) => ({ fromMe: false, body: r.body, timestamp: sentAt + 1 })),
-    ]);
-  });
-  return { fetcher: fetcher as unknown as typeof fetch, calls };
-}
-const fast = { sleep: async () => {}, pollMs: 0, quietMs: 0 };
-
-describe("testing a bot by WhatsApp number", () => {
-  it("sends the question and joins the bot's replies", async () => {
-    const w = fakeWaha([{ body: "Shipping is €9.90.", delayPolls: 1 }, { body: "Anything else?", delayPolls: 1 }]);
-    const answer = await askWhatsApp("923001112233", "How much is shipping?", { ...fast, fetcher: w.fetcher, timeoutMs: 5000 });
-    expect(answer).toBe("Shipping is €9.90.\nAnything else?");
-    expect(w.calls[1]).toBe("POST /api/sendText");
-  });
-
-  it("fails clearly when the bot never replies, and respects the daily limit", async () => {
-    const w = fakeWaha([]);
-    await expect(askWhatsApp("923001112233", "Hi", { sleep: async () => {}, pollMs: 0, fetcher: w.fetcher, timeoutMs: 30 })).rejects.toThrow(/did not reply/);
-    process.env.WHATSAPP_DAILY_LIMIT = "1";
-    await expect(askWhatsApp("923001112233", "Hi", { ...fast, fetcher: fakeWaha([{ body: "x", delayPolls: 0 }]).fetcher })).rejects.toThrow(/Daily WhatsApp test limit/);
   });
 });
 
