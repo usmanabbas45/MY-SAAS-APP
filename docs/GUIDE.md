@@ -96,7 +96,7 @@ Without a key, ProofMyAI uses rules plus your neural network. With a key, Claude
 
 > ⚠️ On Gemini's **free** tier, Google may use the data you send to improve its products. That is fine for demos and your own test data. **Before auditing paying customers' chats, switch to a paid key** (Gemini with billing enabled, or Claude).
 
-**Cost:** the judge uses `claude-opus-5` by default. The knowledge base is cached across every conversation in an audit, which cuts cost a lot. To reduce cost further, set `JUDGE_MODEL=claude-sonnet-5` in `.env`. Check the real cost in the Anthropic console after your first audits, then set your prices so each customer pays well above what their audits cost you.
+**Cost:** the judge uses `claude-opus-5-5` by default (set `JUDGE_MODEL=claude-sonnet-5-5` for about half the cost). The knowledge base is cached across every conversation in an audit, which cuts cost a lot. To reduce cost further, set `JUDGE_MODEL=claude-sonnet-5` in `.env`. Check the real cost in the Anthropic console after your first audits, then set your prices so each customer pays well above what their audits cost you.
 
 ---
 
