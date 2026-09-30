@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Flash } from "@/components/ui";
-import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, type Segment } from "@/lib/admin";
+import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, SORTS, type Segment, type Sort } from "@/lib/admin";
+import { bulkUserAction } from "./actions";
+import { BulkBar } from "./BulkBar";
 import { PLANS } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
 import { testimonialCounts } from "@/lib/testimonials";
@@ -13,17 +15,18 @@ export const dynamic = "force-dynamic";
 
 const money = (v: number) => `$${v.toLocaleString("en-US")}`;
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; segment?: string; page?: string; ok?: string; error?: string }> }) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; segment?: string; page?: string; sort?: string; ok?: string; error?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
   const segment: Segment = sp.segment && sp.segment in SEGMENTS ? (sp.segment as Segment) : "all";
   const page = Math.max(1, Number(sp.page) || 1);
   const q = (sp.q ?? "").slice(0, 200);
+  const sort: Sort = sp.sort && sp.sort in SORTS ? (sp.sort as Sort) : "newest";
   const s = adminStats();
-  const { rows, total } = listUsers({ q, segment, page });
+  const { rows, total } = listUsers({ q, segment, page, sort });
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const link = (over: Record<string, string | number>) => {
-    const p = new URLSearchParams({ ...(q ? { q } : {}), ...(segment !== "all" ? { segment } : {}), ...Object.fromEntries(Object.entries(over).map(([k, v]) => [k, String(v)])) });
+    const p = new URLSearchParams({ ...(q ? { q } : {}), ...(segment !== "all" ? { segment } : {}), ...(sort !== "newest" ? { sort } : {}), ...Object.fromEntries(Object.entries(over).map(([k, v]) => [k, String(v)])) });
     return `/app/admin${p.toString() ? `?${p}` : ""}`;
   };
   const log = recentAdminLog();
@@ -36,6 +39,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <p className="row" style={{ flexWrap: "wrap" }}>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/support">🎫 Support tickets ({ticketCounts().open} open)</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/testimonials">⭐ Feedback &amp; testimonials ({testimonialCounts().pending} new)</Link>
+        <Link className="btn btn-sm" href="/app/admin/analytics">📊 Advanced analytics</Link>
+        <Link className="btn btn-ghost btn-sm" href="/app/admin/blocklist">🚫 Blocklist</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>
         <Link className="btn btn-ghost btn-sm" href="/status">🟢 Status page</Link>
       </p>
@@ -100,6 +105,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <form className="row" style={{ gap: 6 }} action="/app/admin">
               {segment !== "all" ? <input type="hidden" name="segment" value={segment} /> : null}
+              {sort !== "newest" ? <input type="hidden" name="sort" value={sort} /> : null}
               <input name="q" type="search" defaultValue={q} placeholder="Search email…" aria-label="Search users by email" style={{ width: 200, padding: "6px 10px" }} />
               <button className="btn btn-ghost btn-sm">Search</button>
             </form>
@@ -111,13 +117,21 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <Link key={k} href={link({ segment: k, page: 1 })} className={`tab ${k === segment ? "active" : ""}`}>{SEGMENTS[k].label}</Link>
           ))}
         </div>
+        <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+          <span className="faint">Sort:</span>
+          {(Object.keys(SORTS) as Sort[]).map((k) => <Link key={k} href={link({ sort: k, page: 1 })} className={`badge ${k === sort ? "badge-brand" : ""}`}>{SORTS[k].label}</Link>)}
+        </div>
         {rows.length ? (
+          <form action={bulkUserAction} id="bulk">
+          <input type="hidden" name="back" value={link({ page })} />
+          <BulkBar />
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Email</th><th>Plan</th><th>Signed up</th><th>Last active</th><th>Projects</th><th>Conversations (month)</th></tr></thead>
+              <thead><tr><th style={{ width: 32 }}><input type="checkbox" aria-label="Select all users on this page" data-select-all /></th><th>Email</th><th>Plan</th><th>Signed up</th><th>Last active</th><th>Projects</th><th>Conversations (month)</th></tr></thead>
               <tbody>
                 {rows.map((u) => (
                   <tr key={u.id}>
+                    <td><input type="checkbox" name="ids" value={u.id} aria-label={`Select ${u.email}`} disabled={isAdmin(u.email)} /></td>
                     <td style={{ wordBreak: "break-all" }}><Link href={`/app/admin/users/${u.id}`}>{u.email}</Link></td>
                     <td><PlanBadge plan={u.plan} status={u.plan_status} cancelAt={u.plan_cancel_at} suspended={u.suspended_at} owner={isAdmin(u.email)} /></td>
                     <td>{ago(u.created_at)}</td>
@@ -129,6 +143,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               </tbody>
             </table>
           </div>
+          </form>
         ) : <div className="empty">No users match.</div>}
         {pages > 1 ? (
           <div className="row between" style={{ marginTop: 12 }}>

@@ -8,6 +8,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-30", title: "Your must-say rules count as approved information", tag: "Improved",
+    items: [
+      "Statements your \"must include\" rules require (for example \"Prices include VAT\") are now treated as approved company information, so a bot that follows your rule is never marked \"not in docs\" for it.",
+      "The Privacy Policy and Trust Center now name only the AI provider actually in use.",
+    ],
+  },
+  {
+    date: "2026-09-30", title: "Stronger account protection and fair-use monitoring", tag: "Improved",
+    items: [
+      "Behind the scenes: AI usage is now tracked per account, which keeps plans affordable and lets us spot abuse quickly.",
+      "Abusive or fake sign-ups can be blocked by email or domain, so spam accounts can't come back.",
+    ],
+  },
+  {
     date: "2026-09-30", title: "AI checks now run on Claude Opus 5.5", tag: "Improved",
     items: ["Chatbot answers, agent runs and bot tests are graded by Anthropic's newest Opus model by default."],
   },

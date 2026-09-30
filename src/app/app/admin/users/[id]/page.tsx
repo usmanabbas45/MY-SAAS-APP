@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { userMonthCost } from "@/lib/aicost";
+import { isBlocked } from "@/lib/blocklist";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/client";
 import { Flash } from "@/components/ui";
 import { isAdmin, requireAdmin, userDetail } from "@/lib/admin";
 import { paddleEnv, type Resource } from "@/lib/billing";
-import { deleteUserAction, saveNoteAction, sendResetAction, setPlanAction, signOutUserAction, suspendAction } from "../../actions";
+import { blockUserAction, deleteUserAction, saveNoteAction, sendResetAction, setPlanAction, signOutUserAction, suspendAction } from "../../actions";
 import { AdminShell, ago, PlanBadge } from "../../ui";
 
 export const metadata = { title: "Admin · User" };
@@ -121,6 +122,11 @@ export default async function AdminUserPage({ params, searchParams }: { params: 
             <form action={suspendAction}>{hidden}<input type="hidden" name="suspend" value="0" /><SubmitButton pendingText="Saving…">Re-activate account</SubmitButton></form>
           ) : (
             <form action={suspendAction}>{hidden}<input type="hidden" name="suspend" value="1" /><SubmitButton className="btn btn-danger" pendingText="Suspending…" confirm={`Suspend ${u.email}? They will be logged out and their API keys stop working.`}>Suspend account</SubmitButton></form>
+          )}
+          {self || isAdmin(u.email) ? null : isBlocked(u.email) ? (
+            <span className="badge badge-bad">⛔ Email blocked: <Link href="/app/admin/blocklist">manage</Link></span>
+          ) : (
+            <form action={blockUserAction}>{hidden}<SubmitButton className="btn btn-danger" pendingText="Blocking…" confirm={`Block ${u.email}? The account is suspended and this email can never sign up again (you can undo it in the Blocklist).`}>⛔ Block email</SubmitButton></form>
           )}
         </div>
       </div>

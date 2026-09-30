@@ -5,7 +5,7 @@ import { aiForProject, JudgeError, judgeConcurrency, judgeLabel, llmGradeConvers
 import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
 import type { MlpModel } from "../ml/mlp";
 import { loadModel, riskScore } from "../ml/risk";
-import { applyRules, projectRules, type Rule } from "../rules";
+import { applyRules, parseMustInclude, projectRules, type Rule } from "../rules";
 import { conversationFindings, FLAG_SEVERITY, type ConvFlag } from "../judge/conversation";
 import { isFrustrated } from "../sentiment";
 import { raiseIncident } from "../incidents";
@@ -18,8 +18,25 @@ export function scoreFromSeverities(severities: Severity[]): number {
   return Math.round((1 - penalty / severities.length) * 1000) / 10;
 }
 
+/** Title of the virtual article that carries the business's must-say statements. */
+export const RULES_DOC_TITLE = "Required statements (from your rules)";
+
+/**
+ * The project's help articles, plus one virtual article with the statements its must-say rules require.
+ * Without it, an answer that correctly follows a rule ("Prices include VAT") would be marked "not in docs"
+ * whenever the articles don't mention it, so following your own rule would cost accuracy points.
+ */
 export function kbDocs(projectId: number): KbDoc[] {
-  return all<KbDoc>("SELECT title, content FROM kb_docs WHERE project_id = ? ORDER BY id", projectId);
+  const docs = all<KbDoc>("SELECT title, content FROM kb_docs WHERE project_id = ? ORDER BY id", projectId);
+  const required = projectRules(projectId)
+    .filter((r) => r.kind === "must_include")
+    .map((r) => parseMustInclude(r.pattern))
+    .filter((r): r is { topic: string; required: string } => r !== null);
+  if (!required.length) return docs;
+  return [...docs, {
+    title: RULES_DOC_TITLE,
+    content: `The business requires its chatbot to include these statements. They are accurate, approved company information:\n${required.map((r) => `- When ${r.topic} comes up: "${r.required}"`).join("\n")}`,
+  }];
 }
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
