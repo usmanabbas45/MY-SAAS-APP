@@ -17,6 +17,7 @@ export default function PrivacyPage() {
         <li><strong>Content you provide:</strong> chat transcripts, knowledge base articles, test questions, AI agent runs and workflow execution data you upload or send.</li>
         <li><strong>Connection details:</strong> API keys and webhook URLs for n8n, Make, bots and alert channels, stored encrypted.</li>
         <li><strong>Technical data:</strong> basic server logs (such as IP address and time of request) to keep the Service secure.</li>
+        <li><strong>Sign-in devices:</strong> the browser and device type (for example “Chrome on Windows”) and dates of sign-ins, so we can warn you about sign-ins from a new device. If you turn on two-factor authentication, its secret is stored encrypted and recovery codes are stored hashed.</li>
       </ul>
       <h2>Personal data masking</h2>
       <p>By default, emails, phone numbers, card numbers, IBANs, IP addresses, UK postcodes, UK number plates and self-introduced names inside transcripts and agent runs are masked <strong>before</strong> they are stored or sent to an AI model. Each project can add its own words to mask, keep results only (no conversation text), switch the AI provider off, and delete data automatically after 7 to 365 days (Settings → Data &amp; privacy).</p>
@@ -32,6 +33,7 @@ export default function PrivacyPage() {
         <li><strong>AI checking:</strong> {aiProviderName() ? <>{aiProviderName()}, only for projects with AI checking on. Only the masked content needed for a check is sent. {aiTrainingStatement()}</> : aiTrainingStatement()} If we change AI provider, we update this page and the <a href="/security">Trust Center</a> first.</li>
         <li><strong>Email:</strong> Resend, for alerts, summaries and password resets.</li>
         <li><strong>Payments:</strong> Paddle.com is our online reseller and Merchant of Record. Paddle collects and processes your billing details; we never see your full card number.</li>
+        <li><strong>Password breach check:</strong> when you choose a password, we send only the first 5 characters of its SHA-1 hash to Have I Been Pwned to check it hasn't appeared in a data breach. Your password and email are never sent.</li>
       </ul>
       <h2 id="cookies">Cookies</h2>
       <p>We use one essential cookie to keep you logged in, one to remember your cookie choice, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful, but only if you click Accept on the cookie banner. It then sets analytics cookies and IP addresses are anonymised. You can change your choice any time with the \"Cookie settings\" link at the bottom of every page; rejecting deletes the analytics cookies. If you accepted analytics cookies and then sign up, send a form, start a trial or pay, our server tells Google Analytics that this happened (with the analytics ID from that cookie, the plan and price, never your name, email or any content) so we can see which marketing works." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
@@ -40,7 +42,7 @@ export default function PrivacyPage() {
       <h2>Your rights</h2>
       <p>You can access, export (CSV and JSONL exports in the app), correct or delete your data. Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> for any other request and we will reply within 30 days.</p>
       <h2>Security</h2>
-      <p>Passwords are hashed with scrypt, credentials are encrypted with AES-256-GCM, connections use HTTPS, and every page checks that you own the data you view.</p>
+      <p>Passwords are hashed with scrypt, credentials are encrypted with AES-256-GCM, connections use HTTPS, and every page checks that you own the data you view. Sign-up and login are protected by a CAPTCHA, rate limits and account lockout, and you can turn on two-factor authentication.</p>
       <h2>Changes</h2>
       <p>If we change this policy we will update the date above and, for important changes, email account owners. See also our <Link href="/terms">Terms of Service</Link>.</p>
     </PublicPage>

@@ -1,11 +1,9 @@
-import { AutoRefresh, SubmitButton } from "@/components/client";
-import { isRunning } from "@/lib/tests/runner";
-import { MAX_WA_QUESTIONS, wahaConfigured } from "@/lib/whatsapp";
+import { SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 import { ownedProject } from "@/lib/projects";
-import { addTargetAction, addWhatsAppTargetAction, addTestCaseAction, deleteTargetAction, deleteTestCaseAction, runTestsAction } from "../actions";
+import { addTargetAction, addTestCaseAction, deleteTargetAction, deleteTestCaseAction, runTestsAction } from "../actions";
 
 export const metadata = { title: "Chatbot tests" };
 
@@ -13,11 +11,9 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
   const user = await requireUser();
   const p = ownedProject(user.id, Number((await params).id));
   const flash = await searchParams;
-  const targets = all<{ id: number; name: string; url: string; response_path: string; last_run_at: string | null; kind: string; phone: string | null }>(
-    "SELECT id, name, url, response_path, last_run_at, kind, phone FROM bot_targets WHERE project_id = ? ORDER BY id", p.id,
+  const targets = all<{ id: number; name: string; url: string; response_path: string; last_run_at: string | null }>(
+    "SELECT id, name, url, response_path, last_run_at FROM bot_targets WHERE project_id = ? ORDER BY id", p.id,
   );
-  const anyRunning = targets.some((t) => isRunning(t.id));
-  const waReady = wahaConfigured();
   const cases = all<{ id: number; question: string; expected: string; must_not: string }>(
     "SELECT id, question, expected, must_not FROM test_cases WHERE project_id = ? ORDER BY id", p.id,
   );
@@ -36,7 +32,6 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
   return (
     <div>
       <Flash {...flash} />
-      <AutoRefresh active={anyRunning} ms={10000} />
       <PageHeader title="Chatbot tests" subtitle="Ask your bot the same important questions every night and get alerted when an answer breaks" />
 
       <div className="grid grid-2">
@@ -46,9 +41,9 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
             <div key={t.id} className="card" style={{ boxShadow: "none", marginBottom: 12 }}>
               <div className="row between">
                 <div style={{ minWidth: 0 }}>
-                  <strong>{t.kind === "whatsapp" ? "📱" : "🤖"} {t.name}</strong>{isRunning(t.id) ? <> <Badge tone="warn">⏳ Testing now…</Badge></> : null}
-                  <div className="faint mono" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t.kind === "whatsapp" ? `WhatsApp +${t.phone}` : t.url}</div>
-                  <div className="faint">Last run: {timeAgo(t.last_run_at)} · runs automatically every 24h{t.kind === "whatsapp" ? ` · first ${MAX_WA_QUESTIONS} questions` : ""}</div>
+                  <strong>🤖 {t.name}</strong>
+                  <div className="faint mono" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t.url}</div>
+                  <div className="faint">Last run: {timeAgo(t.last_run_at)} · runs automatically every 24h</div>
                 </div>
                 <div className="row">
                   <form action={runTestsAction}>{pid}<input type="hidden" name="targetId" value={t.id} /><SubmitButton className="btn btn-sm" pendingText="Testing…">▶ Run tests</SubmitButton></form>
@@ -58,23 +53,6 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
             </div>
           ))}
           <details open={targets.length === 0}>
-            <summary>📱 + Add a WhatsApp bot (just the number)</summary>
-            {waReady ? (
-              <form action={addWhatsAppTargetAction}>
-                {pid}
-                <p className="sub" style={{ marginTop: 8 }}>
-                  ProofMyAI messages your bot on WhatsApp like a real customer, reads the reply and checks it against your expected facts.
-                  Nothing to install, and it works with any WhatsApp bot (WhatsApp Business API, WATI, Interakt, WAHA, n8n, ManyChat…).
-                </p>
-                <div className="field"><label htmlFor="waname">Name</label><input id="waname" name="name" type="text" placeholder="WhatsApp support bot" /></div>
-                <div className="field"><label htmlFor="waphone">Bot&apos;s WhatsApp number (with country code)</label><input id="waphone" name="phone" type="tel" required placeholder="+92 300 1234567" inputMode="tel" autoComplete="off" /></div>
-                <p className="faint">Up to {MAX_WA_QUESTIONS} test questions per run, once a night. The test chats appear in your WhatsApp inbox like any customer chat. If your bot creates a lead or ticket for every new chat, tag or ignore our number.</p>
-                <label className="check"><input type="checkbox" name="confirm" value="1" required /> This is my own bot&apos;s number (or I have permission to test it).</label>
-                <div style={{ marginTop: 10 }}><SubmitButton pendingText="Checking number…">Connect WhatsApp bot</SubmitButton></div>
-              </form>
-            ) : <p className="sub" style={{ marginTop: 8 }}>WhatsApp testing by number is coming soon. Meanwhile, monitor your WhatsApp bot&apos;s real conversations from <strong>Live tracking</strong>.</p>}
-          </details>
-          <details>
             <summary>+ Add a bot endpoint</summary>
             <form action={addTargetAction}>
               {pid}

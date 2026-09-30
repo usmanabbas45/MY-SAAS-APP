@@ -194,3 +194,13 @@ export async function indexNowAction() {
   logAdmin(admin.email, "indexnow", null, msg.ok ?? msg.error);
   redirect(`/app/admin?${new URLSearchParams(msg)}`);
 }
+
+export async function adminDisableTwoFactorAction(form: FormData) {
+  const { admin, user, back } = await target(form);
+  const { disableTwoFactor } = await import("@/lib/twofactor");
+  const { securityNotice } = await import("@/lib/securityevents");
+  disableTwoFactor(user.id);
+  await securityNotice(user.email, "2fa_off");
+  logAdmin(admin.email, "disable_2fa", user.email);
+  back({ ok: "Two-factor authentication removed. The customer can log in with their password and turn it on again." });
+}

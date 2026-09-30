@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { isBlocked } from "./blocklist";
+import { checkPassword } from "./password";
 import { redirect } from "next/navigation";
 import { get, run } from "./db";
 import { hashPassword, randomToken, sha256, verifyPassword } from "./security";
@@ -18,9 +19,7 @@ export function normaliseEmail(email: string): string {
 
 export function validateCredentials(email: string, password: string): string | null {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
-  if (password.length < 8) return "Password must be at least 8 characters.";
-  if (password.length > 200) return "Password is too long.";
-  return null;
+  return checkPassword(password, email).problem;
 }
 
 export function createUser(email: string, password: string): { user?: User; error?: string } {

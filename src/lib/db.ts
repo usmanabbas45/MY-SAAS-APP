@@ -283,8 +283,23 @@ function migrate(db: DatabaseSync): void {
     at_ms INTEGER NOT NULL,
     PRIMARY KEY (project_id, chat)
   )`);
-  // Daily count of WhatsApp test messages sent from ProofMyAI's own number (protects that number).
-  db.exec("CREATE TABLE IF NOT EXISTS wa_sends (day TEXT PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0)");
+  // Solved CAPTCHA challenges (each can be used once), kept until they expire.
+  db.exec("CREATE TABLE IF NOT EXISTS captcha_used (id TEXT PRIMARY KEY, exp INTEGER NOT NULL)");
+  db.exec(`CREATE TABLE IF NOT EXISTS recovery_codes (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    used_at TEXT,
+    PRIMARY KEY (user_id, code_hash)
+  )`);
+  // Devices a user has logged in from, to email them about sign-ins from new ones.
+  db.exec(`CREATE TABLE IF NOT EXISTS login_devices (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_hash TEXT NOT NULL,
+    label TEXT NOT NULL,
+    first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, device_hash)
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS heartbeats (
     name TEXT PRIMARY KEY,
     last_run_at TEXT NOT NULL,
@@ -329,9 +344,11 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "users", "founding_at", "TEXT");
   addColumn(db, "users", "comp_ends_at", "TEXT");
   addColumn(db, "users", "comp_reminded_at", "TEXT");
-  // Nightly tests over WhatsApp: kind "whatsapp" targets store the bot's number instead of an HTTP endpoint.
-  addColumn(db, "bot_targets", "kind", "TEXT NOT NULL DEFAULT 'http'");
-  addColumn(db, "bot_targets", "phone", "TEXT");
+  // Two-factor authentication (TOTP). Secrets are stored encrypted.
+  addColumn(db, "users", "totp_secret_enc", "TEXT");
+  addColumn(db, "users", "totp_pending_enc", "TEXT");
+  addColumn(db, "users", "totp_enabled_at", "TEXT");
+  addColumn(db, "users", "totp_last_step", "INTEGER");
   // Backfill from what we already know (sign-up day and last active day); runs harmlessly on every start.
   db.exec("INSERT OR IGNORE INTO user_activity (user_id, day) SELECT id, substr(created_at, 1, 10) FROM users");
   db.exec("INSERT OR IGNORE INTO user_activity (user_id, day) SELECT id, substr(last_seen_at, 1, 10) FROM users WHERE last_seen_at IS NOT NULL");

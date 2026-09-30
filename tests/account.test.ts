@@ -30,10 +30,10 @@ describe("password reset", () => {
     addSession("device-a");
     const { token } = await requestPasswordReset("t@example.com", "https://x");
     expect(resetPassword(token!, "short")).toMatchObject({ ok: false });
-    expect(resetPassword(token!, "brandnewpass1")).toMatchObject({ ok: true });
-    expect(verifyPassword("brandnewpass1", pw())).toBe(true);
+    expect(resetPassword(token!, "Brand-New-Pass1")).toMatchObject({ ok: true });
+    expect(verifyPassword("Brand-New-Pass1", pw())).toBe(true);
     expect(activeSessions(userId)).toBe(0);
-    expect(resetPassword(token!, "anotherpass12")).toMatchObject({ ok: false });
+    expect(resetPassword(token!, "Another-Pass12")).toMatchObject({ ok: false });
     expect(resetTokenValid(token!)).toBe(false);
   });
 
@@ -41,8 +41,8 @@ describe("password reset", () => {
     const { token } = await requestPasswordReset("t@example.com", "https://x");
     run("UPDATE password_resets SET expires_at = ?", new Date(Date.now() - 1000).toISOString());
     expect(resetTokenValid(token!)).toBe(false);
-    expect(resetPassword(token!, "brandnewpass1")).toMatchObject({ ok: false });
-    expect(resetPassword("made-up-token", "brandnewpass1")).toMatchObject({ ok: false });
+    expect(resetPassword(token!, "Brand-New-Pass1")).toMatchObject({ ok: false });
+    expect(resetPassword("made-up-token", "Brand-New-Pass1")).toMatchObject({ ok: false });
   });
 
   it("a new request replaces older tokens", async () => {
@@ -57,10 +57,10 @@ describe("account settings", () => {
   it("changes the password only with the right current password, keeping this device", () => {
     addSession("this-device");
     addSession("other-device");
-    expect(changePassword(userId, "wrong", "newpassword1", sha256("this-device"))).toMatch(/current password is wrong/);
-    expect(changePassword(userId, "oldpassword1", "short", sha256("this-device"))).toMatch(/at least 8/);
-    expect(changePassword(userId, "oldpassword1", "newpassword1", sha256("this-device"))).toBeNull();
-    expect(verifyPassword("newpassword1", pw())).toBe(true);
+    expect(changePassword(userId, "wrong", "New-Secure-Pass9", sha256("this-device"))).toMatch(/current password is wrong/);
+    expect(changePassword(userId, "oldpassword1", "short", sha256("this-device"))).toMatch(/at least 10/);
+    expect(changePassword(userId, "oldpassword1", "New-Secure-Pass9", sha256("this-device"))).toBeNull();
+    expect(verifyPassword("New-Secure-Pass9", pw())).toBe(true);
     expect(all("SELECT token_hash FROM sessions WHERE user_id = ?", userId)).toEqual([{ token_hash: sha256("this-device") }]);
   });
 
@@ -80,9 +80,13 @@ describe("account settings", () => {
     expect(all("SELECT id FROM kb_docs")).toHaveLength(0);
   });
 
-  it("validates password length", () => {
-    expect(passwordProblem("1234567")).toBeTruthy();
-    expect(passwordProblem("12345678")).toBeNull();
-    expect(passwordProblem("x".repeat(201))).toBeTruthy();
+  it("requires strong passwords", () => {
+    expect(passwordProblem("1234567")).toMatch(/at least 10/);
+    expect(passwordProblem("Password123!")).toMatch(/common/);
+    expect(passwordProblem("abcdefghijk")).toMatch(/Mix/);
+    expect(passwordProblem("Blue-Tiger-42x")).toBeNull();
+    expect(passwordProblem("correct horse battery staple")).toBeNull();
+    expect(passwordProblem("Usman-Secure-7", "usman@example.com")).toMatch(/email name/);
+    expect(passwordProblem("Aa1!" + "x".repeat(201))).toBeTruthy();
   });
 });

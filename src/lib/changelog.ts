@@ -8,9 +8,17 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
-    date: "2026-09-30", title: "WhatsApp bots: test by number and live monitoring", tag: "New",
+    date: "2026-09-30", title: "Two-factor login, CAPTCHA and stronger passwords", tag: "New",
     items: [
-      "Test any WhatsApp bot with just its number: ProofMyAI messages it like a customer every night and checks the replies.",
+      "Turn on two-factor authentication in Account with any authenticator app, with 10 one-time recovery codes.",
+      "Sign-up, login and password reset are protected by a CAPTCHA that runs automatically in your browser.",
+      "New passwords must be strong and are checked against known data breaches.",
+      "You get an email when your account signs in from a new device, or when your password or 2FA changes.",
+    ],
+  },
+  {
+    date: "2026-09-30", title: "WhatsApp bot live monitoring", tag: "New",
+    items: [
       "WAHA users can monitor every real WhatsApp conversation by adding one webhook, with reply-time and missing-reply alerts.",
       "Customer phone numbers used as chat ids are now replaced with anonymous codes.",
     ],

@@ -170,7 +170,6 @@ export default async function LivePage({ params, searchParams }: { params: Promi
             <li>Tip: set both HTTP nodes to <strong>Continue on fail</strong> so monitoring can never break your bot.</li>
           </ol>
         </details>
-        <p className="faint" style={{ marginTop: 8 }}>Want ProofMyAI to test your WhatsApp bot every night with just its number? Go to <a href={`/app/p/${p.id}/tests`}>Chatbot tests</a> → <strong>Add a WhatsApp bot</strong>.</p>
       </div>
 
       <div className="card" id="twilio">

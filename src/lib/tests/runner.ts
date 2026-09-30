@@ -4,7 +4,6 @@ import { raiseIncident, resolveIncidents } from "../incidents";
 import { aiForProject, JudgeError, llmGradeTest } from "../judge/llm";
 import { decrypt, safeFetch } from "../security";
 import { coverage, truncate } from "../text";
-import { askWhatsApp, MAX_WA_QUESTIONS } from "../whatsapp";
 
 export interface Target {
   id: number;
@@ -14,8 +13,6 @@ export interface Target {
   headers_enc: string | null;
   body_template: string;
   response_path: string;
-  kind?: "http" | "whatsapp";
-  phone?: string | null;
 }
 
 export interface TestCase {
@@ -44,10 +41,6 @@ export function readPath(data: unknown, path: string): unknown {
 }
 
 export async function askBot(target: Target, question: string): Promise<string> {
-  if (target.kind === "whatsapp") {
-    if (!target.phone) throw new Error("This WhatsApp bot has no number.");
-    return askWhatsApp(target.phone, question);
-  }
   const headers: Record<string, string> = { "content-type": "application/json", accept: "application/json" };
   if (target.headers_enc) Object.assign(headers, JSON.parse(decrypt(target.headers_enc)) as Record<string, string>);
   const res = await safeFetch(target.url, { method: "POST", headers, body: renderBody(target.body_template, question) }, 60000);
@@ -80,8 +73,6 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
   if (!target) throw new Error("Bot target not found");
   const cases = all<TestCase>("SELECT id, question, expected, must_not FROM test_cases WHERE project_id = ? ORDER BY id", target.project_id);
   if (cases.length === 0) throw new Error("Add at least one test question first");
-  // WhatsApp runs are real messages from our own number: keep them short.
-  if (target.kind === "whatsapp") cases.splice(MAX_WA_QUESTIONS);
 
   const results: { c: TestCase; answer: string; pass: boolean; reason: string }[] = [];
   for (const c of cases) {
@@ -127,27 +118,10 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
   return { runId, passed, failed };
 }
 
-const running = new Set<number>();
-export const isRunning = (targetId: number) => running.has(targetId);
-
-/**
- * Starts a suite in the background (WhatsApp runs wait for real replies and take minutes).
- * Returns false when this target is already running.
- */
-export function startSuiteInBackground(targetId: number): boolean {
-  if (running.has(targetId)) return false;
-  running.add(targetId);
-  run("UPDATE bot_targets SET last_run_at = datetime('now') WHERE id = ?", targetId);
-  runSuite(targetId)
-    .catch((err) => console.error(`[tests] background suite ${targetId} failed:`, err))
-    .finally(() => running.delete(targetId));
-  return true;
-}
-
 /** Runs every target that has not run in the last 24 hours (called from the cron endpoint). */
 export async function runDueSuites(): Promise<number> {
-  const due = all<{ id: number; kind: string }>(
-    `SELECT t.id, t.kind FROM bot_targets t
+  const due = all<{ id: number }>(
+    `SELECT t.id FROM bot_targets t
       WHERE (t.last_run_at IS NULL OR t.last_run_at <= datetime('now', '-24 hours'))
         AND EXISTS (SELECT 1 FROM test_cases c WHERE c.project_id = t.project_id)`,
   );
@@ -156,10 +130,6 @@ export async function runDueSuites(): Promise<number> {
   for (const t of due) {
     if (allowed && !allowed.has(t.id)) continue;
     try {
-      if (t.kind === "whatsapp") {
-        if (startSuiteInBackground(t.id)) count++;
-        continue;
-      }
       await runSuite(t.id);
       count++;
     } catch (err) {
