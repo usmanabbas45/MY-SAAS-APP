@@ -5,7 +5,9 @@ import { SiteFooter, SiteHeader } from "@/components/site";
 import { YouTube } from "@/components/video";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
-import { FAQS, jsonLd, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, videoJsonLd } from "@/lib/seo";
+import { LEGAL_NAME } from "@/lib/legal";
+import { DEVELOPER_URL } from "@/lib/support";
+import { FAQS, jsonLd, SAME_AS, SUPPORT_EMAIL, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, videoJsonLd } from "@/lib/seo";
 
 const FEATURES = [
   { icon: "💬", title: "Chatbot audits", text: "Upload transcripts from Intercom, Tidio, Crisp, Zendesk or any bot. Every answer is graded against your help docs: correct, made up, not in docs, should have escalated, off-policy." },
@@ -37,7 +39,13 @@ export const metadata = {
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icon.png` },
+    {
+      "@type": "Organization", "@id": `${SITE_URL}/#org`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icon.png`,
+      description: SITE_DESCRIPTION,
+      founder: { "@type": "Person", name: LEGAL_NAME, url: DEVELOPER_URL, jobTitle: "Founder and AI automation developer" },
+      contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, url: `${SITE_URL}/support`, availableLanguage: ["English", "Urdu"] },
+      sameAs: SAME_AS,
+    },
     { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#org` } },
     {
       "@type": "SoftwareApplication", name: SITE_NAME, url: SITE_URL, applicationCategory: "BusinessApplication", operatingSystem: "Web",

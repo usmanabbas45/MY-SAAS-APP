@@ -3,7 +3,7 @@ import { currentUser } from "@/lib/auth";
 import { AuthForm } from "../AuthForm";
 import { loginAction } from "../actions";
 
-export const metadata = { title: "Log in" };
+export const metadata = { title: "Log in", robots: { index: false, follow: true } };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string; deleted?: string; founding?: string }> }) {
   const sp = await searchParams;

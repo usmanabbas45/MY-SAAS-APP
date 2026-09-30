@@ -15,6 +15,7 @@ export async function SiteHeader() {
           <Link href="/#features">Features</Link>
           <Link href="/solutions/ai-chatbot-monitoring">Solutions</Link>
           <Link href="/#pricing">Pricing</Link>
+          <Link href="/blog">Guides</Link>
           <Link href="/docs">Docs</Link>
           <Link href="/#faq">FAQ</Link>
         </div>
@@ -49,6 +50,7 @@ export function SiteFooter() {
             <li><Link href="/#pricing">Pricing</Link></li>
             <li><Link href="/#faq">FAQ</Link></li>
             <li><Link href="/signup">Free AI audit</Link></li>
+            <li><Link href="/blog">Guides</Link></li>
             <li><Link href="/docs">Docs &amp; API</Link></li>
             <li><Link href="/changelog">Changelog</Link></li>
             <li><Link href="/status">System status</Link></li>

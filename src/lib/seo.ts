@@ -1,6 +1,10 @@
 /** Public site URL used for canonical links, sitemaps and social previews. */
 export const SITE_URL = (process.env.APP_URL || "https://proofmyai.com").replace(/\/+$/, "");
 export const SITE_NAME = "ProofMyAI";
+/** Official profiles of the brand (YouTube, LinkedIn, X, GitHub, Product Hunt…) for search and AI engines. Set ORG_SAME_AS as a comma list. */
+export const SAME_AS = [
+  ...(process.env.ORG_SAME_AS ?? "").split(",").map((s) => s.trim()).filter((s) => /^https:\/\//.test(s)),
+];
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "contact@usmanabbas.dev";
 export const SITE_DESCRIPTION =
   "ProofMyAI checks your AI chatbot answers, AI agent runs and n8n/Make workflows, catches wrong answers, hallucinations and silent failures, and tells you exactly what to fix. Free AI audit.";

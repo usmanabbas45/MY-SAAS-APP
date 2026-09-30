@@ -179,3 +179,18 @@ export async function blockUserAction(form: FormData) {
   logAdmin(admin.email, "block", user.email);
   back({ ok: "Email blocked: the account is suspended and this email can't sign up again." });
 }
+
+export async function indexNowAction() {
+  const admin = await requireAdmin();
+  const { default: sitemap } = await import("@/app/sitemap");
+  const { submitToIndexNow } = await import("@/lib/indexnow");
+  let msg: Record<string, string>;
+  try {
+    const r = await submitToIndexNow(sitemap().map((e) => e.url));
+    msg = r.ok ? { ok: `Sent ${r.count} pages to Bing and other IndexNow search engines. They usually re-crawl within a day.` } : { error: `IndexNow answered HTTP ${r.status}. Try again later.` };
+  } catch (err) {
+    msg = { error: `Could not reach IndexNow: ${err instanceof Error ? err.message : "network error"}` };
+  }
+  logAdmin(admin.email, "indexnow", null, msg.ok ?? msg.error);
+  redirect(`/app/admin?${new URLSearchParams(msg)}`);
+}

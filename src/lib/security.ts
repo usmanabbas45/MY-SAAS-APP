@@ -11,6 +11,11 @@ function appSecret(): string {
   return "dev-only-insecure-secret-change-me";
 }
 
+/** A stable, non-secret identifier derived from the app secret (one-way), e.g. the IndexNow key. */
+export function derivedKey(label: string): string {
+  return sha256(`${label}:${appSecret()}`).slice(0, 32);
+}
+
 export function randomToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString("base64url");
 }

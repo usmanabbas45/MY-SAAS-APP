@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-30", title: "Guides for AI chatbot and automation quality", tag: "New",
+    items: [
+      "New guides: testing chatbot accuracy, catching hallucinations, monitoring n8n, Make and AI agents, and a chatbot QA checklist.",
+      "An llms.txt summary so AI assistants describe ProofMyAI accurately.",
+    ],
+  },
+  {
     date: "2026-09-30", title: "Your must-say rules count as approved information", tag: "Improved",
     items: [
       "Statements your \"must include\" rules require (for example \"Prices include VAT\") are now treated as approved company information, so a bot that follows your rule is never marked \"not in docs\" for it.",
