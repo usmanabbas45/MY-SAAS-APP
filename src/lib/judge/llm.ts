@@ -41,7 +41,7 @@ export function aiForProject(projectId: number): boolean {
   return llmAvailable() && (get<{ use_ai: number }>("SELECT use_ai FROM projects WHERE id = ?", projectId)?.use_ai ?? 1) === 1;
 }
 
-/** Human-readable name of the active judge, e.g. "Claude (claude-opus-5)". */
+/** Human-readable name of the active judge, e.g. "Claude (claude-opus-5-5)". */
 export function judgeLabel(projectId?: number): string {
   if (projectId !== undefined && !aiForProject(projectId)) return "Basic mode (rule-based + neural model)";
   const p = judgeProvider();
@@ -63,7 +63,7 @@ function anthropic(): Anthropic {
 }
 
 function model(): string {
-  return process.env.JUDGE_MODEL || "claude-opus-5";
+  return process.env.JUDGE_MODEL || "claude-opus-5-5";
 }
 
 function kbBlock(docs: KbDoc[]): string {
