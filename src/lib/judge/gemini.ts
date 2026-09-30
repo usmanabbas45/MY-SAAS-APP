@@ -46,7 +46,10 @@ export function geminiSchema(schema: z.ZodType): Record<string, unknown> {
   return clean(z.toJSONSchema(schema)) as Record<string, unknown>;
 }
 
-export async function geminiJudge<S extends z.ZodType>(system: string, task: string, schema: S): Promise<z.infer<S>> {
+export async function geminiJudge<S extends z.ZodType>(
+  system: string, task: string, schema: S,
+  onUsage?: (model: string, u: { input: number; output: number; cacheRead: number; cacheWrite: number }) => void,
+): Promise<z.infer<S>> {
   let text: string | undefined;
   try {
     const response = await gemini().models.generateContent({
@@ -59,6 +62,11 @@ export async function geminiJudge<S extends z.ZodType>(system: string, task: str
         temperature: 0,
       },
     });
+    const m = response.usageMetadata;
+    if (m && onUsage) {
+      const cached = m.cachedContentTokenCount ?? 0;
+      onUsage(geminiModel(), { input: Math.max(0, (m.promptTokenCount ?? 0) - cached), cacheRead: cached, cacheWrite: 0, output: (m.candidatesTokenCount ?? 0) + (m.thoughtsTokenCount ?? 0) });
+    }
     text = response.text;
     if (!text) {
       const blocked = response.promptFeedback?.blockReason;

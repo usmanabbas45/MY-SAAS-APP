@@ -107,7 +107,7 @@ export async function executeAudit(auditId: number, projectId: number, conversat
     const graded = await mapLimit(conversations, audit.mode === "ai" ? judgeConcurrency() : 8, async (conv) => {
       const exchanges = exchangesOf(conv);
       const grades: Grade[] =
-        audit.mode === "ai" ? await llmGradeConversation(exchanges, docs) : exchanges.map((e) => heuristicGrade(e, index));
+        audit.mode === "ai" ? await llmGradeConversation(exchanges, docs, { projectId, kind: "audit" }) : exchanges.map((e) => heuristicGrade(e, index));
       return exchanges.map((e, i) => ({ e, g: grades[i] }));
     });
 

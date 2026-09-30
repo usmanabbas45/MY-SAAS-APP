@@ -109,7 +109,7 @@ export async function gradeLiveChat(projectId: number, exchanges: Exchange[], me
   let note = "";
   if (aiForProject(projectId)) {
     try {
-      grades = await llmGradeConversation(exchanges, docs);
+      grades = await llmGradeConversation(exchanges, docs, { projectId, kind: "live" });
     } catch (err) {
       // Live monitoring must keep working when the AI judge is down or over quota.
       grades = exchanges.map((e) => heuristicGrade(e, index));

@@ -45,6 +45,8 @@ const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects
 
 /** States that keep the paid plan active. past_due keeps access while Paddle retries; comped is a free plan given by an admin. */
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "comped"]);
+/** Subscription states that actually bring in money (trials and free upgrades do not). */
+export const ACTIVE_STATUSES_FOR_REVENUE = new Set(["active", "past_due"]);
 
 // ---------- Configuration ----------
 

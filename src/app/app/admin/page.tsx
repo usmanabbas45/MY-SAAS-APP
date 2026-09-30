@@ -4,6 +4,7 @@ import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin
 import { PLANS } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
 import { testimonialCounts } from "@/lib/testimonials";
+import { costSummary, customerCosts } from "@/lib/aicost";
 import { SignupChart } from "./SignupChart";
 import { AdminShell, ago, PlanBadge } from "./ui";
 
@@ -35,13 +36,25 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <p className="row" style={{ flexWrap: "wrap" }}>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/support">🎫 Support tickets ({ticketCounts().open} open)</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/testimonials">⭐ Feedback &amp; testimonials ({testimonialCounts().pending} new)</Link>
+        <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>
         <Link className="btn btn-ghost btn-sm" href="/status">🟢 Status page</Link>
       </p>
 
-      <div className="grid grid-4">
+      <div className="grid grid-4 grid-5">
         <div className="card stat"><span className="stat-label">Monthly revenue (MRR)</span><span className="stat-value">{money(s.mrr)}</span><span className="stat-foot">{money(s.mrr * 12)} per year</span></div>
         <div className="card stat"><span className="stat-label">Paying customers</span><span className="stat-value">{s.paying}</span><span className="stat-foot">{s.trialing} on free trial</span></div>
         <div className="card stat"><span className="stat-label">Users</span><span className="stat-value">{s.users}</span><span className="stat-foot">+{s.new7} this week · +{s.new30} in 30 days</span></div>
+        {(() => {
+          const c = costSummary();
+          const losses = customerCosts().filter((x) => x.flag === "loss").length;
+          return (
+            <Link href="/app/admin/costs" className="card stat" style={{ color: "inherit", textDecoration: "none" }}>
+              <span className="stat-label">💰 AI cost this month</span>
+              <span className="stat-value" style={{ color: losses ? "var(--bad)" : undefined }}>${c.cost.toFixed(2)}</span>
+              <span className="stat-foot">{losses ? `🚨 ${losses} unprofitable customer${losses === 1 ? "" : "s"}` : `${c.calls.toLocaleString()} AI checks · details →`}</span>
+            </Link>
+          );
+        })()}
         <div className="card stat"><span className="stat-label">Active in last 7 days</span><span className="stat-value">{s.active7}</span><span className="stat-foot">{s.users ? Math.round((s.active7 / s.users) * 100) : 0}% of users</span></div>
       </div>
 

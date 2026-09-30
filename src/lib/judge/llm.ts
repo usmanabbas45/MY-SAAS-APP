@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { recordAiUsage, type AiUse } from "../aicost";
 import { get } from "../db";
 import { clamp } from "../text";
 import { JudgeError } from "./errors";
@@ -82,9 +83,10 @@ async function callJudge<S extends z.ZodType>(
   docs: KbDoc[] | null,
   task: string,
   schema: S,
+  use?: AiUse,
 ): Promise<z.infer<S>> {
   if (judgeProvider() === "gemini") {
-    return geminiJudge(docs ? `${instructions}\n\n${kbBlock(docs)}` : instructions, task, schema);
+    return geminiJudge(docs ? `${instructions}\n\n${kbBlock(docs)}` : instructions, task, schema, (model, u) => recordAiUsage(use, "gemini", model, u));
   }
   // Stable content (instructions, knowledge base) goes first and is cached across every
   // conversation in an audit; the per-item task is last so it never breaks the cache prefix.
@@ -109,6 +111,11 @@ async function callJudge<S extends z.ZodType>(
     if (err instanceof Anthropic.APIError) throw new JudgeError(`AI judge error (${err.status ?? "network"}): ${err.message}`);
     throw err;
   }
+  const u = response.usage;
+  recordAiUsage(use, "anthropic", response.model, {
+    input: u.input_tokens ?? 0, output: u.output_tokens ?? 0,
+    cacheRead: u.cache_read_input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0,
+  });
   if (response.stop_reason === "refusal") throw new JudgeError("The AI judge declined to grade this content.");
   if (response.stop_reason === "max_tokens") throw new JudgeError("The AI judge ran out of output space for this item.");
   if (!response.parsed_output) throw new JudgeError("The AI judge returned an unreadable result.");
@@ -151,7 +158,7 @@ const ChatGrades = z.object({
 
 const clampText = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
 
-export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[]): Promise<Grade[]> {
+export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[], use?: AiUse): Promise<Grade[]> {
   const transcript = exchanges
     .map((e) => `<exchange turn_index="${e.turnIndex}">\n<customer>${e.question || "(no customer message)"}</customer>\n<assistant>${e.answer}</assistant>\n</exchange>`)
     .join("\n");
@@ -159,7 +166,7 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[])
   const earlier = (exchanges[0]?.context ?? []).slice(-20)
     .map((t) => `<${t.role === "user" ? "customer" : "assistant"}>${clampText(t.content, 1500)}</${t.role === "user" ? "customer" : "assistant"}>`).join("\n");
   const task = `${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
-  const result = await callJudge(CHAT_INSTRUCTIONS, docs, task, ChatGrades);
+  const result = await callJudge(CHAT_INSTRUCTIONS, docs, task, ChatGrades, use);
   const titles = new Set(docs.map((d) => d.title));
   return exchanges.map((e) => {
     const g = result.grades.find((x) => x.turn_index === e.turnIndex);
@@ -182,9 +189,9 @@ reason: one plain-English sentence explaining the result.`;
 
 const TestResult = z.object({ pass: z.boolean(), reason: z.string() });
 
-export async function llmGradeTest(question: string, expected: string, mustNot: string, answer: string): Promise<{ pass: boolean; reason: string }> {
+export async function llmGradeTest(question: string, expected: string, mustNot: string, answer: string, use?: AiUse): Promise<{ pass: boolean; reason: string }> {
   const task = `<question>${question}</question>\n<expected_facts>${expected}</expected_facts>\n<must_not_say>${mustNot || "(none)"}</must_not_say>\n<chatbot_answer>${answer}</chatbot_answer>`;
-  return callJudge(TEST_INSTRUCTIONS, null, task, TestResult);
+  return callJudge(TEST_INSTRUCTIONS, null, task, TestResult, use);
 }
 
 const AGENT_INSTRUCTIONS = `You are ProofMyAI's auditor for autonomous AI agents.
@@ -194,7 +201,7 @@ reason: one or two plain-English sentences.`;
 
 const AgentVerdict = z.object({ goal_achieved: z.boolean(), grounded: z.boolean(), reason: z.string() });
 
-export async function llmJudgeAgentRun(goal: string, stepsLog: string, finalOutput: string) {
+export async function llmJudgeAgentRun(goal: string, stepsLog: string, finalOutput: string, use?: AiUse) {
   const task = `<goal>${goal}</goal>\n<steps>\n${stepsLog}\n</steps>\n<final_output>${finalOutput}</final_output>`;
-  return callJudge(AGENT_INSTRUCTIONS, null, task, AgentVerdict);
+  return callJudge(AGENT_INSTRUCTIONS, null, task, AgentVerdict, use);
 }

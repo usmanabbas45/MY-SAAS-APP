@@ -8,6 +8,10 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-09-30", title: "AI checks now run on Claude Opus 5.5", tag: "Improved",
+    items: ["Chatbot answers, agent runs and bot tests are graded by Anthropic's newest Opus model by default."],
+  },
+  {
     date: "2026-09-29", title: "Must-say rules and faster missing-reply alerts", tag: "Fixed",
     items: [
       "\"When a topic comes up, the answer must include\" rules now understand alternatives (\"pricing or plans\"), word forms and everyday wording, and are checked on every answer, even when the AI already flagged it for something else.",
