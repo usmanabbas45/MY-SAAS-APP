@@ -76,10 +76,6 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="featured-on" aria-label="Featured on">
-        <a href="https://saashunt.best/projects/proofmyai?utm_source=badge" target="_blank" rel="noopener noreferrer">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://saashunt.best/images/badges/featured-on-light.svg" alt="Featured on SaasHunt" style={{ height: 44, width: "auto" }} />
-        </a>
         <a href="https://launchstag.com/p/proofmy-ai" target="_blank" rel="noopener">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="https://launchstag.com/badge-light.svg" alt="Featured on Launchstag" width={198} height={62} style={{ height: 44, width: "auto" }} />
