@@ -670,3 +670,5 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
   .cx-hero-card { flex: 1 1 140px; width: auto; }
 }
 .cx-layout > .card { min-width: 0; }
+.featured-on { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; margin-top: 24px; }
+.featured-on img { display: block; }
