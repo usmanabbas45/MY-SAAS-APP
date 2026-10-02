@@ -76,6 +76,10 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="featured-on" aria-label="Featured on">
+        <a href="https://www.producthunt.com/products/proofmy-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-proofmy-ai" target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img alt="ProofMy Ai - Catch AI hallucinations before your customers do | Product Hunt" width={250} height={54} src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1265385&theme=light&t=1790960003109" />
+        </a>
         <a href="https://launchstag.com/p/proofmy-ai" target="_blank" rel="noopener">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="https://launchstag.com/badge-light.svg" alt="Featured on Launchstag" width={198} height={62} style={{ height: 44, width: "auto" }} />
