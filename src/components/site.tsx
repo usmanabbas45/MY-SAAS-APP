@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CookieSettingsLink } from "@/components/analytics";
 import { ThemeToggle } from "@/components/client";
 import { currentUser } from "@/lib/auth";
 import { SOLUTIONS, SUPPORT_EMAIL } from "@/lib/seo";
@@ -78,7 +77,7 @@ export function SiteFooter() {
       <p className="sub" style={{ textAlign: "center", marginTop: 24 }}>
         Need a custom AI chatbot, agent or n8n automation? <a href={DEVELOPER_URL} target="_blank" rel="noopener">Hire the developer behind ProofMyAI: {DEVELOPER_NAME} ↗</a>
       </p>
-      <p className="faint" style={{ textAlign: "center", marginTop: 8 }}>© {new Date().getFullYear()} ProofMyAI · Prove your AI works{process.env.GA_MEASUREMENT_ID ? <> · <CookieSettingsLink /></> : null}</p>
+      <p className="faint" style={{ textAlign: "center", marginTop: 8 }}>© {new Date().getFullYear()} ProofMyAI · Prove your AI works</p>
       <a className="wa-float" href={whatsappLink()} target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.3Z" /></svg>
         <span className="wa-label">Need help?</span>

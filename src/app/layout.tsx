@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        {process.env.GA_MEASUREMENT_ID ? <Analytics id={process.env.GA_MEASUREMENT_ID.trim()} /> : null}
+        <Analytics />
       </body>
     </html>
   );

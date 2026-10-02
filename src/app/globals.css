@@ -382,12 +382,6 @@ section[id] { scroll-margin-top: 88px; }
 @media (max-width: 480px) { .wa-float .wa-label { display: none; } .wa-float { padding: 13px; } }
 @media print { .wa-float { display: none; } }
 
-/* Cookie consent */
-.cookie-banner { position: fixed; left: 18px; bottom: 18px; z-index: 60; max-width: 420px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
-.cookie-banner p { margin: 0 0 10px; font-size: 0.92rem; }
-.cookie-banner .row { justify-content: flex-end; }
-@media (max-width: 520px) { .cookie-banner { left: 10px; right: 10px; bottom: 76px; max-width: none; } }
-@media print { .cookie-banner { display: none; } }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
 .docs-toc ol { margin: 8px 0 0; columns: 2; column-gap: 24px; }
 @media (max-width: 600px) { .docs-toc ol { columns: 1; } }
@@ -612,3 +606,8 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .step-art { height: 140px; }
 .step-alerts { gap: 5px; }
 .step-alerts > div { padding: 5px 10px; }
+.traffic-row { position: relative; display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; font-size: 14px; border-radius: 8px; overflow: hidden; }
+.traffic-row > span, .traffic-row > a { position: relative; z-index: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.traffic-row > b { position: relative; z-index: 1; }
+.traffic-row > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--brand-soft); border-radius: 8px; z-index: 0; }
+.traffic-row + .traffic-row { margin-top: 4px; }

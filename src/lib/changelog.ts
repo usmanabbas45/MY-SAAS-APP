@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-02", title: "No more cookie banner", tag: "Improved",
+    items: [
+      "We removed Google Analytics and its cookie banner. ProofMyAI's website now uses no tracking cookies at all.",
+      "Visits are counted on our own server without cookies or personal data.",
+    ],
+  },
+  {
     date: "2026-09-30", title: "Two-factor login, CAPTCHA and stronger passwords", tag: "New",
     items: [
       "Turn on two-factor authentication in Account with any authenticator app, with 10 one-time recovery codes.",
