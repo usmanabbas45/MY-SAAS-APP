@@ -49,7 +49,7 @@ export default function SecurityPage() {
           </tbody>
         </table>
       </div>
-      <p className="sub">Our public website counts visits on our own server without cookies (no Google Analytics, never inside the dashboard) and uses YouTube for videos (loaded only when you press play). We give at least 30 days&apos; notice by email before adding a sub-processor that handles customer data.</p>
+      <p className="sub">Our public website also uses Google Analytics (visits only, never inside the dashboard) and YouTube for videos (loaded only when you press play). We give at least 30 days&apos; notice by email before adding a sub-processor that handles customer data.</p>
 
       <h2>🔒 Security measures</h2>
       <ul>

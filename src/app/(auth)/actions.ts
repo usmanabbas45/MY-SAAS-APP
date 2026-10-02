@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { checkLogin, createUser, endSession, isSuspended, startSession } from "@/lib/auth";
 import { requestPasswordReset, resetPassword } from "@/lib/account";
 import { createProject } from "@/lib/projects";
+import { currentGaIds, rememberGaClient, trackEvent } from "@/lib/ga";
 import { strongPasswordProblem } from "@/lib/breach";
 import { captchaConfig, checkCaptcha, type CaptchaConfig } from "@/lib/captcha";
 import { isDisposableEmail } from "@/lib/disposable";
@@ -42,6 +43,9 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   const projectId = createProject(user.id, String(form.get("company") ?? "") || "My first project");
   await startSession(user.id);
   await recordLogin(user.id, user.email, await userAgent(), ip);
+  const ga = await currentGaIds();
+  rememberGaClient(user.id, ga);
+  void trackEvent(ga, "sign_up", { method: "email" });
   redirect(form.get("founding") === "1" ? "/app/founding" : `/app/p/${projectId}?welcome=1`);
 }
 
