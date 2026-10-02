@@ -159,6 +159,29 @@ export const VIDEOS = {
 } satisfies Record<string, Video>;
 
 /** schema.org VideoObject so Google can show the video in search results. */
+/** Self-hosted 75-second product demo (public/video). */
+export const DEMO_VIDEO = {
+  src: "/video/proofmyai-demo.mp4",
+  webm: "/video/proofmyai-demo.webm",
+  poster: "/video/proofmyai-demo-poster.jpg",
+  title: "Is your AI chatbot lying to your customers? ProofMyAI in 75 seconds",
+  description: "See how ProofMyAI connects in 2 minutes, flags wrong chatbot answers with the exact fix, catches AI agent loops and silent n8n/Make failures, and alerts you on Slack, email or WhatsApp.",
+  duration: "PT1M15S",
+  uploadDate: "2026-10-02",
+};
+
+export function demoVideoJsonLd() {
+  return {
+    "@type": "VideoObject",
+    name: DEMO_VIDEO.title,
+    description: DEMO_VIDEO.description,
+    thumbnailUrl: [`${SITE_URL}${DEMO_VIDEO.poster}`],
+    uploadDate: DEMO_VIDEO.uploadDate,
+    duration: DEMO_VIDEO.duration,
+    contentUrl: `${SITE_URL}${DEMO_VIDEO.src}`,
+  };
+}
+
 export function videoJsonLd(v: Video) {
   return {
     "@type": "VideoObject",
