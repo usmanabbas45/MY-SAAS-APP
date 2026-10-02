@@ -23,21 +23,35 @@ export default async function Overview({ params, searchParams }: { params: Promi
   );
   const count = (sql: string) => get<{ n: number }>(sql, p.id)?.n ?? 0;
   const steps = [
+    { done: count("SELECT COUNT(*) AS n FROM audits WHERE project_id = ?") > 0, text: "Connect your chatbot (or upload chats)", href: `${base}/connect` },
     { done: count("SELECT COUNT(*) AS n FROM kb_docs WHERE project_id = ?") > 0, text: "Add your help articles (knowledge base)", href: `${base}/chatbot` },
-    { done: count("SELECT COUNT(*) AS n FROM audits WHERE project_id = ?") > 0, text: "Run your first chatbot audit", href: `${base}/chatbot` },
     { done: count("SELECT COUNT(*) AS n FROM test_cases WHERE project_id = ?") > 0, text: "Add nightly test questions for your bot", href: `${base}/tests` },
-    { done: count("SELECT COUNT(*) AS n FROM agent_runs WHERE project_id = ?") > 0, text: "Send your first AI agent run", href: `${base}/agents` },
-    { done: count("SELECT COUNT(*) AS n FROM workflow_runs WHERE project_id = ?") > 0, text: "Connect n8n or Make", href: `${base}/workflows` },
+    { done: count("SELECT COUNT(*) AS n FROM agent_runs WHERE project_id = ?") > 0, text: "Connect an AI agent", href: `${base}/connect` },
+    { done: count("SELECT COUNT(*) AS n FROM workflow_runs WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM workflow_sources WHERE project_id = ?") > 0, text: "Connect n8n, Make or Zapier", href: `${base}/connect` },
     { done: Boolean(p.alert_webhook || p.alert_email), text: "Turn on Slack/Discord/email alerts", href: `${base}/settings` },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
   const daysSinceSignup = (Date.now() - new Date(`${get<{ c: string }>("SELECT created_at AS c FROM users WHERE id = ?", user.id)?.c ?? ""}Z`).getTime()) / 86400000;
   const askFeedback = doneSteps >= 1 && daysSinceSignup >= 3 && !(await cookies()).get("pma_fb_dismissed") && !userHasGivenFeedback(user.id);
+  const nothingConnected = steps[0].done === false && !steps[3].done && !steps[4].done
+    && count("SELECT COUNT(*) AS n FROM chat_sources WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM bot_targets WHERE project_id = ?") === 0;
   const moduleLinks = { chatbot: `${base}/chatbot`, tests: `${base}/tests`, agents: `${base}/agents`, workflows: `${base}/workflows` } as const;
 
   return (
     <div>
-      {welcome ? <div className="alert alert-info">Welcome to ProofMyAI! Follow the checklist below. Each step takes about 2 minutes. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
+      {nothingConnected ? (
+        <div className="cx-hero">
+          <div>
+            <h2>{welcome ? "👋 Welcome! " : ""}Connect your first AI in 2 minutes</h2>
+            <p>What do you want ProofMyAI to watch? Pick one. You can add the others later.</p>
+          </div>
+          <div className="cx-hero-cards">
+            <Link href={`${base}/connect#chatbot`} className="cx-hero-card"><span aria-hidden>💬</span><strong>A chatbot</strong><small>Website, WhatsApp, Intercom, Tidio…</small></Link>
+            <Link href={`${base}/connect#agents`} className="cx-hero-card"><span aria-hidden>🤖</span><strong>An AI agent</strong><small>LangChain, OpenAI, Claude, n8n agents…</small></Link>
+            <Link href={`${base}/connect#workflows`} className="cx-hero-card"><span aria-hidden>⚙️</span><strong>Workflows</strong><small>n8n, Make, Zapier…</small></Link>
+          </div>
+        </div>
+      ) : welcome ? <div className="alert alert-info">Welcome to ProofMyAI! Follow the checklist below. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
       {!llmAvailable() ? (
         <div className="alert alert-warn">Running in <strong>basic mode</strong> (rule-based checks and the neural model). Add a <code>GEMINI_API_KEY</code> (free tier available) or <code>ANTHROPIC_API_KEY</code> to the server to turn on the AI judge.</div>
       ) : null}
@@ -50,7 +64,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
           </span>
         </div>
       ) : null}
-      <PageHeader title={p.name} subtitle="Health of every AI system in this project" />
+      <PageHeader title={p.name} subtitle="Health of every AI system in this project" actions={<Link href={`${base}/connect`} className="btn btn-sm">➕ Connect</Link>} />
 
       <div className="grid grid-hero">
         <div className="card" style={{ display: "grid", placeItems: "center", textAlign: "center" }}>
