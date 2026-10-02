@@ -15,6 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 DATABASE_PATH=/data/agentproof.db
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 # Railway/Docker mount the persistent disk at /data (Railway: attach a volume; compose: see docker-compose.yml)
 RUN mkdir -p /data && chown -R node:node /data /app
 USER node

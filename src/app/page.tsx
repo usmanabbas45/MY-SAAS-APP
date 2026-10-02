@@ -2,13 +2,13 @@ import { PLAN_FEATURES, PLANS as PLANS_BY_ID } from "@/lib/billing";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
-import { YouTube } from "@/components/video";
+import { DemoVideo } from "@/components/video";
 import { CatchDemo, HeroMockup, IntegrationStrip, StepArt } from "@/components/illustrations";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { LEGAL_NAME } from "@/lib/legal";
 import { DEVELOPER_URL } from "@/lib/support";
-import { FAQS, jsonLd, SAME_AS, SUPPORT_EMAIL, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, videoJsonLd } from "@/lib/seo";
+import { FAQS, jsonLd, SAME_AS, SUPPORT_EMAIL, SITE_DESCRIPTION, SITE_NAME, SITE_URL, VIDEOS, DEMO_VIDEO, demoVideoJsonLd, videoJsonLd } from "@/lib/seo";
 
 const FEATURES = [
   { icon: "💬", title: "Chatbot audits", text: "Upload transcripts from Intercom, Tidio, Crisp, Zendesk or any bot. Every answer is graded against your help docs: correct, made up, not in docs, should have escalated, off-policy." },
@@ -54,6 +54,7 @@ const structuredData = {
       offers: PLANS.map((p) => ({ "@type": "Offer", name: p.name, price: p.price, priceCurrency: "USD" })),
     },
     { "@type": "FAQPage", mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+    demoVideoJsonLd(),
     videoJsonLd(VIDEOS.marketing),
     videoJsonLd(VIDEOS.tutorial),
   ],
@@ -127,7 +128,7 @@ export default function Landing() {
           <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
           <div className="row lp-hero-ctas">
             <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
-            <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the video</a>
+            <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the 75-sec demo</a>
           </div>
           <ul className="lp-trust">
             <li>✓ Free for 50 conversations a month</li>
@@ -150,10 +151,10 @@ export default function Landing() {
       </section>
 
       <section className="lp-section" id="video" aria-labelledby="video-title">
-        <h2 id="video-title">See ProofMyAI in under 90 seconds</h2>
-        <p className="lp-lead">What goes wrong with AI chatbots, agents and automations, and how ProofMyAI catches it.</p>
+        <h2 id="video-title">See ProofMyAI in 75 seconds</h2>
+        <p className="lp-lead">Connect in 2 minutes, catch wrong answers with the exact fix, and get alerted before your customers notice.</p>
         <div className="video-wrap">
-          <YouTube id={VIDEOS.marketing.id} title={VIDEOS.marketing.title} />
+          <DemoVideo src={DEMO_VIDEO.src} webm={DEMO_VIDEO.webm} poster={DEMO_VIDEO.poster} title={DEMO_VIDEO.title} />
           <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>
             Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
           </p>
