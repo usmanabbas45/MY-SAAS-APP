@@ -75,6 +75,12 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
+      <div className="featured-on" aria-label="Featured on">
+        <a href="https://saashunt.best/projects/proofmyai?utm_source=badge" target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://saashunt.best/images/badges/featured-on-light.svg" alt="Featured on SaasHunt" style={{ height: 44, width: "auto" }} />
+        </a>
+      </div>
       <p className="sub" style={{ textAlign: "center", marginTop: 24 }}>
         Need a custom AI chatbot, agent or n8n automation? <a href={DEVELOPER_URL} target="_blank" rel="noopener">Hire the developer behind ProofMyAI: {DEVELOPER_NAME} ↗</a>
       </p>
