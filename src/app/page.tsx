@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { YouTube } from "@/components/video";
+import { CatchDemo, HeroMockup, IntegrationStrip, StepArt } from "@/components/illustrations";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { LEGAL_NAME } from "@/lib/legal";
@@ -119,19 +120,33 @@ export default function Landing() {
       <SiteHeader />
 
       <main>
-      <section className="lp-hero">
-        <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
-        <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
-        <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
-        <div className="row" style={{ justifyContent: "center" }}>
-          <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
-          <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the video</a>
+      <section className="lp-hero lp-hero-split">
+        <div className="lp-hero-copy">
+          <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
+          <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
+          <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
+          <div className="row lp-hero-ctas">
+            <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
+            <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the video</a>
+          </div>
+          <ul className="lp-trust">
+            <li>✓ Free for 50 conversations a month</li>
+            <li>✓ No card needed</li>
+            <li>✓ Set up in 5 minutes</li>
+          </ul>
         </div>
-        <div className="chip-row">
-          {["Intercom", "Tidio", "Crisp", "Zendesk", "Chatbase", "Custom GPTs", "n8n", "Make", "LangChain", "OpenAI Agents", "Claude agents"].map((c) => (
-            <span key={c} className="badge">{c}</span>
-          ))}
-        </div>
+        <HeroMockup />
+      </section>
+
+      <section className="lp-section lp-works" aria-label="Works with">
+        <p className="lp-works-title">Works with the tools you already use</p>
+        <IntegrationStrip />
+      </section>
+
+      <section className="lp-section" id="how-it-catches" aria-labelledby="catch-title">
+        <h2 id="catch-title">See a wrong answer caught in seconds</h2>
+        <p className="lp-lead">Your bot sounds confident even when it&apos;s wrong. ProofMyAI checks every answer against your own help docs and tells you what to fix.</p>
+        <CatchDemo />
       </section>
 
       <section className="lp-section" id="video" aria-labelledby="video-title">
@@ -166,7 +181,7 @@ export default function Landing() {
         <p className="lp-lead">Customers are losing trust in support bots, and most bot platforms have no built-in quality control. ProofMyAI is the independent auditor that works with all of them.</p>
         <div className="grid grid-3">
           {FEATURES.map((f) => (
-            <div className="card" key={f.title}>
+            <div className="card feature-card" key={f.title}>
               <div className="feature-icon" aria-hidden>{f.icon}</div>
               <h3>{f.title}</h3>
               <p className="sub" style={{ margin: 0 }}>{f.text}</p>
@@ -177,16 +192,17 @@ export default function Landing() {
 
       <section className="lp-section">
         <h2>Set up in 3 steps</h2>
-        <div className="grid grid-3" style={{ marginTop: 24 }}>
-          {[
-            ["1", "Connect", "Upload a chat export, paste your bot's URL, add an n8n/Make key, or add one HTTP call to your agent."],
-            ["2", "Check", "AI grades every answer and run against your own docs and limits. Results in minutes."],
-            ["3", "Fix & relax", "Follow the fix list. Nightly tests and live monitoring alert you on Slack or email if anything breaks again."],
-          ].map(([n, t, d]) => (
-            <div className="card" key={n}>
-              <div className="feature-icon" style={{ fontWeight: 800 }}>{n}</div>
-              <h3>{t}</h3>
-              <p className="sub" style={{ margin: 0 }}>{d}</p>
+        <p className="lp-lead">No code needed for chatbots and workflows. Agents need one HTTP call.</p>
+        <div className="grid grid-3 steps" style={{ marginTop: 24 }}>
+          {([
+            [1, "Connect", "Upload a chat export, paste your bot's URL, add an n8n/Make key, or add one HTTP call to your agent."],
+            [2, "Check", "AI grades every answer and run against your own docs and limits. Results in minutes."],
+            [3, "Fix & relax", "Follow the fix list. Nightly tests and live monitoring alert you on Slack or email if anything breaks again."],
+          ] as const).map(([n, t, d]) => (
+            <div className="card step-card" key={n}>
+              <StepArt step={n} />
+              <div className="row" style={{ gap: 10, marginTop: 16 }}><span className="step-num">{n}</span><h3 style={{ margin: 0 }}>{t}</h3></div>
+              <p className="sub" style={{ margin: "8px 0 0" }}>{d}</p>
             </div>
           ))}
         </div>
@@ -226,10 +242,15 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="lp-section" style={{ textAlign: "center" }}>
-        <h2>Is your AI telling customers the truth?</h2>
-        <p className="lp-lead">Find out in 5 minutes with a free AI audit.</p>
-        <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
+      <section className="lp-section">
+        <div className="cta-banner">
+          <h2>Is your AI telling customers the truth?</h2>
+          <p>Find out in 5 minutes with a free AI audit. No card needed.</p>
+          <div className="row" style={{ justifyContent: "center" }}>
+            <Link href="/signup" className="btn btn-lg btn-white">Get your free AI audit →</Link>
+            <a href="#pricing" className="btn btn-lg btn-outline-white">See pricing</a>
+          </div>
+        </div>
       </section>
       </main>
       <SiteFooter />
