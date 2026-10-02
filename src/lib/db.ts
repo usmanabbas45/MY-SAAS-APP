@@ -267,6 +267,12 @@ function migrate(db: DatabaseSync): void {
     mrr REAL NOT NULL,
     ai_cost REAL NOT NULL DEFAULT 0
   )`);
+  // Cookie-free website traffic (no consent needed): daily totals only, no IPs or personal data.
+  db.exec(`CREATE TABLE IF NOT EXISTS traffic_pages (day TEXT NOT NULL, path TEXT NOT NULL, views INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, path))`);
+  db.exec(`CREATE TABLE IF NOT EXISTS traffic_sources (day TEXT NOT NULL, source TEXT NOT NULL, visits INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, source))`);
+  db.exec(`CREATE TABLE IF NOT EXISTS traffic_days (day TEXT PRIMARY KEY, visitors INTEGER NOT NULL DEFAULT 0, views INTEGER NOT NULL DEFAULT 0)`);
+  // Today's anonymous visitor fingerprints (salted hash that changes daily); rows older than today are deleted.
+  db.exec(`CREATE TABLE IF NOT EXISTS traffic_seen (day TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (day, hash))`);
   // Emails ("name@x.com") or whole domains ("@x.com") that may not sign up.
   db.exec(`CREATE TABLE IF NOT EXISTS blocklist (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

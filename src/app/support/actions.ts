@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers";
 import { currentUser } from "@/lib/auth";
-import { currentGaIds, trackEvent } from "@/lib/ga";
 import { rateLimit } from "@/lib/security";
 import { CATEGORIES, createTicket, validateTicket, whatsappLink, type Category } from "@/lib/support";
 
@@ -25,6 +24,5 @@ export async function submitTicketAction(_: TicketState, form: FormData): Promis
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (!rateLimit(`ticket:${user?.id ?? ip}`, 8, 3600000)) return { error: "You've sent several tickets in the last hour. Please wait, or message us on WhatsApp." };
   const t = await createTicket({ userId: user?.id ?? null, ...input, category: input.category in CATEGORIES ? input.category : "question" });
-  void trackEvent(await currentGaIds(), "generate_lead", { form: "support", category: input.category });
   return { ok: { code: t.code, whatsapp: whatsappLink(t.whatsapp), signedIn: Boolean(user) } };
 }

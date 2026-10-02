@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { all, get, run } from "./db";
-import { trackEvent, userGaIds } from "./ga";
 
 /**
  * Plans, usage limits and Paddle billing (Paddle is the Merchant of Record).
@@ -243,15 +242,6 @@ export function applySubscription(sub: PaddleSubscription): number | null {
     sub.updated_at ?? new Date().toISOString(),
     userId,
   );
-  // Conversions for Google Analytics, once per transition (the webhook and the checkout sync may both arrive).
-  const same = current.paddle_subscription_id === sub.id;
-  const price = plan ? PLANS[plan].price : 0;
-  if (sub.status === "trialing" && !(same && current.plan_status === "trialing")) {
-    void trackEvent(userGaIds(userId), "begin_trial", { plan: plan ?? "unknown", value: price, currency: "USD" });
-  }
-  if (sub.status === "active" && !(same && ["active", "past_due"].includes(current.plan_status ?? ""))) {
-    void trackEvent(userGaIds(userId), "purchase", { transaction_id: `${sub.id}:${sub.next_billed_at ?? ""}`, value: price, currency: "USD", plan: plan ?? "unknown" });
-  }
   return userId;
 }
 

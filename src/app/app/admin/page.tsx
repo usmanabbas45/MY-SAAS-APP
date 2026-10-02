@@ -40,6 +40,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <Link className="btn btn-ghost btn-sm" href="/app/admin/support">🎫 Support tickets ({ticketCounts().open} open)</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/testimonials">⭐ Feedback &amp; testimonials ({testimonialCounts().pending} new)</Link>
         <Link className="btn btn-sm" href="/app/admin/analytics">📊 Advanced analytics</Link>
+        <Link className="btn btn-ghost btn-sm" href="/app/admin/traffic">🌍 Website traffic</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/blocklist">🚫 Blocklist</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>
         <Link className="btn btn-ghost btn-sm" href="/status">🟢 Status page</Link>
