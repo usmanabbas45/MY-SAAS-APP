@@ -35,9 +35,15 @@ function str(form: FormData, key: string, max = 20000): string {
 }
 
 function done(path: string, msg: { ok?: string; error?: string }): never {
-  revalidatePath(path);
+  revalidatePath(path.split("?")[0]);
   const q = new URLSearchParams(msg as Record<string, string>).toString();
-  redirect(`${path}${q ? `?${q}` : ""}`);
+  redirect(`${path}${q ? `${path.includes("?") ? "&" : "?"}${q}` : ""}`);
+}
+
+/** Where to go after a connect form: the Connect page when it sent the form, otherwise the module page. */
+function backTo(form: FormData, projectId: number, fallback: string): string {
+  const back = String(form.get("back") ?? "");
+  return back.startsWith(`/app/p/${projectId}/connect`) && !/[\\\s]/.test(back) && !back.includes("//") ? back : fallback;
 }
 
 async function fileText(form: FormData, key: string): Promise<string> {
@@ -167,7 +173,7 @@ export async function shareAuditAction(form: FormData) {
 
 export async function addTargetAction(form: FormData) {
   const p = await project(form);
-  const path = `/app/p/${p.id}/tests`;
+  const path = backTo(form, p.id, `/app/p/${p.id}/tests`);
   const name = str(form, "name", 120) || "My chatbot";
   const url = str(form, "url", 2000);
   const template = str(form, "body_template", 10000) || '{"message":"{{question}}"}';
@@ -235,7 +241,7 @@ export async function runTestsAction(form: FormData) {
 
 export async function addWorkflowSourceAction(form: FormData) {
   const p = await project(form);
-  const path = `/app/p/${p.id}/workflows`;
+  const path = backTo(form, p.id, `/app/p/${p.id}/workflows`);
   const platform = str(form, "platform") === "make" ? "make" : "n8n";
   const baseUrl = str(form, "base_url", 500).replace(/\/+$/, "");
   const apiKey = str(form, "api_key", 2000);
@@ -319,7 +325,7 @@ export async function updateSettingsAction(form: FormData) {
 
 export async function sendTestEventAction(form: FormData) {
   const p = await project(form);
-  const path = `/app/p/${p.id}/live`;
+  const path = backTo(form, p.id, `/app/p/${p.id}/live`);
   const stamp = Date.now().toString(36);
   // A sample conversation where the bot asks again for a registration the customer already gave.
   await (await processLiveChat(p, {
@@ -341,7 +347,7 @@ export async function sendTestEventAction(form: FormData) {
 
 export async function addChatSourceAction(form: FormData) {
   const p = await project(form);
-  const path = `/app/p/${p.id}/live`;
+  const path = backTo(form, p.id, `/app/p/${p.id}/live`);
   const accountSid = str(form, "account_sid", 64);
   const keySid = str(form, "key_sid", 64);
   const secret = str(form, "secret", 200);

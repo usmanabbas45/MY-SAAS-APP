@@ -3,6 +3,7 @@
 export function agentSnippets(appUrl: string, key: string) {
   const url = `${appUrl}/api/v1/agent-runs`;
   return {
+    url,
     curl: `curl -X POST ${url} \\
   -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\

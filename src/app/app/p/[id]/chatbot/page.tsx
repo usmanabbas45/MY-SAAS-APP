@@ -91,7 +91,7 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
           ) : null}
         </div>
 
-        <div className="card">
+        <div className="card" id="new-audit">
           <div className="card-head">
             <div>
               <h3>2. New audit</h3>

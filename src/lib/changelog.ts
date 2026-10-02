@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-02", title: "One place to connect everything", tag: "New",
+    items: [
+      "New Connect page: pick your chatbot, AI agent or workflow tool and follow 3 numbered steps with copy buttons.",
+      "A live status box turns green the moment your first data arrives, so you know it worked.",
+      "New projects start with a simple “Connect your first AI” panel.",
+    ],
+  },
+  {
     date: "2026-09-30", title: "Two-factor login, CAPTCHA and stronger passwords", tag: "New",
     items: [
       "Turn on two-factor authentication in Account with any authenticator app, with 10 one-time recovery codes.",
