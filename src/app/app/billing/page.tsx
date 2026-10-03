@@ -5,7 +5,7 @@ import { Flash } from "@/components/ui";
 import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import {
-  billingConfigProblems, billingEnabled, checkPaddlePrices, billingState, checkoutSignature, paddleEnv, PAID_PLANS, PLAN_FEATURES, PLANS, priceId, usage, type Resource,
+  billingConfigProblems, billingEnabled, checkPaddlePrices, billingState, checkoutSignature, paddleEnv, PAID_PLANS, PLAN_FEATURES, PLANS, priceId, usage, yearlyAvailable, yearlyMonthly, yearlyPrice, YEARLY_MONTHS, type Interval, type Resource,
 } from "@/lib/billing";
 import { listProjects } from "@/lib/projects";
 import { logoutAction } from "../../(auth)/actions";
@@ -30,7 +30,7 @@ function day(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export default async function BillingPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string; period?: string }> }) {
   const user = await requireUser();
   const flash = await searchParams;
   const enabled = billingEnabled();
@@ -42,14 +42,17 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   if (admin && enabled && problems.length === 0) problems = await checkPaddlePrices().catch(() => []);
   const autoRenew = !state.cancelAt;
   const founding = foundingStatus(user.id);
-  const subscribed =["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
+  const subscribed = ["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
+  const yearly = yearlyAvailable();
+  const period: Interval = !yearly ? "month" : flash.period === "year" || flash.period === "month" ? flash.period : subscribed ? state.interval : "month";
+  const { period: _p, ...messages } = flash;
 
   let status: { text: string; tone: string } | null = null;
   if (state.plan.id === "unlimited") status = { text: enabled ? "Owner account: no limits" : "Billing is not switched on: no limits", tone: "badge-info" };
   else if (state.cancelAt) status = { text: `Cancels on ${day(state.cancelAt)}`, tone: "badge-warn" };
   else if (state.status === "trialing") status = { text: `Free trial until ${day(state.trialEndsAt ?? state.renewsAt)}`, tone: "badge-brand" };
   else if (state.status === "past_due") status = { text: "Payment failed: update your card", tone: "badge-bad" };
-  else if (state.status === "active") status = { text: `Renews on ${day(state.renewsAt)}`, tone: "badge-ok" };
+  else if (state.status === "active") status = { text: `${state.interval === "year" ? "Yearly plan · renews" : "Renews"} on ${day(state.renewsAt)}`, tone: "badge-ok" };
   else if (state.status === "comped" && founding.active && founding.endsAt) status = { text: `🎉 Founding customer: free until ${day(founding.endsAt)}`, tone: "badge-ok" };
   else if (state.status === "comped") status = { text: "Free plan upgrade from ProofMyAI", tone: "badge-ok" };
   else if (state.status === "paused" || state.status === "canceled") status = { text: `Subscription ${state.status}`, tone: "badge-warn" };
@@ -66,7 +69,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
       <main className="content" style={{ margin: "0 auto", maxWidth: 1000 }}>
         <p className="sub"><Link href={projects[0] ? `/app/p/${projects[0].id}` : "/app"}>← Back to dashboard</Link></p>
         <h1>Plan & billing</h1>
-        <Flash {...flash} />
+        <Flash {...messages} />
 
         {(admin || !enabled) && problems.length > 0 && (enabled || process.env.PADDLE_API_KEY || process.env.PADDLE_CLIENT_TOKEN) ? (
           <div className="card" style={{ borderColor: "var(--warn)" }}>
@@ -75,7 +78,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
             <p className="sub" style={{ margin: 0 }}>Fix these in Paddle or in Railway → Variables (then click Deploy). Only you can see this box.</p>
           </div>
         ) : admin && enabled ? (
-          <p className="alert alert-ok">✅ Paddle check passed: the API key works and all 3 prices exist as monthly subscriptions with a free trial ({paddleEnv()} mode).</p>
+          <p className="alert alert-ok">✅ Paddle check passed: the API key works and your prices exist with a free trial ({paddleEnv()} mode).{yearly ? " Yearly plans are on." : " Yearly plans are off until you add the PADDLE_PRICE_…_YEARLY variables."}</p>
         ) : null}
 
         <div className="card">
@@ -128,11 +131,20 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         {enabled ? (
           <>
             <h2 style={{ marginTop: 28 }}>{subscribed ? "Change plan" : "Choose a plan"}</h2>
+            {yearly ? (
+              <div className="period-toggle" role="tablist" aria-label="Billing period">
+                <Link href="/app/billing?period=month" role="tab" aria-selected={period === "month"} className={period === "month" ? "active" : ""}>Monthly</Link>
+                <Link href="/app/billing?period=year" role="tab" aria-selected={period === "year"} className={period === "year" ? "active" : ""}>Yearly <span className="badge badge-ok">2 months free</span></Link>
+              </div>
+            ) : null}
             <p className="sub">Every plan starts with a <strong>14-day free trial</strong>. Cancel any time. <Link href="/refund">14-day money-back guarantee</Link>. Prices in USD; local tax is added at checkout where required.</p>
             <div className="grid grid-4">
               {PAID_PLANS.map((id) => {
                 const plan = PLANS[id];
-                const current = subscribed && state.plan.id === id;
+                const yearlyHere = period === "year" && Boolean(priceId(id, "year"));
+                const interval: Interval = yearlyHere ? "year" : "month";
+                const current = subscribed && state.plan.id === id && state.interval === interval;
+                const samePlan = subscribed && state.plan.id === id;
                 const featured = id === "growth";
                 if (!priceId(id) && !current) {
                   // Optional plan without a Paddle price yet: sold through a conversation.
@@ -151,20 +163,32 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                       <h3>{plan.name}</h3>
                       {current ? <span className="badge badge-ok">Your plan</span> : featured ? <span className="badge badge-brand">Most popular</span> : null}
                     </div>
-                    <div className="price">${plan.price}<small>/month</small></div>
+                    {yearlyHere ? (
+                      <>
+                        <div className="price">${yearlyMonthly(id)}<small>/month</small></div>
+                        <p className="price-note">Billed ${yearlyPrice(id)} yearly · <strong>save ${plan.price * 12 - yearlyPrice(id)}</strong></p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="price">${plan.price}<small>/month</small></div>
+                        <p className="price-note">{period === "year" ? "Monthly billing only" : "Billed monthly"}</p>
+                      </>
+                    )}
                     <ul>{PLAN_FEATURES[id as Exclude<typeof id, "free">].map((f) => <li key={f}>{f}</li>)}</ul>
                     {current ? (
                       <button className="btn btn-ghost" style={{ width: "100%" }} disabled>Current plan</button>
                     ) : subscribed ? (
                       <form action={changePlanAction}>
                         <input type="hidden" name="plan" value={id} />
+                        <input type="hidden" name="interval" value={interval} />
                         <SubmitButton className={featured ? "btn" : "btn btn-ghost"} pendingText="Switching…">
-                          {plan.price > state.plan.price ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`}
+                          {samePlan ? (interval === "year" ? `Switch to yearly (save $${plan.price * 12 - yearlyPrice(id)})` : "Switch to monthly")
+                            : plan.price > state.plan.price ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`}
                         </SubmitButton>
                       </form>
                     ) : (
                       <CheckoutButton
-                        priceId={priceId(id)} token={process.env.PADDLE_CLIENT_TOKEN!.trim()} env={paddleEnv()} email={user.email}
+                        priceId={priceId(id, interval)} token={process.env.PADDLE_CLIENT_TOKEN!.trim()} env={paddleEnv()} email={user.email}
                         userId={user.id} sig={checkoutSignature(user.id)} label="Start 14-day free trial" featured={featured}
                       />
                     )}
@@ -172,7 +196,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                 );
               })}
             </div>
-            {subscribed ? <p className="faint">Upgrades take effect straight away and you pay only the difference for the rest of this month. During the free trial, switching is free.</p> : null}
+            {subscribed ? <p className="faint">Changes take effect straight away and you pay only the difference for the rest of your current period. During the free trial, switching is free.</p> : null}
+            {yearly ? <p className="faint">Yearly plans: 12 months for the price of {YEARLY_MONTHS}, paid once a year. The 14-day free trial and 14-day money-back guarantee apply too.</p> : null}
             {paddleEnv() === "sandbox" ? <p className="faint">Test mode: use card 4242 4242 4242 4242, any future date, CVC 100. No real money is charged.</p> : null}
           </>
         ) : null}
