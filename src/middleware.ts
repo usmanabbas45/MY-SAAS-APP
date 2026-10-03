@@ -1,11 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Sends www.proofmyai.com (and any www. host) to the main domain with a permanent redirect, so Google sees one site. */
+const REF_COOKIE = "pm_ref";
+
+/**
+ * - Sends www.proofmyai.com (and any www. host) to the main domain with a permanent redirect, so Google sees one site.
+ * - Remembers a referral code (?ref=abcd2345) for 60 days, so the friend is credited when they sign up later.
+ */
 export function middleware(req: NextRequest) {
   const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").split(",")[0].trim().toLowerCase();
-  if (!host.startsWith("www.")) return NextResponse.next();
-  const url = new URL(req.nextUrl.pathname + req.nextUrl.search, `https://${host.slice(4)}`);
-  return NextResponse.redirect(url, 308);
+  if (host.startsWith("www.")) {
+    const url = new URL(req.nextUrl.pathname + req.nextUrl.search, `https://${host.slice(4)}`);
+    return NextResponse.redirect(url, 308);
+  }
+  const ref = req.nextUrl.searchParams.get("ref")?.toLowerCase();
+  const res = NextResponse.next();
+  if (ref && /^[a-z0-9]{8}$/.test(ref) && !req.cookies.get(REF_COOKIE)) {
+    // First invite wins: a later link doesn't replace the friend who invited them first.
+    res.cookies.set(REF_COOKIE, ref, { maxAge: 60 * 86400, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+  }
+  return res;
 }
 
 export const config = {

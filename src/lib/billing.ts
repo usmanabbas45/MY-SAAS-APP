@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { all, get, run } from "./db";
 import { trackEvent, userGaIds } from "./ga";
+import { onFriendPaid } from "./referral-rewards";
 
 /**
  * Plans, usage limits and Paddle billing (Paddle is the Merchant of Record).
@@ -287,12 +288,13 @@ export function applySubscription(sub: PaddleSubscription): number | null {
     void trackEvent(userGaIds(userId), "begin_trial", { plan: plan ?? "unknown", value: price, currency: "USD" });
   }
   if (sub.status === "active" && !(same && ["active", "past_due"].includes(current.plan_status ?? ""))) {
+    onFriendPaid(userId); // referral rewards, once per friend
     void trackEvent(userGaIds(userId), "purchase", { transaction_id: `${sub.id}:${sub.next_billed_at ?? ""}`, value: price, currency: "USD", plan: plan ?? "unknown" });
   }
   return userId;
 }
 
-async function paddleApi<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function paddleApi<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const base = paddleEnv() === "production" ? "https://api.paddle.com" : "https://sandbox-api.paddle.com";
   const res = await fetch(`${base}${path}`, {
     method: init.method ?? "GET",

@@ -32,6 +32,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/team`, label: "Team", icon: "👥" },
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
     { href: "/app/billing", label: "Plan & billing", icon: "💳" },
+    { href: "/app/referrals", label: "Invite & earn", icon: "🎁" },
     { href: "/app/account", label: "Account", icon: "👤" },
     { href: "/app/support", label: "Help & support", icon: "🛟" },
     { href: "/app/feedback", label: "Share feedback", icon: "⭐" },

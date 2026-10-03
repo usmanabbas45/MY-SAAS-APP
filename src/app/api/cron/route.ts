@@ -14,6 +14,7 @@ import { runDueMonitors } from "@/lib/uptime";
 import { purgeOldErrors } from "@/lib/monitoring";
 import { sendDueOnboarding } from "@/lib/onboarding";
 import { sendRenewalReminders } from "@/lib/renewals";
+import { applyPendingRewards } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -47,6 +48,7 @@ async function runAll(started: number) {
   const digests = await sendDueDigests();
   const welcomeEmails = await sendDueOnboarding();
   const renewalReminders = await sendRenewalReminders();
+  const referralRewards = await applyPendingRewards();
   const chatSources = await pollAllChatSources();
   const noReply = await alertMissingReplies();
   const uptimeChecks = await runDueMonitors();
@@ -55,5 +57,5 @@ async function runAll(started: number) {
   const founding = await processFoundingPeriods();
   recordDailyMetrics();
   recordCronRun(true);
-  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, welcomeEmails, renewalReminders, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
+  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, welcomeEmails, renewalReminders, referralRewards, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
 }

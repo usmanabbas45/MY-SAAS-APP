@@ -34,6 +34,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <div className="row">
           {isAdmin(user.email) ? <Link href="/app/admin" className="sub">🛡️ Admin</Link> : null}
           <Link href="/app/billing" className="sub">💳 Billing</Link>
+          <Link href="/app/referrals" className="sub">🎁 Invite &amp; earn</Link>
           <Link href="/app/account" className="sub">👤 {user.email}</Link>
           <ThemeToggle />
           <form action={logoutAction}><button className="btn btn-ghost btn-sm">Log out</button></form>
