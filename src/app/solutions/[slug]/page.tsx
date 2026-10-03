@@ -1,3 +1,4 @@
+import { metaDescription, metaTitle } from "@/lib/meta";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,10 +15,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const s = SOLUTIONS.find((x) => x.slug === slug);
   if (!s) return {};
   return {
-    title: s.title,
-    description: s.description,
+    title: metaTitle(s.title),
+    description: metaDescription(s.description),
     alternates: { canonical: `/solutions/${s.slug}` },
-    openGraph: { title: `${s.title} · ProofMyAI`, description: s.description, url: `/solutions/${s.slug}` },
+    openGraph: { title: `${s.title} · ProofMyAI`, description: metaDescription(s.description, 200), url: `/solutions/${s.slug}` },
   };
 }
 

@@ -4,7 +4,7 @@ import { POSTS } from "@/lib/blog";
 import { jsonLd, SITE_URL } from "@/lib/seo";
 
 export const metadata = {
-  title: "Guides: AI chatbot testing, hallucinations, n8n & agent monitoring",
+  title: "Guides: AI chatbot testing & workflow monitoring",
   description: "Practical guides to testing AI chatbots, catching hallucinations, and monitoring n8n, Make and AI agents in production.",
   alternates: { canonical: "/blog" },
 };

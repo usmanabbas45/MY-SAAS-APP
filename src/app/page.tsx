@@ -1,3 +1,4 @@
+import { metaDescription } from "@/lib/meta";
 import { PLAN_FEATURES, PLANS as PLANS_BY_ID, priceId, yearlyAvailable, yearlyMonthly, yearlyPrice, type PlanId } from "@/lib/billing";
 import { planSignupHref } from "@/lib/next-path";
 import Link from "next/link";
@@ -65,7 +66,7 @@ export const dynamic = "force-dynamic"; // approved testimonials appear without 
 
 export const metadata = {
   title: { absolute: "ProofMyAI · AI Chatbot, AI Agent & n8n Workflow Monitoring" },
-  description: SITE_DESCRIPTION,
+  description: metaDescription(SITE_DESCRIPTION),
   alternates: { canonical: "/" },
 };
 
