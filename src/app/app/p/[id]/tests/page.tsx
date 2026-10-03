@@ -1,15 +1,20 @@
 import { SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { pendingSuggestions } from "@/lib/testgen";
+import { aiForProject } from "@/lib/judge/llm";
 import { all } from "@/lib/db";
 import { projectAccess } from "@/lib/projects";
-import { addTargetAction, addTestCaseAction, deleteTargetAction, deleteTestCaseAction, runTestsAction } from "../actions";
+import { acceptSuggestionsAction, addTargetAction, addTestCaseAction, deleteTargetAction, deleteTestCaseAction, dismissSuggestionsAction, generateTestsAction, runTestsAction } from "../actions";
 
 export const metadata = { title: "Chatbot tests" };
 
 export default async function TestsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = projectAccess(user.id, Number((await params).id)).project;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
+  const suggestions = pendingSuggestions(p.id);
+  const canEdit = role !== "viewer";
+  const aiOn = aiForProject(p.id);
   const flash = await searchParams;
   const targets = all<{ id: number; name: string; url: string; response_path: string; last_run_at: string | null }>(
     "SELECT id, name, url, response_path, last_run_at FROM bot_targets WHERE project_id = ? ORDER BY id", p.id,
@@ -109,6 +114,54 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
             </div>
           ) : null}
         </div>
+      </div>
+
+      <div className="card" id="suggested">
+        <div className="card-head">
+          <div>
+            <h3>✨ Auto test generator</h3>
+            <span className="sub">AI writes test questions for you from your help articles, your rules and the questions your bot already got wrong, including prompt-injection and “talk to a human” checks. You review them before they run.</span>
+          </div>
+          {canEdit && aiOn ? (
+            <form action={generateTestsAction}>{pid}<SubmitButton className="btn btn-sm" pendingText="Writing tests… (about 30 s)">{suggestions.length ? "✨ Suggest more" : "✨ Generate test questions"}</SubmitButton></form>
+          ) : null}
+        </div>
+        {!aiOn ? <p className="sub" style={{ margin: 0 }}>The generator needs AI checking switched on for this project (Settings → Data &amp; privacy).</p> : null}
+        {suggestions.length ? (
+          <>
+            {canEdit ? (
+              <div className="row" style={{ gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                <form action={acceptSuggestionsAction}>{pid}<SubmitButton className="btn btn-sm" pendingText="Adding…">✓ Add all {suggestions.length}</SubmitButton></form>
+                <form action={dismissSuggestionsAction}>{pid}<SubmitButton className="btn btn-ghost btn-sm" pendingText="…" confirm="Dismiss all suggestions?">Dismiss all</SubmitButton></form>
+              </div>
+            ) : null}
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Suggested question</th><th>Must include</th><th>Why</th><th /></tr></thead>
+                <tbody>
+                  {suggestions.map((s) => (
+                    <tr key={s.id}>
+                      <td className="cell-text">
+                        <Badge tone={s.source === "failure" ? "bad" : s.source === "safety" ? "warn" : "info"}>{s.source === "failure" ? "Got wrong before" : s.source === "safety" ? "Safety" : "From your docs"}</Badge>
+                        <div style={{ marginTop: 4 }}>{s.question}</div>
+                      </td>
+                      <td className="sub cell-text" style={{ whiteSpace: "pre-wrap" }}>{s.expected}{s.must_not ? <div className="faint" style={{ marginTop: 4 }}>Must not: {s.must_not.split("\n").join(" · ")}</div> : null}</td>
+                      <td className="sub cell-text">{s.why}</td>
+                      <td>
+                        {canEdit ? (
+                          <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                            <form action={acceptSuggestionsAction}>{pid}<input type="hidden" name="suggestionId" value={s.id} /><SubmitButton className="btn btn-sm" pendingText="…">Add</SubmitButton></form>
+                            <form action={dismissSuggestionsAction}>{pid}<input type="hidden" name="suggestionId" value={s.id} /><SubmitButton className="btn btn-ghost btn-sm" pendingText="…">✕</SubmitButton></form>
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : aiOn ? <p className="faint" style={{ margin: 0, fontSize: 13 }}>Paid plans also get fresh suggestions automatically every week when your help articles change or the bot gets new questions wrong.</p> : null}
       </div>
 
       <div className="card">

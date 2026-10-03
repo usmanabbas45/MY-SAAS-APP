@@ -21,7 +21,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     ...(role === "viewer" ? [] : [{ href: `${base}/connect`, label: "Connect", icon: "➕" }]),
     { href: `${base}/live`, label: "Live tracking", icon: "📡" },
     { href: `${base}/chatbot`, label: "Chatbot audits", icon: "💬" },
-    { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪" },
+    { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM test_suggestions WHERE project_id = ?", project.id)?.n ?? 0, badgeTone: "brand" },
     { href: `${base}/agents`, label: "AI agents", icon: "🤖" },
     { href: `${base}/workflows`, label: "n8n & Make", icon: "⚙️" },
     { href: `${base}/uptime`, label: "Uptime", icon: "🟢", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM uptime_monitors WHERE project_id = ? AND status = 'down'", project.id)?.n ?? 0 },

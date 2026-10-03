@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Auto test generator", tag: "New",
+    items: [
+      "✨ On the Chatbot tests page, AI now writes test questions for you from your help articles, your rules and the questions your bot already got wrong, including prompt-injection and “talk to a human” checks.",
+      "Review the suggestions and add them in one click. Paid plans get fresh suggestions every week when something changes.",
+    ],
+  },
+  {
     date: "2026-10-03", title: "Invite & earn: give a month, get a month", tag: "New",
     items: ["Share your invite link from the new 🎁 Invite & earn page. When a friend becomes a paying customer, you both get your next month free."],
   },
