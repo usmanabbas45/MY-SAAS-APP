@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { checkLogin, createUser, endSession, isSuspended, startSession } from "@/lib/auth";
+import { checkLogin, createUser, endSession, isSuspended, requireUser, startSession } from "@/lib/auth";
 import { requestPasswordReset, resetPassword } from "@/lib/account";
 import { createProject } from "@/lib/projects";
 import { currentGaIds, rememberGaClient, trackEvent } from "@/lib/ga";
@@ -13,6 +13,7 @@ import { get } from "@/lib/db";
 import { recordLogin, securityNotice } from "@/lib/securityevents";
 import { pendingLoginToken, readPendingLogin, twoFactorEnabled, verifySecondFactor } from "@/lib/twofactor";
 import { rateLimit } from "@/lib/security";
+import { sendVerification } from "@/lib/verify";
 
 export interface AuthState { error?: string; ok?: string; captcha?: CaptchaConfig; pending?: string; founding?: boolean; next?: string }
 
@@ -47,6 +48,11 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   const { user, error } = createUser(email, password);
   if (!user) return fail(error ?? "Could not create the account.");
   const projectId = createProject(user.id, String(form.get("company") ?? "") || "My first project");
+  try {
+    await sendVerification(user.id);
+  } catch (err) {
+    console.error("[auth] verification email failed:", err); // they can resend from the dashboard
+  }
   await startSession(user.id);
   await recordLogin(user.id, user.email, await userAgent(), ip);
   const ga = await currentGaIds();
@@ -129,4 +135,20 @@ export async function resetPasswordAction(_: AuthState, form: FormData): Promise
   const email = get<{ email: string }>("SELECT email FROM users WHERE id = ?", result.userId)?.email;
   if (email) await securityNotice(email, "password_changed", await clientIp(), await userAgent());
   redirect("/login?reset=1");
+}
+
+/** "Resend link" on the confirm-your-email banner. */
+export async function resendVerificationAction(): Promise<void> {
+  const user = await requireUser();
+  let msg: string;
+  if (!rateLimit(`verify:${user.id}`, 3, 3600000)) msg = "error=" + encodeURIComponent("You've asked for 3 links in the last hour. Please check your inbox and spam folder, or try again later.");
+  else {
+    try {
+      const r = await sendVerification(user.id);
+      msg = r === "sent" ? "ok=" + encodeURIComponent(`Confirmation link sent to ${user.email}. Check your inbox (and spam folder).`) : "ok=" + encodeURIComponent("Your email is confirmed.");
+    } catch {
+      msg = "error=" + encodeURIComponent("We couldn't send the email right now. Please try again in a few minutes.");
+    }
+  }
+  redirect(`/app/account?${msg}`);
 }

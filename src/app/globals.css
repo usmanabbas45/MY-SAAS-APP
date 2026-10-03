@@ -225,6 +225,8 @@ tbody tr:hover { background: var(--surface-2); }
 .alert-ok { background: var(--ok-soft); color: var(--ok); }
 .alert-info { background: var(--info-soft); color: var(--info); }
 .alert-warn { background: var(--warn-soft); color: var(--warn); }
+.verify-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.verify-banner span { min-width: 0; flex: 1 1 260px; }
 
 .empty { text-align: center; padding: 36px 16px; color: var(--muted); }
 .empty-icon { font-size: 30px; margin-bottom: 8px; }

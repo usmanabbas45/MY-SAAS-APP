@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { accessibleProjects, projectAccess } from "@/lib/projects";
 import { logoutAction } from "../../../(auth)/actions";
+import { VerifyBanner } from "@/components/verify-banner";
 
 export default async function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -55,6 +56,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
       <div className="main">
         <nav className="mobile-nav" aria-label="Sections"><NavLinks items={[...monitor, ...manage]} /></nav>
         <div className="content">
+          <VerifyBanner userId={user.id} email={user.email} />
           {role !== "owner" ? <div className="alert alert-info role-banner">{role === "viewer" ? "👁️ View-only access: you can see everything but not change it." : "✏️ Editor access: you can connect tools and run checks. Settings and team are managed by the owner."}</div> : null}
           {children}
         </div>

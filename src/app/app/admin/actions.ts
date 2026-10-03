@@ -7,6 +7,7 @@ import { addBlock, removeBlock } from "@/lib/blocklist";
 import type { PlanId } from "@/lib/billing";
 import { all, get, run } from "@/lib/db";
 import { deleteTestimonial, setTestimonialStatus, submitTestimonial, validateTestimonial } from "@/lib/testimonials";
+import { runBackup } from "@/lib/backup";
 import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
 
 async function target(form: FormData) {
@@ -203,4 +204,11 @@ export async function adminDisableTwoFactorAction(form: FormData) {
   await securityNotice(user.email, "2fa_off");
   logAdmin(admin.email, "disable_2fa", user.email);
   back({ ok: "Two-factor authentication removed. The customer can log in with their password and turn it on again." });
+}
+
+export async function backupNowAction() {
+  const admin = await requireAdmin();
+  const r = await runBackup(new Date(), { email: true });
+  logAdmin(admin.email, "backup_now", null, r.detail);
+  redirect(`/app/admin?${new URLSearchParams(r.ok ? { ok: `Backup made (${r.detail}).` } : { error: `Backup failed: ${r.detail}` })}#system`);
 }

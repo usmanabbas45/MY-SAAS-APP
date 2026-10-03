@@ -431,6 +431,22 @@ function migrate(db: DatabaseSync): void {
     used INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  // Email verification. Accounts created before this column existed are treated as verified.
+  const hadVerified = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).some((c) => c.name === "email_verified_at");
+  addColumn(db, "users", "email_verified_at", "TEXT");
+  if (!hadVerified) db.exec("UPDATE users SET email_verified_at = created_at");
+  db.exec(`CREATE TABLE IF NOT EXISTS email_verifications (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS server_errors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    source TEXT NOT NULL,
+    message TEXT NOT NULL
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_server_errors_at ON server_errors(at)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_conv ON audit_items(conversation_id, turn_index)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_audits_share ON audits(share_token) WHERE share_token IS NOT NULL");
 }
