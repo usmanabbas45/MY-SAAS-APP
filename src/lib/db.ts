@@ -311,6 +311,19 @@ function migrate(db: DatabaseSync): void {
     accepted_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  // "Fix with AI": generated help-article fixes and safe system prompts.
+  db.exec(`CREATE TABLE IF NOT EXISTS ai_fixes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    audit_id INTEGER,
+    kind TEXT NOT NULL,
+    target TEXT NOT NULL,
+    title TEXT,
+    output TEXT NOT NULL,
+    notes TEXT,
+    applied_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   // Emails ("name@x.com") or whole domains ("@x.com") that may not sign up.
   db.exec(`CREATE TABLE IF NOT EXISTS blocklist (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

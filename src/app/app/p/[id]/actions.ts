@@ -23,7 +23,9 @@ import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
 import { AccessError, newApiKey, projectAccess, type Project } from "@/lib/projects";
 import { parseMustInclude, RULE_KINDS } from "@/lib/rules";
-import { assertPublicUrl, encrypt, randomToken } from "@/lib/security";
+import { assertPublicUrl, encrypt, randomToken, rateLimit } from "@/lib/security";
+import { applyArticleFix, fixAvailability, generateArticleFix, generateSafePrompt } from "@/lib/fixes";
+import { JudgeError } from "@/lib/judge/llm";
 import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
 
@@ -583,4 +585,57 @@ export async function addIntercomSourceAction(form: FormData) {
   done(path, r.error
     ? { error: `Connected to ${app.appName}, but the first check failed: ${r.error}` }
     : { ok: `Connected to ${app.appName}! Checked ${r.replies} bot repl${r.replies === 1 ? "y" : "ies"} from the last 24 hours. New conversations are checked every 15 minutes.` });
+}
+
+// ---------- Fix with AI ----------
+function fixGate(p: Project, path: string): void {
+  const blocked = fixAvailability(p.id, p.user_id);
+  if (blocked) done(path, { error: blocked });
+  if (!rateLimit(`fix:${p.id}`, 20, 3600000)) done(path, { error: "That's a lot of fixes in one hour. Please wait a little and try again." });
+}
+
+const fixError = (err: unknown) => (err instanceof JudgeError || err instanceof Error ? err.message : "The AI couldn't write this fix. Try again.");
+
+export async function fixWithAiAction(form: FormData) {
+  const p = await project(form);
+  const auditId = Number(form.get("auditId"));
+  const doc = str(form, "doc", 300);
+  const path = `/app/p/${p.id}/chatbot/audit/${auditId}`;
+  if (!get("SELECT 1 FROM audits WHERE id = ? AND project_id = ?", auditId, p.id)) done(path, { error: "Audit not found." });
+  fixGate(p, path);
+  let fixId = 0;
+  try {
+    fixId = (await generateArticleFix(p.id, auditId, doc)).id;
+  } catch (err) {
+    done(path, { error: fixError(err) });
+  }
+  revalidatePath(path);
+  redirect(`${path}#fix-${fixId}`);
+}
+
+export async function safePromptAction(form: FormData) {
+  const p = await project(form);
+  const back = str(form, "back", 300);
+  const path = back.startsWith(`/app/p/${p.id}/`) && !back.includes("//") ? back.split("#")[0] : `/app/p/${p.id}/chatbot`;
+  fixGate(p, path);
+  try {
+    await generateSafePrompt(p.id);
+  } catch (err) {
+    done(path, { error: fixError(err) });
+  }
+  revalidatePath(path.split("?")[0]);
+  redirect(`${path.split("?")[0]}#safe-prompt`);
+}
+
+export async function applyFixAction(form: FormData) {
+  const p = await project(form);
+  const auditId = Number(form.get("auditId"));
+  const path = `/app/p/${p.id}/chatbot/audit/${auditId}`;
+  try {
+    const { title } = applyArticleFix(p.id, Number(form.get("fixId")));
+    done(path, { ok: `Saved “${title}” to your knowledge base. Future checks use the corrected article. Remember to update it in your own chatbot too.` });
+  } catch (err) {
+    if (err instanceof Error && err.message === "Fix not found.") done(path, { error: err.message });
+    throw err;
+  }
 }

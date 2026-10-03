@@ -689,3 +689,8 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .up-dot.failing { background: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
 .up-badge.failing { background: var(--warn-soft); color: var(--warn); }
 .role-banner { margin-bottom: 16px; }
+
+/* ---------- Fix with AI ---------- */
+.fix-result { margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--brand-soft); border: 1px solid var(--border); }
+.fix-notes { margin: 8px 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.fix-text { white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.55; margin: 0 0 10px; font-family: inherit; }

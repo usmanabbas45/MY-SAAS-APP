@@ -162,7 +162,7 @@ export interface FixGroup {
   count: number;
   high: number;
   verdicts: Partial<Record<Verdict, number>>;
-  examples: { question: string; reason: string }[];
+  examples: { question: string; answer: string; reason: string }[];
 }
 
 /** Groups problem answers by the help article that should be fixed or written. */
@@ -192,8 +192,8 @@ export function riskSummary(auditId: number): { high: number; medium: number; fl
 }
 
 export function fixList(auditId: number): FixGroup[] {
-  const rows = all<{ source_doc: string | null; verdict: Verdict; severity: Severity; question: string; reason: string; rule_hit: string | null; conv_flags: string | null }>(
-    `SELECT source_doc, COALESCE(corrected_verdict, verdict) AS verdict, severity, question, reason, rule_hit, conv_flags
+  const rows = all<{ source_doc: string | null; verdict: Verdict; severity: Severity; question: string; answer: string; reason: string; rule_hit: string | null; conv_flags: string | null }>(
+    `SELECT source_doc, COALESCE(corrected_verdict, verdict) AS verdict, severity, question, answer, reason, rule_hit, conv_flags
        FROM audit_items WHERE audit_id = ? AND COALESCE(corrected_verdict, verdict) <> 'correct'
       ORDER BY CASE severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END`,
     auditId,
@@ -210,7 +210,7 @@ export function fixList(auditId: number): FixGroup[] {
     g.count++;
     if (r.severity === "high") g.high++;
     g.verdicts[r.verdict] = (g.verdicts[r.verdict] ?? 0) + 1;
-    if (g.examples.length < 3) g.examples.push({ question: r.question, reason: r.reason });
+    if (g.examples.length < 8) g.examples.push({ question: r.question, answer: r.answer, reason: r.reason });
     groups.set(doc, g);
   }
   return [...groups.values()].sort((a, b) => b.high - a.high || b.count - a.count);

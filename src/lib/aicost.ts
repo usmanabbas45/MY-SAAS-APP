@@ -6,7 +6,7 @@ import { all, get, run } from "./db";
  * text), so the admin can see what each customer costs against what they pay.
  */
 
-export type AiKind = "audit" | "live" | "test" | "agent";
+export type AiKind = "audit" | "live" | "test" | "agent" | "fix";
 export interface AiUse { projectId: number; kind: AiKind }
 export interface TokenUsage { input: number; output: number; cacheRead: number; cacheWrite: number }
 

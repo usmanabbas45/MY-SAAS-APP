@@ -1,3 +1,5 @@
+import { SafePromptCard } from "../FixViews";
+import { fixAvailability, latestFixes } from "@/lib/fixes";
 import Link from "next/link";
 import { SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, ScoreBadge, StatusBadge, timeAgo } from "@/components/ui";
@@ -19,7 +21,7 @@ const SAMPLE_CSV = `conversation_id,role,message
 
 export default async function ChatbotPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = projectAccess(user.id, Number((await params).id)).project;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
   const flash = await searchParams;
   const docs = all<{ id: number; title: string; chars: number; updated_at: string }>(
     "SELECT id, title, LENGTH(content) AS chars, updated_at FROM kb_docs WHERE project_id = ? ORDER BY id DESC", p.id,
@@ -153,6 +155,8 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
           <SubmitButton pendingText="Adding…">Add rule</SubmitButton>
         </form>
       </div>
+
+      <SafePromptCard fix={latestFixes(p.id, null).get("system_prompt")} projectId={p.id} back={`/app/p/${p.id}/chatbot`} canEdit={role !== "viewer"} aiOff={fixAvailability(p.id, p.user_id)} />
 
       {trend.length >= 2 ? (
         <div className="card">
