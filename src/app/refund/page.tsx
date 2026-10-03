@@ -6,12 +6,14 @@ export const metadata = { title: "Refund Policy", description: "ProofMyAI's 14-d
 
 export default function RefundPage() {
   return (
-    <PublicPage title="Refund Policy" updated="28 September 2026">
+    <PublicPage title="Refund Policy" updated="3 October 2026">
       <p>We want you to be sure ProofMyAI is right for you before you pay, and happy after you do.</p>
       <h2>Free plan and free trial</h2>
       <p>The Free plan (50 conversations a month) needs no card. Paid plans start with a <strong>14-day free trial</strong>. If you cancel before the trial ends, you are not charged.</p>
       <h2>14-day money-back guarantee</h2>
       <p>If you are not happy, ask for a refund within <strong>14 days</strong> of any payment and you will receive a full refund of that payment. No questions asked.</p>
+      <h2>Yearly plans</h2>
+      <p>Yearly plans are paid once a year and cost 12 months for the price of 10. The same 14-day money-back guarantee applies to the first yearly payment and to every yearly renewal. We email you about 30 days before a yearly plan renews, so you have time to cancel or switch to monthly.</p>
       <h2>After 14 days</h2>
       <p>Payments older than 14 days are not refunded, but you can cancel at any time and keep access until the end of the period you paid for. You will not be charged again.</p>
       <h2>How to ask for a refund</h2>

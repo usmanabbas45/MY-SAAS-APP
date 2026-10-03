@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { syncCheckoutAction } from "./actions";
 
 interface PaddleEvent { name?: string; data?: { transaction_id?: string }; error?: { detail?: string; code?: string } }
@@ -34,6 +34,8 @@ function loadPaddle(token: string, env: string): Promise<PaddleJs> {
 
 export function CheckoutButton(props: {
   priceId: string; token: string; env: string; email: string; userId: number; sig: string; label: string; featured?: boolean;
+  /** Open the checkout straight away (the customer picked this plan on the pricing page before signing up). */
+  autoOpen?: boolean;
 }) {
   const [state, setState] = useState<"idle" | "opening" | "activating">("idle");
   const [error, setError] = useState("");
@@ -72,6 +74,15 @@ export function CheckoutButton(props: {
       setState("idle");
     }
   }
+
+  const opened = useRef(false);
+  useEffect(() => {
+    if (props.autoOpen && !opened.current) {
+      opened.current = true;
+      void open();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.autoOpen]);
 
   return (
     <>

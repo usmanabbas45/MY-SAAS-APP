@@ -30,7 +30,7 @@ function day(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export default async function BillingPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string; period?: string }> }) {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string; period?: string; plan?: string }> }) {
   const user = await requireUser();
   const flash = await searchParams;
   const enabled = billingEnabled();
@@ -45,7 +45,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const subscribed = ["active", "trialing", "past_due"].includes(state.status ?? "") && state.plan.id !== "free";
   const yearly = yearlyAvailable();
   const period: Interval = !yearly ? "month" : flash.period === "year" || flash.period === "month" ? flash.period : subscribed ? state.interval : "month";
-  const { period: _p, ...messages } = flash;
+  const { period: _p, plan: chosen, ...messages } = flash;
 
   let status: { text: string; tone: string } | null = null;
   if (state.plan.id === "unlimited") status = { text: enabled ? "Owner account: no limits" : "Billing is not switched on: no limits", tone: "badge-info" };
@@ -145,7 +145,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                 const interval: Interval = yearlyHere ? "year" : "month";
                 const current = subscribed && state.plan.id === id && state.interval === interval;
                 const samePlan = subscribed && state.plan.id === id;
-                const featured = id === "growth";
+                const featured = chosen && PAID_PLANS.includes(chosen as never) ? chosen === id : id === "growth";
                 if (!priceId(id) && !current) {
                   // Optional plan without a Paddle price yet: sold through a conversation.
                   return (
@@ -158,15 +158,15 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                   );
                 }
                 return (
-                  <div key={id} className={`card plan ${featured ? "featured" : ""}`}>
+                  <div key={id} id={`plan-${id}`} className={`card plan ${featured ? "featured" : ""}`}>
                     <div className="row between">
                       <h3>{plan.name}</h3>
-                      {current ? <span className="badge badge-ok">Your plan</span> : featured ? <span className="badge badge-brand">Most popular</span> : null}
+                      {current ? <span className="badge badge-ok">Your plan</span> : chosen === id ? <span className="badge badge-brand">Your choice</span> : featured ? <span className="badge badge-brand">Most popular</span> : null}
                     </div>
                     {yearlyHere ? (
                       <>
-                        <div className="price">${yearlyMonthly(id)}<small>/month</small></div>
-                        <p className="price-note">Billed ${yearlyPrice(id)} yearly · <strong>save ${plan.price * 12 - yearlyPrice(id)}</strong></p>
+                        <div className="price">${yearlyPrice(id).toLocaleString("en-US")}<small>/year</small></div>
+                        <p className="price-note">Works out at ${yearlyMonthly(id)}/month · <strong>save ${plan.price * 12 - yearlyPrice(id)}</strong> vs monthly</p>
                       </>
                     ) : (
                       <>
@@ -181,7 +181,9 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                       <form action={changePlanAction}>
                         <input type="hidden" name="plan" value={id} />
                         <input type="hidden" name="interval" value={interval} />
-                        <SubmitButton className={featured ? "btn" : "btn btn-ghost"} pendingText="Switching…">
+                        <SubmitButton className={featured ? "btn" : "btn btn-ghost"} pendingText="Switching…" confirm={interval === "year" ? (state.status === "trialing"
+                          ? `Switch to ${plan.name} yearly? Nothing is charged during your free trial. When it ends you pay $${yearlyPrice(id).toLocaleString("en-US")} for the year.`
+                          : `Switch to ${plan.name} yearly for $${yearlyPrice(id).toLocaleString("en-US")}/year? You're charged now, minus a credit for the unused part of your current period.`) : undefined}>
                           {samePlan ? (interval === "year" ? `Switch to yearly (save $${plan.price * 12 - yearlyPrice(id)})` : "Switch to monthly")
                             : plan.price > state.plan.price ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`}
                         </SubmitButton>
@@ -190,8 +192,14 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                       <CheckoutButton
                         priceId={priceId(id, interval)} token={process.env.PADDLE_CLIENT_TOKEN!.trim()} env={paddleEnv()} email={user.email}
                         userId={user.id} sig={checkoutSignature(user.id)} label="Start 14-day free trial" featured={featured}
+                        autoOpen={chosen === id && period === interval && !messages.ok && !messages.error}
                       />
                     )}
+                    {!subscribed && !current ? (
+                      <p className="price-note" style={{ marginTop: 8, textAlign: "center" }}>
+                        Then ${interval === "year" ? `${yearlyPrice(id).toLocaleString("en-US")}/year` : `${plan.price}/month`} · card required, no charge if you cancel before day 14
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}

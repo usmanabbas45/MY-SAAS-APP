@@ -712,3 +712,8 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .lp-period:has(#lp-year:checked) + .lp-plans .when-yearly { display: block; }
 .lp-period:has(#lp-year:checked) + .lp-plans .when-yearly ~ ul { margin-top: 0; }
 .lp-period:has(#lp-year:checked) + .lp-plans .card:has(.when-yearly) > .price { display: none; }
+.plan-fine { text-align: center; margin: 8px 0 0; font-size: 12px; }
+.when-yearly-inline { display: none !important; }
+.lp-period:has(#lp-year:checked) + .lp-plans .when-yearly-inline { display: inline-flex !important; }
+.lp-period:has(#lp-year:checked) + .lp-plans span.when-yearly-inline { display: inline !important; }
+.lp-period:has(#lp-year:checked) + .lp-plans .card:has(.when-yearly-inline) .when-monthly-inline { display: none !important; }
