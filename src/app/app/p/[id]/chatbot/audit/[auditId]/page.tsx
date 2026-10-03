@@ -3,13 +3,15 @@ import { notFound } from "next/navigation";
 import { AutoRefresh, CopyButton, SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, HBars, PageHeader, ScoreRing, SeverityBadge, VerdictBadge } from "@/components/ui";
 import { fixList, riskSummary } from "@/lib/audit/run";
+import { ArticleFix, SafePromptCard } from "../../../FixViews";
+import { fixAvailability, isBehaviourGroup, latestFixes } from "@/lib/fixes";
 import { FLAG_LABELS, FLAG_SEVERITY, SAFETY_FLAGS, isSafetyFlag, type ConvFlag } from "@/lib/judge/conversation";
 import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
 import { VERDICT_LABELS, VERDICTS, type Verdict } from "@/lib/judge/types";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
 import { projectAccess } from "@/lib/projects";
-import { feedbackAction, shareAuditAction } from "../../../actions";
+import { feedbackAction, fixWithAiAction, shareAuditAction } from "../../../actions";
 
 export const metadata = { title: "Audit results" };
 
@@ -35,7 +37,8 @@ export default async function AuditPage({ params, searchParams }: {
 }) {
   const user = await requireUser();
   const { id, auditId } = await params;
-  const p = projectAccess(user.id, Number(id)).project;
+  const { project: p, role } = projectAccess(user.id, Number(id));
+  const canEdit = role !== "viewer";
   const audit = get<{ id: number; name: string; status: string; score: number | null; error: string | null; mode: string; judge: string | null; share_token: string | null }>(
     "SELECT id, name, status, score, error, mode, judge, share_token FROM audits WHERE id = ? AND project_id = ?", Number(auditId), p.id,
   );
@@ -74,6 +77,9 @@ export default async function AuditPage({ params, searchParams }: {
     ...args, PAGE_SIZE, (page - 1) * PAGE_SIZE,
   );
   const fixes = audit.status === "done" || audit.status === "live" ? fixList(audit.id) : [];
+  const articleFixes = latestFixes(p.id, audit.id);
+  const promptFix = latestFixes(p.id, null).get("system_prompt");
+  const fixBlocked = fixAvailability(p.id, p.user_id);
   const pages = Math.max(1, Math.ceil(matching / PAGE_SIZE));
 
   return (
@@ -156,11 +162,24 @@ export default async function AuditPage({ params, searchParams }: {
                     {f.examples.slice(0, 2).map((e, j) => (
                       <p key={j} className="sub" style={{ marginBottom: 6 }}>“{e.question.slice(0, 120)}” → {e.reason}</p>
                     ))}
+                    {canEdit && !fixBlocked ? (
+                      isBehaviourGroup(f.doc) ? (
+                        <a href="#safe-prompt" className="btn btn-ghost btn-sm" style={{ marginTop: 6 }}>🛡️ Fix with a safe system prompt ↓</a>
+                      ) : (
+                        <form action={fixWithAiAction} style={{ marginTop: 6 }}>
+                          <input type="hidden" name="projectId" value={p.id} /><input type="hidden" name="auditId" value={audit.id} /><input type="hidden" name="doc" value={f.doc} />
+                          <SubmitButton className="btn btn-sm" pendingText="✨ Writing the fix… (about 30 s)">{articleFixes.get(f.doc) ? "↻ Rewrite with AI" : "✨ Fix with AI"}</SubmitButton>
+                        </form>
+                      )
+                    ) : null}
+                    {articleFixes.get(f.doc) ? <ArticleFix fix={articleFixes.get(f.doc)!} projectId={p.id} auditId={audit.id} canEdit={canEdit} /> : null}
                   </div>
                 ))}
               </div>
             )}
+            {fixBlocked && fixes.length ? <p className="hint" style={{ marginTop: 10 }}>✨ {fixBlocked}</p> : null}
           </div>
+          {fixes.length ? <SafePromptCard fix={promptFix} projectId={p.id} back={base} canEdit={canEdit} aiOff={fixBlocked} /> : null}
         </>
       ) : null}
 

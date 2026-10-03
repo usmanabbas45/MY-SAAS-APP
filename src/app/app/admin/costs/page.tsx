@@ -9,7 +9,7 @@ export const metadata = { title: "Admin · AI costs" };
 export const dynamic = "force-dynamic";
 
 const usd = (n: number) => (n < 1 && n > 0 ? `$${n.toFixed(3)}` : `$${n.toFixed(2)}`);
-const KIND_LABEL = { audit: "💬 Chatbot audits (uploads)", live: "📡 Live tracking", test: "🧪 Nightly bot tests", agent: "🤖 AI agent reviews" } as const;
+const KIND_LABEL = { audit: "💬 Chatbot audits (uploads)", live: "📡 Live tracking", test: "🧪 Nightly bot tests", agent: "🤖 AI agent reviews", fix: "✨ Fix with AI" } as const;
 
 export default async function AdminCostsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   await requireAdmin();

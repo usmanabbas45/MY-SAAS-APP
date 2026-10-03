@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Fix with AI", tag: "New",
+    items: [
+      "Every fix-list item now has a ✨ Fix with AI button that writes the corrected help article from the real wrong answers, ready to paste into your bot.",
+      "Save the corrected article to your ProofMyAI knowledge base in one click, so future checks use it.",
+      "🛡️ Safe system prompt: a ready-to-paste prompt for your bot with prompt-injection protection, no made-up prices, human hand-over and language rules, built from what ProofMyAI found.",
+    ],
+  },
+  {
     date: "2026-10-03", title: "Safety checks, uptime monitoring, team access and Intercom", tag: "New",
     items: [
       "Every answer is now checked for prompt-injection and jailbreak attempts, leaked system prompts, exposed card or bank numbers, rude replies and replies in the wrong language.",

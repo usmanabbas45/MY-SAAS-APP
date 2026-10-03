@@ -35,7 +35,7 @@ export const PAID_PLANS: PlanId[] = ["starter", "growth", "agency", "compliance"
 
 /** Marketing copy for the paid plans, shared by the pricing section and the billing page. */
 export const PLAN_FEATURES: Record<Exclude<PlanId, "free">, string[]> = {
-  starter: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "3 uptime monitors · 1 teammate", "Email + Slack alerts"],
+  starter: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "3 uptime monitors · 1 teammate", "Unlimited ✨ Fix with AI", "Email + Slack alerts"],
   growth: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "10 uptime monitors · 5 teammates", "Neural risk model + training export"],
   agency: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "50 uptime monitors · 20 teammates", "Priority support", "Everything in Growth"],
   compliance: ["For dealers, finance, insurance & healthcare", "10 projects · 10,000 conversations / month", "Signed DPA, results-only storage, auto-delete", "AI-off mode or self-hosted option", "Risk reports + onboarding call + priority support"],
