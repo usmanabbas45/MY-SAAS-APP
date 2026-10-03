@@ -8,6 +8,10 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Invite & earn: give a month, get a month", tag: "New",
+    items: ["Share your invite link from the new 🎁 Invite & earn page. When a friend becomes a paying customer, you both get your next month free."],
+  },
+  {
     date: "2026-10-03", title: "Yearly plans: 2 months free", tag: "New",
     items: [
       "Pay yearly and get 12 months for the price of 10. Switch between monthly and yearly any time on the Billing page; you only pay the difference.",

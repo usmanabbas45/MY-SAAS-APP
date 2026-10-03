@@ -432,6 +432,24 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   addColumn(db, "users", "renew_reminded_for", "TEXT");
+  // Referral program: each user's invite code, and who invited them.
+  addColumn(db, "users", "ref_code", "TEXT");
+  addColumn(db, "users", "referred_by", "INTEGER");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_ref_code ON users(ref_code) WHERE ref_code IS NOT NULL");
+  db.exec(`CREATE TABLE IF NOT EXISTS referral_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    friend_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    amount_cents INTEGER,
+    discount_id TEXT,
+    error TEXT,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    applied_at TEXT,
+    UNIQUE(friend_id, role)
+  )`);
   addColumn(db, "users", "plan_interval", "TEXT NOT NULL DEFAULT 'month'");
   addColumn(db, "projects", "is_demo", "INTEGER NOT NULL DEFAULT 0");
   // Welcome emails: last one sent (0-3), 9 = finished or not wanted. Existing accounts never get them.

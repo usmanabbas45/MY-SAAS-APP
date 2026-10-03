@@ -11,6 +11,7 @@ import { listProjects } from "@/lib/projects";
 import { logoutAction } from "../../(auth)/actions";
 import { autoRenewAction, changePlanAction, portalAction } from "./actions";
 import { CheckoutButton } from "./CheckoutButton";
+import { referralStats } from "@/lib/referrals";
 
 export const metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
@@ -70,6 +71,14 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <p className="sub"><Link href={projects[0] ? `/app/p/${projects[0].id}` : "/app"}>← Back to dashboard</Link></p>
         <h1>Plan & billing</h1>
         <Flash {...messages} />
+        {(() => {
+          const r = referralStats(user.id);
+          return r.pending ? (
+            <div className="alert alert-ok">🎁 You have {r.pending} free month{r.pending === 1 ? "" : "s"} from referrals waiting. {subscribed ? "It's applied to your next bill automatically." : "Choose a paid plan and it comes off your first bill."}</div>
+          ) : (
+            <p className="sub"><Link href="/app/referrals">🎁 Invite a friend: you both get a month free →</Link></p>
+          );
+        })()}
 
         {(admin || !enabled) && problems.length > 0 && (enabled || process.env.PADDLE_API_KEY || process.env.PADDLE_CLIENT_TOKEN) ? (
           <div className="card" style={{ borderColor: "var(--warn)" }}>
