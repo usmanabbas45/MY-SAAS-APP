@@ -47,7 +47,7 @@ export default function DocsPage() {
 
       <h2 id="quick-start">🚀 Quick start</h2>
       <ol>
-        <li><Link href="/signup">Create a free account</Link> (50 conversations a month free, no card).</li>
+        <li><Link href="/signup">Create a free account</Link> (50 conversations a month free).</li>
         <li>Open your project → <strong>Settings</strong> and copy your <strong>API key</strong> (it starts with <code>ap_live_</code>). Each project has its own key.</li>
         <li>Pick what you want to monitor: upload chat transcripts, connect n8n/Make, or send events to the API below.</li>
         <li>Add a Slack, email, Telegram or webhook channel under <strong>Settings → Notifications</strong> so you hear about problems.</li>

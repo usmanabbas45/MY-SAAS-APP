@@ -70,7 +70,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         {p.faqs.map((f) => <details key={f.q} open><summary>{f.q}</summary><p className="sub" style={{ margin: "8px 0 0" }}>{f.a}</p></details>)}
         <div className="card founding" style={{ marginTop: 28 }}>
           <h2 style={{ marginTop: 0 }}>{p.cta.text}</h2>
-          <p className="sub">Free plan, no card needed. Set up in minutes.</p>
+          <p className="sub">Free plan available. Set up in minutes.</p>
           <Link href={p.cta.href} className="btn">Start free →</Link>
         </div>
         {related.length ? (

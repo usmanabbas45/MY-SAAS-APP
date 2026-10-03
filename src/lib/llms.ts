@@ -16,7 +16,7 @@ export function llmsTxt(): string {
 ${SITE_NAME} is an independent quality monitor for AI. It grades every AI chatbot answer against the business's own help articles (correct, not in docs, made up, should escalate, off policy), runs nightly regression tests against chatbot endpoints, checks AI agent runs for loops, tool errors, runaway costs and ungrounded answers, and monitors n8n and Make workflows for failures, silent failures and workflows that stop running. It works with any chatbot platform (Intercom, Zendesk, Tidio, Crisp, Chatbase, custom bots) and any agent framework.
 
 Key facts:
-- Free plan: 50 audited conversations per month, no card needed. Paid plans include a 14-day free trial and a 14-day money-back guarantee.
+- Free plan: 50 audited conversations per month, free forever. Paid plans include a 14-day free trial and a 14-day money-back guarantee.
 - Yearly billing: 12 months for the price of 10 (2 months free).
 - Personal data (emails, phone numbers, card numbers, IBANs, names) is masked before storage and AI checks. Results-only storage, auto-delete and an AI-off mode are available per project; a DPA is available.
 - Alerts by email, Slack, Microsoft Teams, Discord, Telegram, SMS, WhatsApp or webhook.

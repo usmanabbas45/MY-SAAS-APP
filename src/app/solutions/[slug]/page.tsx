@@ -96,7 +96,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
 
         <section className="lp-section" style={{ textAlign: "center" }}>
           <h2>Try it free today</h2>
-          <p className="lp-lead">Set up in minutes. No card needed.</p>
+          <p className="lp-lead">Set up in minutes. Free plan available.</p>
           <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
           <p className="sub" style={{ marginTop: 18 }}>
             Also see: {SOLUTIONS.filter((x) => x.slug !== s.slug).map((x, i) => <span key={x.slug}>{i ? " · " : ""}<Link href={`/solutions/${x.slug}`}>{x.kicker}</Link></span>)}

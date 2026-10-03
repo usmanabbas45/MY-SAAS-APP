@@ -9,7 +9,7 @@ export default function RefundPage() {
     <PublicPage title="Refund Policy" updated="3 October 2026">
       <p>We want you to be sure ProofMyAI is right for you before you pay, and happy after you do.</p>
       <h2>Free plan and free trial</h2>
-      <p>The Free plan (50 conversations a month) needs no card. Paid plans start with a <strong>14-day free trial</strong>. If you cancel before the trial ends, you are not charged.</p>
+      <p>The Free plan (50 conversations a month) is free forever. Paid plans start with a <strong>14-day free trial</strong>. If you cancel before the trial ends, you are not charged.</p>
       <h2>14-day money-back guarantee</h2>
       <p>If you are not happy, ask for a refund within <strong>14 days</strong> of any payment and you will receive a full refund of that payment. No questions asked.</p>
       <h2>Yearly plans</h2>

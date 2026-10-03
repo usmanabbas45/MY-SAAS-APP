@@ -197,7 +197,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                     )}
                     {!subscribed && !current ? (
                       <p className="price-note" style={{ marginTop: 8, textAlign: "center" }}>
-                        Then ${interval === "year" ? `${yearlyPrice(id).toLocaleString("en-US")}/year` : `${plan.price}/month`} · card required, no charge if you cancel before day 14
+                        Then ${interval === "year" ? `${yearlyPrice(id).toLocaleString("en-US")}/year` : `${plan.price}/month`} · cancel before day 14 and pay nothing
                       </p>
                     ) : null}
                   </div>

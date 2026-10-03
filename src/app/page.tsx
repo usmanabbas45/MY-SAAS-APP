@@ -34,8 +34,8 @@ const PLANS: { id: PlanId; name: string; price: number; featured: boolean; items
 ];
 
 /**
- * Starter begins on the Free plan (no card); Growth and Agency go through sign-up straight to a
- * 14-day trial checkout for the chosen billing period (card required by Paddle); Compliance is sold by talking to us.
+ * Starter begins on the Free plan; Growth and Agency go through sign-up straight to a
+ * 14-day trial checkout for the chosen billing period; Compliance is sold by talking to us.
  */
 function PlanButton({ p, yearly }: { p: (typeof PLANS)[number]; yearly: boolean }) {
   const cls = `btn ${p.featured ? "" : "btn-ghost"}`;
@@ -43,7 +43,7 @@ function PlanButton({ p, yearly }: { p: (typeof PLANS)[number]; yearly: boolean 
   if (p.id === "starter") {
     return (
       <>
-        <Link href="/signup" className={cls} style={{ width: "100%" }}>Start free, no card</Link>
+        <Link href="/signup" className={cls} style={{ width: "100%" }}>Start free</Link>
         <p className="price-note plan-fine">Begin on the Free plan, upgrade to Starter any time</p>
       </>
     );
@@ -55,7 +55,7 @@ function PlanButton({ p, yearly }: { p: (typeof PLANS)[number]; yearly: boolean 
       {yearly ? <Link href={planSignupHref(p.id, "year")} className={`${cls} when-yearly-inline`} style={{ width: "100%" }}>Start 14-day free trial</Link> : null}
       <p className="price-note plan-fine">
         <span className="when-monthly-inline">Then ${p.price}/month</span>
-        {yearly ? <span className="when-yearly-inline">Then {yearlyTotal}</span> : null} · card required, no charge if you cancel before day 14
+        {yearly ? <span className="when-yearly-inline">Then {yearlyTotal}</span> : null} · cancel before day 14 and pay nothing
       </p>
     </>
   );
@@ -102,7 +102,7 @@ function FoundingOffer() {
         <h2>Become a founding customer</h2>
         <p className="lp-lead" style={{ marginTop: 8 }}>
           ProofMyAI is new, so our first {FOUNDING_OFFER.spots} businesses running AI chatbots, agents or n8n/Make automations get
-          <strong> {FOUNDING_OFFER.reward}</strong> and direct WhatsApp access to the developer. No card needed, no automatic charge. We ask for {FOUNDING_OFFER.ask}.
+          <strong> {FOUNDING_OFFER.reward}</strong> and direct WhatsApp access to the developer. No automatic charge. We ask for {FOUNDING_OFFER.ask}.
         </p>
         <div className="row" style={{ justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>
           <Link href="/signup?founding=1" className="btn">🎉 Claim a founding spot</Link>
@@ -164,7 +164,7 @@ export default function Landing() {
           </div>
           <ul className="lp-trust">
             <li>✓ Free for 50 conversations a month</li>
-            <li>✓ No card needed</li>
+            <li>✓ Cancel any time</li>
             <li>✓ Set up in 5 minutes</li>
           </ul>
         </div>
@@ -245,7 +245,7 @@ export default function Landing() {
 
       <section className="lp-section" id="pricing">
         <h2>Simple pricing</h2>
-        <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>, no card needed. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
+        <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
         {yearlyAvailable() ? (
           <div className="period-toggle lp-period" role="radiogroup" aria-label="Billing period">
             <input type="radio" name="lp-period" id="lp-month" defaultChecked />
@@ -292,7 +292,7 @@ export default function Landing() {
       <section className="lp-section">
         <div className="cta-banner">
           <h2>Is your AI telling customers the truth?</h2>
-          <p>Find out in 5 minutes with a free AI audit. No card needed.</p>
+          <p>Find out in 5 minutes with a free AI audit.</p>
           <div className="row" style={{ justifyContent: "center" }}>
             <Link href="/signup" className="btn btn-lg btn-white">Get your free AI audit →</Link>
             <a href="#pricing" className="btn btn-lg btn-outline-white">See pricing</a>

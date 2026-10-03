@@ -246,7 +246,7 @@ export function foundingWelcomeEmail(endsAt: string): Mail {
     icon: "🎉",
     badge: { text: "FOUNDING CUSTOMER", color: "#0b7a52", bg: "#e3f7ee" },
     title: "Your Growth plan is active",
-    paragraphs: [`Thank you for being one of our first customers. Your account now has the Growth plan for free until ${day(endsAt)}. No card is needed and nothing will be charged.`],
+    paragraphs: [`Thank you for being one of our first customers. Your account now has the Growth plan for free until ${day(endsAt)}. Nothing will be charged.`],
     bullets: ["📁 3 projects and 3,000 audited conversations a month", "🧪 Nightly tests for 5 bots", "⚙️ Unlimited workflows and agents", "📱 Direct WhatsApp access to the developer"],
     cta: { label: "Open your dashboard", url: `${appUrl()}/app` },
     after: [`In return we'd love ${FOUNDING_OFFER.ask}. You can share it any time from "Share feedback" in your dashboard.`, "We'll email you a week before the free period ends. If you don't subscribe, your account simply moves to the Free plan and keeps all its data."],
