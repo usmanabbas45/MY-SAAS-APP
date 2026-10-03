@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   experimental: { serverActions: { bodySizeLimit: "10mb" } },
+  async redirects() {
+    // People type proofmyai.com/pricing; the plans live on the homepage.
+    return [{ source: "/pricing", destination: "/#pricing", permanent: true }, { source: "/plans", destination: "/#pricing", permanent: true }];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
