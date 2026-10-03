@@ -161,6 +161,22 @@ export function passwordResetEmail(link: string, minutes: number): Mail {
   }, "You're receiving this because a password reset was requested for your ProofMyAI account.");
 }
 
+export function verifyEmail(link: string, hours: number): Mail {
+  return compose("Confirm your email for ProofMyAI", "One click to confirm your email and switch on alerts.", {
+    icon: "✉️",
+    title: "Confirm your email address",
+    paragraphs: ["Welcome to ProofMyAI! Please confirm this is your email address. Until you do, we can't send alerts or team invitations from your account."],
+    cta: { label: "Confirm my email", url: link },
+    after: [`This link expires in ${hours} hours. You can send a new one from your dashboard at any time.`, "If you didn't create a ProofMyAI account, you can ignore this email.", `Button not working? Copy this link into your browser: ${link}`],
+  }, "You're receiving this because this email address was used to sign up to ProofMyAI.");
+}
+
+/** System email to the site owner (backups, error spikes, stopped background checks). */
+export function systemEmail(subject: string, o: { icon: string; tone: "ok" | "bad" | "info"; title: string; paragraphs: string[]; facts?: [string, string][]; bullets?: string[]; cta?: { label: string; url: string } }): Mail {
+  const badge = o.tone === "bad" ? { text: "ACTION NEEDED", color: "#b42335", bg: "#fde8eb" } : o.tone === "ok" ? { text: "ALL GOOD", color: "#0b7a52", bg: "#e3f7ee" } : { text: "SYSTEM", color: "#1f5fae", bg: "#e4f0fd" };
+  return compose(subject, o.paragraphs[0] ?? o.title, { icon: o.icon, badge, title: o.title, paragraphs: o.paragraphs, facts: o.facts, bullets: o.bullets, cta: o.cta }, "You're receiving this because your address is in ADMIN_EMAILS on the ProofMyAI server.");
+}
+
 // ── Weekly summary ──────────────────────────────────────────────────────────
 
 export interface DigestData {

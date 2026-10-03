@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Email confirmation and daily backups", tag: "Improved",
+    items: [
+      "New accounts confirm their email address with one click, so alerts always reach a real inbox. Until then, alerts to other addresses and team invitations are paused.",
+      "Your data is now backed up automatically every day, encrypted, with copies kept off the server.",
+    ],
+  },
+  {
     date: "2026-10-03", title: "Fix with AI", tag: "New",
     items: [
       "Every fix-list item now has a ✨ Fix with AI button that writes the corrected help article from the real wrong answers, ready to paste into your bot.",

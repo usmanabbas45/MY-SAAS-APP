@@ -11,6 +11,7 @@ import { runDueSuites } from "@/lib/tests/runner";
 import { periodicWorkflowChecks } from "@/lib/workflows/monitor";
 import { pollAllSources } from "@/lib/workflows/pollers";
 import { runDueMonitors } from "@/lib/uptime";
+import { purgeOldErrors } from "@/lib/monitoring";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -46,6 +47,7 @@ async function runAll(started: number) {
   const noReply = await alertMissingReplies();
   const uptimeChecks = await runDueMonitors();
   const purged = purgeExpired();
+  purgeOldErrors();
   const founding = await processFoundingPeriods();
   recordDailyMetrics();
   recordCronRun(true);

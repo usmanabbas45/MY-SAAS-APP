@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Flash } from "@/components/ui";
-import { adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, SORTS, type Segment, type Sort } from "@/lib/admin";
-import { bulkUserAction, indexNowAction } from "./actions";
+import { adminEmails, adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, SORTS, type Segment, type Sort } from "@/lib/admin";
+import { backupNowAction, bulkUserAction, indexNowAction } from "./actions";
+import { SubmitButton } from "@/components/client";
+import { KEEP_DAYS, lastBackup, listBackups, sizeLabel } from "@/lib/backup";
+import { errorCount, recentErrors } from "@/lib/monitoring";
+import { get } from "@/lib/db";
 import { BulkBar } from "./BulkBar";
 import { PLANS } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
@@ -100,6 +104,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <div className="card stat"><span className="stat-label">Open incidents</span><span className="stat-value">{s.openIncidents}</span><span className="stat-foot">across all customers</span></div>
       </div>
 
+      <SystemHealth />
+
       <div className="card" id="users" style={{ marginTop: 16 }}>
         <div className="row between" style={{ flexWrap: "wrap", gap: 10 }}>
           <h2 style={{ margin: 0 }}>Users <span className="faint">({total})</span></h2>
@@ -167,5 +173,52 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         ) : <p className="sub">No admin actions yet. Everything you change here is recorded.</p>}
       </div>
     </AdminShell>
+  );
+}
+
+/** Backups, background checks and server errors. */
+function SystemHealth() {
+  const last = lastBackup();
+  const files = listBackups();
+  const errors = recentErrors(10);
+  const e24 = errorCount(24);
+  const cron = get<{ last_run_at: string; ok: number }>("SELECT last_run_at, ok FROM heartbeats WHERE name = 'cron'");
+  const cronLate = !cron || Date.now() - Date.parse(cron.last_run_at) > 45 * 60000;
+  const unverified = get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE email_verified_at IS NULL")?.n ?? 0;
+  const admins = adminEmails();
+  const backupOld = !last || !last.ok || Date.now() - Date.parse(last.at) > 26 * 3600000;
+  return (
+    <div className="card" id="system" style={{ marginTop: 16 }}>
+      <div className="row between" style={{ flexWrap: "wrap", gap: 10 }}>
+        <h2 style={{ margin: 0 }}>🩺 System health</h2>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <form action={backupNowAction}><SubmitButton className="btn btn-ghost btn-sm" pendingText="Backing up…">🗄️ Back up &amp; email now</SubmitButton></form>
+          <a className="btn btn-ghost btn-sm" href="/app/admin/backup">⬇ Download database now</a>
+        </div>
+      </div>
+      <div className="grid grid-4" style={{ marginTop: 14 }}>
+        <div className="card stat"><span className="stat-label">Last backup</span><span className="stat-value" style={{ fontSize: 20, color: backupOld ? "var(--bad)" : "var(--ok)" }}>{last ? (last.ok ? `✓ ${ago(last.at)}` : "✗ failed") : "Not yet"}</span><span className="stat-foot">{last?.detail ?? "Runs automatically within a minute of start-up, then daily"}</span></div>
+        <div className="card stat"><span className="stat-label">Background checks</span><span className="stat-value" style={{ fontSize: 20, color: cronLate ? "var(--bad)" : "var(--ok)" }}>{cron ? (cronLate ? "✗ stopped" : "✓ running") : "Never ran"}</span><span className="stat-foot">{cron ? `Last run ${ago(cron.last_run_at)}` : "Set up cron-job.org to call /api/cron"}</span></div>
+        <div className="card stat"><span className="stat-label">Server errors (24h)</span><span className="stat-value" style={{ fontSize: 20, color: e24 >= 5 ? "var(--bad)" : undefined }}>{e24}</span><span className="stat-foot">You&apos;re emailed when 5+ happen in 10 minutes</span></div>
+        <div className="card stat"><span className="stat-label">Unconfirmed emails</span><span className="stat-value" style={{ fontSize: 20 }}>{unverified}</span><span className="stat-foot">Accounts that haven&apos;t clicked the link</span></div>
+      </div>
+      {admins.length ? <p className="faint" style={{ fontSize: 13 }}>Backups and alerts go to {admins.join(", ")}. Backups are kept on the server for {KEEP_DAYS} days and the emailed copy is encrypted with APP_SECRET.</p>
+        : <div className="alert alert-warn">Set ADMIN_EMAILS in Railway → Variables to receive backups and alerts by email.</div>}
+      {files.length ? (
+        <details>
+          <summary className="sub" style={{ cursor: "pointer" }}>Saved backups ({files.length})</summary>
+          <ul style={{ margin: "8px 0 0" }}>{files.map((f) => <li key={f.name}><a href={`/app/admin/backup?file=${encodeURIComponent(f.name)}`}>{f.name}</a> <span className="faint">· {sizeLabel(f.bytes)}</span></li>)}</ul>
+        </details>
+      ) : null}
+      {errors.length ? (
+        <details style={{ marginTop: 10 }}>
+          <summary className="sub" style={{ cursor: "pointer" }}>Latest server errors ({errors.length})</summary>
+          <div className="table-wrap"><table>
+            <thead><tr><th>When</th><th>Where</th><th>Error</th></tr></thead>
+            <tbody>{errors.map((e, i) => <tr key={i}><td style={{ whiteSpace: "nowrap" }}>{ago(e.at)}</td><td className="mono" style={{ fontSize: 12 }}>{e.source}</td><td style={{ fontSize: 13, wordBreak: "break-word" }}>{e.message}</td></tr>)}</tbody>
+          </table></div>
+        </details>
+      ) : null}
+    </div>
   );
 }

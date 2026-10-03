@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SubmitButton, ThemeToggle } from "@/components/client";
 import { Flash } from "@/components/ui";
+import { VerifyBanner } from "@/components/verify-banner";
 import { PasswordField } from "@/components/password";
 import { activeSessions } from "@/lib/account";
 import { requireUser } from "@/lib/auth";
@@ -40,6 +41,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <p className="sub"><Link href={projects[0] ? `/app/p/${projects[0].id}` : "/app"}>← Back to dashboard</Link></p>
         <h1>Your account</h1>
         <Flash {...flash} />
+        <VerifyBanner userId={user.id} email={user.email} />
 
         <div className="card">
           <h2>Profile</h2>

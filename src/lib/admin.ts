@@ -9,6 +9,12 @@ export function isAdmin(email: string): boolean {
   return list.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean).includes(email.toLowerCase());
 }
 
+/** Addresses that receive system emails (backups, error alerts). */
+export function adminEmails(): string[] {
+  const list = process.env.ADMIN_EMAILS?.trim() || process.env.UNLIMITED_EMAILS || "";
+  return [...new Set(list.split(",").map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
+}
+
 /** Loads the current user and hides the page (404) from anyone who is not an admin. */
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser();

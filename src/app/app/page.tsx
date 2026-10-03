@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { projectHealth } from "@/lib/health";
 import { accessibleProjects, createProject } from "@/lib/projects";
 import { logoutAction } from "../(auth)/actions";
+import { VerifyBanner } from "@/components/verify-banner";
 
 export const metadata = { title: "Projects" };
 
@@ -38,6 +39,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         </div>
       </nav>
       <div className="content" style={{ margin: "0 auto" }}>
+        <VerifyBanner userId={user.id} email={user.email} />
         <h1>Your projects</h1>
         <p className="sub">Use one project per business or client. Agencies: create one project per client.</p>
         <Flash error={sp.error} />

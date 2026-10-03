@@ -17,7 +17,7 @@ export function fromAddress(name = "ProofMyAI"): string {
  * Sends an email through Resend (HTML with a plain-text fallback). Replies go to the support inbox unless
  * replyTo is given. Returns false when email is not configured; throws when Resend rejects the message.
  */
-export async function sendMail(to: string, mail: Mail, opts: { replyTo?: string; fromName?: string } = {}): Promise<boolean> {
+export async function sendMail(to: string, mail: Mail, opts: { replyTo?: string; fromName?: string; attachments?: { filename: string; content: Buffer }[] } = {}): Promise<boolean> {
   if (!process.env.RESEND_API_KEY) return false;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -29,8 +29,9 @@ export async function sendMail(to: string, mail: Mail, opts: { replyTo?: string;
       text: mail.text,
       ...(mail.html ? { html: mail.html } : {}),
       reply_to: opts.replyTo || SUPPORT_EMAIL,
+      ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })) } : {}),
     }),
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(opts.attachments?.length ? 120000 : 10000),
   });
   if (!res.ok) throw new Error(`Resend returned HTTP ${res.status}`);
   return true;

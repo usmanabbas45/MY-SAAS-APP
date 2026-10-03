@@ -28,6 +28,7 @@ import { applyArticleFix, fixAvailability, generateArticleFix, generateSafePromp
 import { JudgeError } from "@/lib/judge/llm";
 import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
+import { isVerified, VERIFY_FIRST } from "@/lib/verify";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -44,6 +45,12 @@ async function project(form: FormData, need: "editor" | "owner" = "editor"): Pro
 }
 /** Settings, alerts, API key, privacy and deletion: owner only. */
 const ownerProject = (form: FormData) => project(form, "owner");
+
+/** Unconfirmed accounts may only send email to their own address (stops sign-up spam). */
+async function mayEmailOthers(to: string): Promise<boolean> {
+  const user = await requireUser();
+  return isVerified(user.id) || to.trim().toLowerCase() === user.email;
+}
 
 function str(form: FormData, key: string, max = 20000): string {
   return String(form.get(key) ?? "").trim().slice(0, max);
@@ -316,6 +323,7 @@ export async function updateSettingsAction(form: FormData) {
   try {
     if (webhook) await assertPublicUrl(webhook);
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid alert email.");
+    if (email && email !== p.alert_email && !(await mayEmailOthers(email))) throw new Error(VERIFY_FIRST);
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Invalid settings." });
   }
@@ -440,6 +448,7 @@ export async function addChannelAction(form: FormData) {
   let ch;
   try {
     ch = await validateChannel(str(form, "type"), str(form, "target", 2000), { token: str(form, "token", 300), sid: str(form, "sid", 64), from: str(form, "from", 40) });
+    if (ch.type === "email" && !(await mayEmailOthers(ch.target))) throw new Error(VERIFY_FIRST);
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Invalid channel." });
   }
@@ -528,6 +537,7 @@ export async function inviteMemberAction(form: FormData) {
   const p = await ownerProject(form);
   const user = await requireUser();
   const path = `/app/p/${p.id}/team`;
+  if (!isVerified(user.id)) done(path, { error: VERIFY_FIRST });
   const over = limitError(p.user_id, "seats");
   if (over) done(path, { error: over });
   const r = await createInvite(p, user.email, str(form, "email", 200), str(form, "role", 10), process.env.APP_URL || "");
