@@ -1,3 +1,4 @@
+import { unsubHeaders, unsubUrl } from "./unsubscribe";
 import { all, get, run } from "./db";
 import { sendMail } from "./email";
 import { digestEmail, type DigestData } from "./emails";
@@ -63,7 +64,7 @@ export async function sendDueDigests(): Promise<number> {
   let sent = 0;
   for (const p of due) {
     try {
-      await sendMail(p.alert_email, digestEmail(digestData(p.id, p.name)));
+      await sendMail(p.alert_email, digestEmail(digestData(p.id, p.name), { url: unsubUrl(p.id), headers: unsubHeaders(p.id) }));
       run("UPDATE projects SET last_digest_at = datetime('now') WHERE id = ?", p.id);
       sent++;
     } catch (err) {

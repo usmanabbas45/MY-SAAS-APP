@@ -191,10 +191,10 @@ export interface DigestData {
   top: string[];
 }
 
-export function digestEmail(d: DigestData): Mail {
+export function digestEmail(d: DigestData, unsubscribe?: { url: string; headers: Record<string, string> }): Mail {
   const base = `${appUrl()}/app/p/${d.projectId}`;
   const summary = d.openIncidents ? `${d.openIncidents} open incident${d.openIncidents === 1 ? "" : "s"} need${d.openIncidents === 1 ? "s" : ""} attention.` : "No open incidents. Everything looks healthy.";
-  return compose(`Weekly AI quality summary · ${d.projectName}`, `AI Health ${d.score ?? "–"}/100. ${summary}`, {
+  const mail = compose(`Weekly AI quality summary · ${d.projectName}`, `AI Health ${d.score ?? "–"}/100. ${summary}`, {
     icon: "📊",
     badge: { text: "WEEKLY SUMMARY", color: BRAND, bg: "#eeebff" },
     title: `AI Health score: ${d.score ?? "–"}/100`,
@@ -206,7 +206,8 @@ export function digestEmail(d: DigestData): Mail {
     ],
     ...(d.top.length ? { bullets: d.top.map((t) => `⚠️ ${t}`) } : {}),
     cta: { label: "Open your dashboard", url: base },
-  }, `You're receiving this weekly summary for "${d.projectName}".`, { label: "Turn off weekly summaries", url: `${base}/settings` });
+  }, `You're receiving this weekly summary for "${d.projectName}".`, unsubscribe ? { label: "Unsubscribe", url: unsubscribe.url } : { label: "Turn off weekly summaries", url: `${base}/settings` });
+  return unsubscribe ? { ...mail, headers: unsubscribe.headers } : mail;
 }
 
 // ── Support ─────────────────────────────────────────────────────────────────

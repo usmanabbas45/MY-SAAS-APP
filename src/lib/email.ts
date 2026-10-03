@@ -4,6 +4,8 @@ export interface Mail {
   subject: string;
   text: string;
   html?: string;
+  /** Extra headers, e.g. List-Unsubscribe. */
+  headers?: Record<string, string>;
 }
 
 /** "Name <address>" using the verified sending address (ALERT_FROM_EMAIL, default alerts@proofmyai.com). */
@@ -29,6 +31,7 @@ export async function sendMail(to: string, mail: Mail, opts: { replyTo?: string;
       text: mail.text,
       ...(mail.html ? { html: mail.html } : {}),
       reply_to: opts.replyTo || SUPPORT_EMAIL,
+      ...(mail.headers ? { headers: mail.headers } : {}),
       ...(opts.attachments?.length ? { attachments: opts.attachments.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })) } : {}),
     }),
     signal: AbortSignal.timeout(opts.attachments?.length ? 120000 : 10000),
