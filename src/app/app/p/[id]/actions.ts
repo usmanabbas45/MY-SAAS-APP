@@ -9,15 +9,19 @@ import { RETENTION_OPTIONS } from "@/lib/retention";
 import { processLiveChat } from "@/lib/audit/live";
 import { ingestAgentRun } from "@/lib/agents/ingest";
 import { pollChatSource, type ChatSource } from "@/lib/connectors/twilio";
+import { pollAnySource } from "@/lib/connectors";
+import { INTERCOM_REGIONS, verifyIntercom, type IntercomRegion } from "@/lib/connectors/intercom";
 import { recordWorkflowRun } from "@/lib/workflows/monitor";
 import { CHANNEL_TYPES, channelsFor, deliver, MODULES, validateChannel } from "@/lib/notify";
 import { requireUser } from "@/lib/auth";
-import { limitError } from "@/lib/billing";
+import { billingState, limitError } from "@/lib/billing";
 import { get, run } from "@/lib/db";
-import { raiseIncident } from "@/lib/incidents";
+import { raiseIncident, resolveIncidents } from "@/lib/incidents";
+import { checkMonitor, INTERVALS, type Monitor } from "@/lib/uptime";
+import { createInvite, INVITE_DAYS, projectRole, removeMember, revokeInvite, setMemberRole } from "@/lib/team";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
-import { newApiKey, ownedProject, type Project } from "@/lib/projects";
+import { AccessError, newApiKey, projectAccess, type Project } from "@/lib/projects";
 import { parseMustInclude, RULE_KINDS } from "@/lib/rules";
 import { assertPublicUrl, encrypt, randomToken } from "@/lib/security";
 import { renderBody, runSuite } from "@/lib/tests/runner";
@@ -25,10 +29,19 @@ import { pollSource } from "@/lib/workflows/pollers";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
-async function project(form: FormData): Promise<Project> {
+/** The project for a form: editors and owners can change things; viewers get a friendly message instead. */
+async function project(form: FormData, need: "editor" | "owner" = "editor"): Promise<Project> {
   const user = await requireUser();
-  return ownedProject(user.id, Number(form.get("projectId")));
+  const id = Number(form.get("projectId"));
+  try {
+    return projectAccess(user.id, id, need).project;
+  } catch (err) {
+    if (err instanceof AccessError) redirect(`/app/p/${id}?error=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
 }
+/** Settings, alerts, API key, privacy and deletion: owner only. */
+const ownerProject = (form: FormData) => project(form, "owner");
 
 function str(form: FormData, key: string, max = 20000): string {
   return String(form.get(key) ?? "").trim().slice(0, max);
@@ -294,7 +307,7 @@ export async function resolveIncidentAction(form: FormData) {
 // ---------- Settings ----------
 
 export async function updateSettingsAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   const path = `/app/p/${p.id}/settings`;
   const webhook = str(form, "alert_webhook", 2000) || null;
   const email = str(form, "alert_email", 300) || null;
@@ -375,7 +388,7 @@ export async function pollChatSourceAction(form: FormData) {
   const p = await project(form);
   const src = get<ChatSource>("SELECT * FROM chat_sources WHERE id = ? AND project_id = ?", Number(form.get("sourceId")), p.id);
   if (!src) done(`/app/p/${p.id}/live`, { error: "Connection not found." });
-  const r = await pollChatSource(src);
+  const r = await pollAnySource(src);
   done(`/app/p/${p.id}/live`, r.error ? { error: r.error } : { ok: `Checked: ${r.replies} new repl${r.replies === 1 ? "y" : "ies"}, ${r.waiting} waiting for a reply.` });
 }
 
@@ -386,7 +399,7 @@ export async function deleteChatSourceAction(form: FormData) {
 }
 
 export async function updatePrivacyAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   const days = Number(form.get("retention_days"));
   const terms = str(form, "mask_terms", 20000).split(/\r?\n/).map((t) => t.trim()).filter(Boolean).slice(0, 300).join("\n");
   run(
@@ -399,7 +412,7 @@ export async function updatePrivacyAction(form: FormData) {
 }
 
 export async function testAlertAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   const path = `/app/p/${p.id}/settings`;
   const only = Number(form.get("channelId")) || null;
   const channels = channelsFor(p.id).filter((c) => !only || c.id === only);
@@ -420,7 +433,7 @@ export async function testAlertAction(form: FormData) {
 }
 
 export async function addChannelAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   const path = `/app/p/${p.id}/settings`;
   let ch;
   try {
@@ -440,19 +453,19 @@ export async function addChannelAction(form: FormData) {
 }
 
 export async function deleteChannelAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   run("DELETE FROM alert_channels WHERE id = ? AND project_id = ?", Number(form.get("channelId")), p.id);
   done(`/app/p/${p.id}/settings`, { ok: "Notification channel removed." });
 }
 
 export async function regenerateKeyAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   run("UPDATE projects SET api_key = ? WHERE id = ?", newApiKey(), p.id);
   done(`/app/p/${p.id}/settings`, { ok: "New API key created. Update it in your agents and workflows - the old key no longer works." });
 }
 
 export async function retrainAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   const r = retrainRiskModel(p.id);
   done(`/app/p/${p.id}/settings`, r.ok
     ? { ok: `Neural model trained on ${r.samples} reviewed answers. Validation accuracy ${(r.valAccuracy * 100).toFixed(0)}% (judge alone: ${(r.baselineAccuracy * 100).toFixed(0)}%). Re-scored ${r.rescored} answers.` }
@@ -460,8 +473,114 @@ export async function retrainAction(form: FormData) {
 }
 
 export async function deleteProjectAction(form: FormData) {
-  const p = await project(form);
+  const p = await ownerProject(form);
   if (str(form, "confirm") !== p.name) done(`/app/p/${p.id}/settings`, { error: "Type the project name exactly to delete it." });
   run("DELETE FROM projects WHERE id = ?", p.id);
   redirect("/app?new=1");
+}
+
+// ---------- Uptime monitors ----------
+export async function addMonitorAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/uptime`;
+  const over = limitError(p.user_id, "uptime");
+  if (over) done(path, { error: over });
+  let url = str(form, "url", 2000);
+  if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+  const keyword = str(form, "keyword", 200) || null;
+  let interval = Number(str(form, "interval_min")) || 5;
+  if (!(INTERVALS as readonly number[]).includes(interval)) interval = 5;
+  if (interval === 1 && billingState(p.user_id).plan.id === "free") interval = 5;
+  try {
+    await assertPublicUrl(url);
+  } catch (err) {
+    done(path, { error: err instanceof Error ? err.message : "Enter a valid public URL." });
+  }
+  const name = str(form, "name", 100) || new URL(url).hostname;
+  const { lastInsertRowid } = run("INSERT INTO uptime_monitors (project_id, name, url, keyword, interval_min) VALUES (?, ?, ?, ?, ?)", p.id, name, url, keyword, interval);
+  const m = get<Monitor>("SELECT * FROM uptime_monitors WHERE id = ?", lastInsertRowid)!;
+  const r = await checkMonitor(m);
+  done(path, r.ok
+    ? { ok: `"${name}" is up (${r.ms} ms). It will be checked every ${interval} minute${interval === 1 ? "" : "s"}.` }
+    : { error: `"${name}" was saved, but the first check failed: ${r.error}. You'll get an alert if the next check fails too.` });
+}
+
+export async function checkMonitorNowAction(form: FormData) {
+  const p = await project(form);
+  const m = get<Monitor>("SELECT * FROM uptime_monitors WHERE id = ? AND project_id = ?", Number(form.get("monitorId")), p.id);
+  if (!m) done(`/app/p/${p.id}/uptime`, { error: "Monitor not found." });
+  const r = await checkMonitor(m);
+  done(`/app/p/${p.id}/uptime`, r.ok ? { ok: `${m.name} is up (${r.ms} ms).` } : { error: `${m.name}: ${r.error}` });
+}
+
+export async function deleteMonitorAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("monitorId"));
+  run("DELETE FROM uptime_monitors WHERE id = ? AND project_id = ?", id, p.id);
+  resolveIncidents(p.id, `uptime:${id}`);
+  done(`/app/p/${p.id}/uptime`, { ok: "Monitor removed." });
+}
+
+// ---------- Team ----------
+export async function inviteMemberAction(form: FormData) {
+  const p = await ownerProject(form);
+  const user = await requireUser();
+  const path = `/app/p/${p.id}/team`;
+  const over = limitError(p.user_id, "seats");
+  if (over) done(path, { error: over });
+  const r = await createInvite(p, user.email, str(form, "email", 200), str(form, "role", 10), process.env.APP_URL || "");
+  if (!r.ok) done(path, { error: r.error });
+  done(path, r.emailed
+    ? { ok: `Invitation emailed to ${str(form, "email", 200)}. It expires in ${INVITE_DAYS} days.` }
+    : { ok: `Invitation created. Email isn't set up, so send them this link yourself: ${r.link}` });
+}
+
+export async function setMemberRoleAction(form: FormData) {
+  const p = await ownerProject(form);
+  setMemberRole(p.id, Number(form.get("userId")), str(form, "role", 10));
+  done(`/app/p/${p.id}/team`, { ok: "Role updated." });
+}
+
+export async function removeMemberAction(form: FormData) {
+  const p = await ownerProject(form);
+  removeMember(p.id, Number(form.get("userId")));
+  done(`/app/p/${p.id}/team`, { ok: "Member removed. They no longer have access." });
+}
+
+export async function revokeInviteAction(form: FormData) {
+  const p = await ownerProject(form);
+  revokeInvite(p.id, Number(form.get("inviteId")));
+  done(`/app/p/${p.id}/team`, { ok: "Invitation cancelled." });
+}
+
+export async function leaveProjectAction(form: FormData) {
+  const user = await requireUser();
+  const id = Number(form.get("projectId"));
+  if (projectRole(user.id, id) === "owner") redirect(`/app/p/${id}/team?error=${encodeURIComponent("Owners can't leave their own project.")}`);
+  removeMember(id, user.id);
+  redirect("/app?new=1");
+}
+
+// ---------- Intercom ----------
+export async function addIntercomSourceAction(form: FormData) {
+  const p = await project(form);
+  const path = backTo(form, p.id, `/app/p/${p.id}/live`);
+  const token = str(form, "token", 500);
+  const region = (str(form, "region", 4) in INTERCOM_REGIONS ? str(form, "region", 4) : "us") as IntercomRegion;
+  if (!token) done(path, { error: "Paste your Intercom access token." });
+  let app: { appName: string; appId: string };
+  try {
+    app = await verifyIntercom(token, region);
+  } catch (err) {
+    done(path, { error: err instanceof Error ? err.message : "Couldn't reach Intercom." });
+  }
+  const { lastInsertRowid } = run(
+    "INSERT INTO chat_sources (project_id, platform, name, account_id, secret_enc, bot_address) VALUES (?, 'intercom', ?, ?, ?, ?)",
+    p.id, `Intercom · ${app.appName}`.slice(0, 100), app.appId, encrypt(JSON.stringify({ token })), region,
+  );
+  const src = get<ChatSource>("SELECT * FROM chat_sources WHERE id = ?", lastInsertRowid)!;
+  const r = await pollAnySource(src);
+  done(path, r.error
+    ? { error: `Connected to ${app.appName}, but the first check failed: ${r.error}` }
+    : { ok: `Connected to ${app.appName}! Checked ${r.replies} bot repl${r.replies === 1 ? "y" : "ies"} from the last 24 hours. New conversations are checked every 15 minutes.` });
 }

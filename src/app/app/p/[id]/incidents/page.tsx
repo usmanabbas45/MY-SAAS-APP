@@ -3,14 +3,14 @@ import { SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, SeverityBadge, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { resolveIncidentAction } from "../actions";
 
 export const metadata = { title: "Incidents" };
 
 export default async function IncidentsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; show?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const sp = await searchParams;
   const resolved = sp.show === "resolved";
   const rows = all<{ id: number; module: string; code: string; severity: string; title: string; detail: string; created_at: string }>(

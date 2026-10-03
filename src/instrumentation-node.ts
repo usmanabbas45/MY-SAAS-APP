@@ -1,4 +1,5 @@
 import { alertMissingReplies } from "./lib/audit/live";
+import { runDueMonitors } from "./lib/uptime";
 
 /**
  * Checks for unanswered customer messages every minute, so a missing-reply alert arrives about a minute
@@ -14,6 +15,11 @@ if (process.env.DISABLE_BACKGROUND_TIMERS !== "1") {
       await alertMissingReplies();
     } catch (err) {
       console.error("[missing-replies] check failed:", err instanceof Error ? err.message : err);
+    }
+    try {
+      await runDueMonitors(); // uptime monitors due for a check
+    } catch (err) {
+      console.error("[uptime] check failed:", err instanceof Error ? err.message : err);
     } finally {
       running = false;
     }

@@ -4,18 +4,19 @@ import { Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { sourceStatuses, type Source } from "@/lib/live";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { agentSnippets, liveChatSnippets, workflowSnippets } from "@/lib/snippets";
-import { addChatSourceAction, addTargetAction, addWorkflowSourceAction, sendTestEventAction } from "../actions";
+import { addChatSourceAction, addIntercomSourceAction, addTargetAction, addWorkflowSourceAction, sendTestEventAction } from "../actions";
 
 export const metadata = { title: "Connect" };
 
 type Group = Source;
-interface Method { id: string; group: Group; icon: string; title: string; text: string; time: string; code?: boolean }
+interface Method { id: string; group: Group; icon: string; title: string; text: string; time: string; code?: boolean; page?: string }
 
 const METHODS: Method[] = [
   { id: "upload", group: "chatbot", icon: "📤", title: "Upload chat history", text: "Export chats from Intercom, Zendesk, Tidio, Crisp or any bot and upload the file.", time: "3 min · no code" },
-  { id: "nocode-chat", group: "chatbot", icon: "🔗", title: "Intercom, Zendesk, Crisp, Tidio, Chatbase", text: "Live checking of every answer using one HTTP step in n8n, Make or Zapier.", time: "5 min · no code" },
+  { id: "intercom", group: "chatbot", icon: "🔵", title: "Intercom (Fin)", text: "Paste an Intercom access token. Every Fin / bot reply is checked automatically.", time: "3 min · no code" },
+  { id: "nocode-chat", group: "chatbot", icon: "🔗", title: "Zendesk, Crisp, Tidio, Chatbase & others", text: "Live checking of every answer using one HTTP step in n8n, Make or Zapier.", time: "5 min · no code" },
   { id: "whatsapp", group: "chatbot", icon: "📱", title: "WhatsApp bot (WAHA)", text: "Paste one webhook URL in WAHA. Every message is checked live.", time: "2 min · no code" },
   { id: "twilio", group: "chatbot", icon: "☎️", title: "WhatsApp or SMS via Twilio", text: "Read-only: we read your Twilio message log every 15 minutes.", time: "3 min · no code" },
   { id: "website", group: "chatbot", icon: "💻", title: "My own chatbot (code)", text: "Custom GPT backend, website widget or any bot you built. One HTTP call.", time: "5 min · developer", code: true },
@@ -25,6 +26,7 @@ const METHODS: Method[] = [
   { id: "n8n", group: "workflows", icon: "🟠", title: "n8n", text: "Paste your n8n URL and API key. We check every workflow every 15 minutes.", time: "2 min · no code" },
   { id: "make", group: "workflows", icon: "🟣", title: "Make", text: "Paste a Make API token and your scenario IDs.", time: "2 min · no code" },
   { id: "webhook", group: "workflows", icon: "⚡", title: "Zapier or anything else", text: "Send a webhook when a workflow runs or fails.", time: "3 min" },
+  { id: "uptime", group: "workflows", icon: "🟢", title: "Uptime & speed", text: "Paste any URL (chatbot, website, API). Alerts when it goes down or gets slow.", time: "1 min · no code", page: "uptime" },
 ];
 
 const GROUPS: { id: Group; icon: string; title: string; sub: string }[] = [
@@ -71,7 +73,7 @@ function Code({ blocks }: { blocks: [string, string][] }) {
 
 export default async function ConnectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ with?: string; ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const sp = await searchParams;
   const base = `/app/p/${p.id}`;
   const method = METHODS.find((m) => m.id === sp.with);
@@ -121,7 +123,7 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
             <h2>{g.icon} {g.title} <span className="sub">{g.sub}</span></h2>
             <div className="cx-grid">
               {METHODS.filter((m) => m.group === g.id).map((m) => (
-                <Link key={m.id} href={`${base}/connect?with=${m.id}`} className="cx-card">
+                <Link key={m.id} href={m.page ? `${base}/${m.page}` : `${base}/connect?with=${m.id}`} className="cx-card">
                   <span className="cx-card-icon" aria-hidden>{m.icon}</span>
                   <strong>{m.title}</strong>
                   <span className="sub">{m.text}</span>
@@ -221,6 +223,28 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
           </Step>
           <Step n={4} title="Save, then send your bot a WhatsApp message" />
         </ol>
+      );
+      break;
+    case "intercom":
+      steps = (
+        <form action={addIntercomSourceAction}>
+          {pid}
+          <ol className="cx-steps">
+            <Step n={1} title={<>In Intercom: <strong>Settings</strong> → <strong>Integrations</strong> → <strong>Developer Hub</strong> → <strong>New app</strong> (name it “ProofMyAI”, internal)</>} />
+            <Step n={2} title={<>Open the app → <strong>Authentication</strong> → copy the <strong>Access token</strong> (it needs “Read conversations”)</>}>
+              <div className="field"><input id="ic-token" name="token" type="password" required aria-label="Intercom access token" placeholder="Paste the access token" autoComplete="off" /></div>
+            </Step>
+            <Step n={3} title="Where is your Intercom workspace hosted?">
+              <div className="field">
+                <select id="ic-region" name="region" defaultValue="us" aria-label="Intercom region" style={{ maxWidth: 260 }}>
+                  <option value="us">United States (default)</option><option value="eu">Europe</option><option value="au">Australia</option>
+                </select>
+              </div>
+              <SubmitButton pendingText="Connecting…">Connect Intercom</SubmitButton>
+              <p className="hint" style={{ marginTop: 8 }}>Read-only and stored encrypted. ProofMyAI never writes to Intercom, and human agents&apos; replies are never graded.</p>
+            </Step>
+          </ol>
+        </form>
       );
       break;
     case "twilio":

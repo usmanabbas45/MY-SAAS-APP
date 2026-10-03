@@ -20,7 +20,7 @@ export const CHANNEL_TYPES = {
   webhook: { label: "Custom webhook (Zapier, n8n, Make)", target: "URL receiving JSON", placeholder: "https://hooks.zapier.com/…" },
 } as const;
 export type ChannelType = keyof typeof CHANNEL_TYPES;
-export const MODULES = ["chatbot", "tests", "agents", "workflows"] as const;
+export const MODULES = ["chatbot", "tests", "agents", "workflows", "uptime"] as const;
 export const SEVERITY_RANK = { low: 1, medium: 2, high: 3 } as const;
 
 export interface Channel {

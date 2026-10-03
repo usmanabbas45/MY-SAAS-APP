@@ -8,7 +8,7 @@ import { trackEvent, userGaIds } from "./ga";
  */
 
 export type PlanId = "free" | "starter" | "growth" | "agency" | "compliance";
-export type Resource = "projects" | "conversations" | "bots" | "monitors";
+export type Resource = "projects" | "conversations" | "bots" | "monitors" | "uptime" | "seats";
 
 export interface Plan {
   id: PlanId | "unlimited";
@@ -18,30 +18,32 @@ export interface Plan {
   conversations: number; // per calendar month
   bots: number; // chatbots with nightly tests
   monitors: number; // n8n/Make connections + AI agents
+  uptime: number; // uptime monitors (URLs checked every few minutes)
+  seats: number; // team members invited to the owner's projects (owner not counted)
 }
 
 const INF = Number.POSITIVE_INFINITY;
 
 export const PLANS: Record<PlanId, Plan> = {
-  free: { id: "free", name: "Free", price: 0, projects: 1, conversations: 50, bots: 1, monitors: 2 },
-  starter: { id: "starter", name: "Starter", price: 29, projects: 1, conversations: 500, bots: 1, monitors: 5 },
-  growth: { id: "growth", name: "Growth", price: 79, projects: 3, conversations: 3000, bots: 5, monitors: INF },
-  agency: { id: "agency", name: "Agency", price: 199, projects: 20, conversations: 15000, bots: 25, monitors: INF },
-  compliance: { id: "compliance", name: "Compliance", price: 249, projects: 10, conversations: 10000, bots: 25, monitors: INF },
+  free: { id: "free", name: "Free", price: 0, projects: 1, conversations: 50, bots: 1, monitors: 2, uptime: 1, seats: 0 },
+  starter: { id: "starter", name: "Starter", price: 29, projects: 1, conversations: 500, bots: 1, monitors: 5, uptime: 3, seats: 1 },
+  growth: { id: "growth", name: "Growth", price: 79, projects: 3, conversations: 3000, bots: 5, monitors: INF, uptime: 10, seats: 5 },
+  agency: { id: "agency", name: "Agency", price: 199, projects: 20, conversations: 15000, bots: 25, monitors: INF, uptime: 50, seats: 20 },
+  compliance: { id: "compliance", name: "Compliance", price: 249, projects: 10, conversations: 10000, bots: 25, monitors: INF, uptime: 50, seats: 10 },
 };
 export const PAID_PLANS: PlanId[] = ["starter", "growth", "agency", "compliance"];
 
 /** Marketing copy for the paid plans, shared by the pricing section and the billing page. */
 export const PLAN_FEATURES: Record<Exclude<PlanId, "free">, string[]> = {
-  starter: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "Email + Slack alerts"],
-  growth: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "Neural risk model + training export"],
-  agency: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "Priority support", "Everything in Growth"],
+  starter: ["1 project", "500 audited conversations / month", "Nightly tests for 1 bot", "5 workflows or agents", "3 uptime monitors · 1 teammate", "Email + Slack alerts"],
+  growth: ["3 projects", "3,000 audited conversations / month", "Nightly tests for 5 bots", "Unlimited workflows and agents", "10 uptime monitors · 5 teammates", "Neural risk model + training export"],
+  agency: ["20 client projects", "15,000 audited conversations / month", "White-label client reports (share link + PDF)", "50 uptime monitors · 20 teammates", "Priority support", "Everything in Growth"],
   compliance: ["For dealers, finance, insurance & healthcare", "10 projects · 10,000 conversations / month", "Signed DPA, results-only storage, auto-delete", "AI-off mode or self-hosted option", "Risk reports + onboarding call + priority support"],
 };
 
 /** Optional plans are sold only when their Paddle price is configured; otherwise shown as "Talk to us". */
 export const OPTIONAL_PLANS: PlanId[] = ["compliance"];
-const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects: INF, conversations: INF, bots: INF, monitors: INF };
+const UNLIMITED: Plan = { id: "unlimited", name: "Unlimited", price: 0, projects: INF, conversations: INF, bots: INF, monitors: INF, uptime: INF, seats: INF };
 
 /** States that keep the paid plan active. past_due keeps access while Paddle retries; comped is a free plan given by an admin. */
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "comped"]);
@@ -142,6 +144,12 @@ export function usage(userId: number, plan: Plan): Record<Resource, number> {
     ),
     bots: n("SELECT COUNT(*) AS n FROM bot_targets b JOIN projects p ON p.id = b.project_id WHERE p.user_id = ?", userId),
     monitors: agents + n("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ?", userId),
+    uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ?", userId),
+    seats: n(
+      `SELECT COUNT(*) AS n FROM (SELECT u.email FROM project_members pm JOIN projects p ON p.id = pm.project_id JOIN users u ON u.id = pm.user_id WHERE p.user_id = ?
+         UNION SELECT i.email FROM project_invites i JOIN projects p ON p.id = i.project_id WHERE p.user_id = ? AND i.accepted_at IS NULL AND i.expires_at > datetime('now'))`,
+      userId, userId,
+    ),
   };
 }
 
@@ -150,6 +158,8 @@ const LABELS: Record<Resource, string> = {
   conversations: "audited conversations",
   bots: "chatbot(s) with nightly tests",
   monitors: "workflows and AI agents",
+  uptime: "uptime monitor(s)",
+  seats: "team member(s)",
 };
 
 /** Returns an error message when adding `adding` more of a resource would exceed the user's plan, otherwise null. */

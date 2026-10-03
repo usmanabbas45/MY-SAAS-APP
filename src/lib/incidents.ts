@@ -1,7 +1,7 @@
 import { all, get, run } from "./db";
 import { notify } from "./notify";
 
-export type Module = "chatbot" | "tests" | "agents" | "workflows";
+export type Module = "chatbot" | "tests" | "agents" | "workflows" | "uptime";
 export type IncidentSeverity = "low" | "medium" | "high";
 
 export interface NewIncident {

@@ -6,7 +6,7 @@ import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, 
 import type { MlpModel } from "../ml/mlp";
 import { loadModel, riskScore } from "../ml/risk";
 import { applyRules, parseMustInclude, projectRules, type Rule } from "../rules";
-import { conversationFindings, FLAG_SEVERITY, type ConvFlag } from "../judge/conversation";
+import { conversationFindings, FLAG_SEVERITY, INFO_FLAGS, isSafetyFlag, type ConvFlag } from "../judge/conversation";
 import { isFrustrated } from "../sentiment";
 import { raiseIncident } from "../incidents";
 
@@ -69,21 +69,27 @@ const SEV_RANK: Record<Severity, number> = { none: 0, low: 1, medium: 2, high: 3
 
 /** Adds conversation-level problems (re-asking, restarts, fallbacks, contradictions) to a grade. */
 export function withConversationChecks(e: Exchange, grade: Grade): { grade: Grade; flags: ConvFlag[] } {
-  const findings = conversationFindings(e);
-  if (!findings.length) return { grade, flags: [] };
+  const all = conversationFindings(e);
+  if (!all.length) return { grade, flags: [] };
+  // Informational flags (an attack the bot refused) are recorded but don't count against the bot.
+  const findings = all.filter((f) => !INFO_FLAGS.includes(f.flag));
+  if (!findings.length) return { grade, flags: all.map((f) => f.flag) };
   let severity = grade.severity;
   for (const f of findings) if (SEV_RANK[FLAG_SEVERITY[f.flag]] > SEV_RANK[severity]) severity = FLAG_SEVERITY[f.flag];
   const worst = findings.reduce((a, b) => (SEV_RANK[FLAG_SEVERITY[b.flag]] > SEV_RANK[FLAG_SEVERITY[a.flag]] ? b : a));
   const reason = grade.verdict === "correct" ? findings.map((f) => f.reason).join(" ") : `${grade.reason} Also: ${findings.map((f) => f.reason).join(" ")}`;
+  const serious = SEV_RANK[FLAG_SEVERITY[worst.flag]] >= 2;
   return {
     grade: {
       ...grade,
-      // A factually fine answer that re-asks, restarts or contradicts is still a problem the owner should see.
-      verdict: grade.verdict === "correct" && SEV_RANK[FLAG_SEVERITY[worst.flag]] >= 2 ? "unclear" : grade.verdict,
+      // A factually fine answer that re-asks, restarts or contradicts is still a problem the owner should see;
+      // a safety problem (leak, injection, rude reply) breaks policy.
+      verdict: isSafetyFlag(worst.flag) && FLAG_SEVERITY[worst.flag] === "high" && (grade.verdict === "correct" || grade.verdict === "unclear") ? "off_policy"
+        : grade.verdict === "correct" && serious ? "unclear" : grade.verdict,
       severity,
       reason,
     },
-    flags: findings.map((f) => f.flag),
+    flags: all.map((f) => f.flag),
   };
 }
 
@@ -165,6 +171,12 @@ const BEHAVIOUR_FIX: Record<ConvFlag, string> = {
   restart: "Bot session handling: restarts mid-conversation",
   fallback: "Bot coverage: generic fallback replies instead of answers",
   contradiction: "Bot consistency: contradicts its earlier replies",
+  injection: "Bot security: add prompt-injection protection to the system prompt",
+  attack_blocked: "Bot security: attacks the bot refused (no action needed)",
+  prompt_leak: "Bot security: stop the bot revealing its system prompt",
+  data_leak: "Bot privacy: the bot exposed payment data",
+  toxic: "Bot tone: rude or offensive replies",
+  wrong_language: "Bot language: reply in the customer's language",
 };
 
 /** Headline risk numbers for reports ("3 answers could have created legal or financial exposure"). */
@@ -172,7 +184,7 @@ export function riskSummary(auditId: number): { high: number; medium: number; fl
   const bySev = all<{ severity: Severity; n: number }>(
     "SELECT severity, COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND COALESCE(corrected_verdict, verdict) <> 'correct' GROUP BY severity", auditId,
   );
-  const flags = { re_ask: 0, restart: 0, fallback: 0, contradiction: 0 } as Record<ConvFlag, number>;
+  const flags = { re_ask: 0, restart: 0, fallback: 0, contradiction: 0, injection: 0, attack_blocked: 0, prompt_leak: 0, data_leak: 0, toxic: 0, wrong_language: 0 } as Record<ConvFlag, number>;
   for (const r of all<{ conv_flags: string }>("SELECT conv_flags FROM audit_items WHERE audit_id = ? AND conv_flags IS NOT NULL", auditId)) {
     for (const f of r.conv_flags.split(",") as ConvFlag[]) if (f in flags) flags[f]++;
   }
@@ -189,9 +201,9 @@ export function fixList(auditId: number): FixGroup[] {
   const groups = new Map<string, FixGroup>();
   for (const r of rows) {
     // Problems caused by the bot's behaviour are fixed in its prompt, code or hand-over logic, not in a help article.
-    const flag = r.conv_flags?.split(",")[0] as ConvFlag | undefined;
+    const flag = r.conv_flags?.split(",").find((f) => !INFO_FLAGS.includes(f as ConvFlag)) as ConvFlag | undefined;
     const doc = r.rule_hit ? `Bot prompt/logic: rule "${r.rule_hit.split("\n")[0].split(":").slice(1).join(":")}" broken`
-      : flag && !r.source_doc ? BEHAVIOUR_FIX[flag]
+      : flag && (!r.source_doc || isSafetyFlag(flag)) ? BEHAVIOUR_FIX[flag]
       : r.verdict === "should_escalate" && !r.source_doc ? "Bot hand-over logic: escalate these cases to a human"
       : r.source_doc ?? "Missing documentation (write a new article)";
     const g = groups.get(doc) ?? { doc, count: 0, high: 0, verdicts: {}, examples: [] };

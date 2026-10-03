@@ -20,6 +20,8 @@ const USAGE_LABELS: [Resource, string][] = [
   ["conversations", "Audited conversations"],
   ["bots", "Chatbots with nightly tests"],
   ["monitors", "Workflows and AI agents"],
+  ["uptime", "Uptime monitors"],
+  ["seats", "Team members"],
 ];
 
 function day(iso: string | null): string {

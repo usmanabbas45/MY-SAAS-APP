@@ -5,17 +5,17 @@ import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
 import { projectHealth } from "@/lib/health";
 import { llmAvailable } from "@/lib/judge/llm";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { userHasGivenFeedback } from "@/lib/testimonials";
 import { cookies } from "next/headers";
 import { dismissFeedbackPromptAction } from "../../feedback/actions";
 
 export const metadata = { title: "Overview" };
 
-export default async function Overview({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ welcome?: string }> }) {
+export default async function Overview({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ welcome?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
-  const { welcome } = await searchParams;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
+  const { welcome, error } = await searchParams;
   const h = projectHealth(p.id);
   const base = `/app/p/${p.id}`;
   const incidents = all<{ id: number; severity: string; title: string; detail: string; module: string; created_at: string }>(
@@ -39,7 +39,8 @@ export default async function Overview({ params, searchParams }: { params: Promi
 
   return (
     <div>
-      {nothingConnected ? (
+      {error ? <div className="alert alert-bad" role="alert">{error}</div> : null}
+      {nothingConnected && role !== "viewer" ? (
         <div className="cx-hero">
           <div>
             <h2>{welcome ? "👋 Welcome! " : ""}Connect your first AI in 2 minutes</h2>
@@ -64,7 +65,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
           </span>
         </div>
       ) : null}
-      <PageHeader title={p.name} subtitle="Health of every AI system in this project" actions={<Link href={`${base}/connect`} className="btn btn-sm">➕ Connect</Link>} />
+      <PageHeader title={p.name} subtitle="Health of every AI system in this project" actions={role === "viewer" ? undefined : <Link href={`${base}/connect`} className="btn btn-sm">➕ Connect</Link>} />
 
       <div className="grid grid-hero">
         <div className="card" style={{ display: "grid", placeItems: "center", textAlign: "center" }}>

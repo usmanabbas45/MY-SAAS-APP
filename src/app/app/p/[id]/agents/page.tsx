@@ -4,7 +4,7 @@ import { Badge, Empty, PageHeader, ScoreBadge, SeverityBadge, Stat, StatusBadge,
 import type { AgentStep, Issue } from "@/lib/agents/checks";
 import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { agentSnippets } from "@/lib/snippets";
 import { truncate } from "@/lib/text";
 
@@ -12,7 +12,7 @@ export const metadata = { title: "AI agents" };
 
 export default async function AgentsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const runs = all<{ id: number; external_id: string; agent_name: string; goal: string; status: string; final_output: string; steps_json: string; total_cost_usd: number; total_ms: number; issues_json: string; score: number; created_at: string }>(
     "SELECT * FROM agent_runs WHERE project_id = ? ORDER BY id DESC LIMIT 50", p.id,
   );

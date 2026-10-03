@@ -14,7 +14,13 @@ import { recordLogin, securityNotice } from "@/lib/securityevents";
 import { pendingLoginToken, readPendingLogin, twoFactorEnabled, verifySecondFactor } from "@/lib/twofactor";
 import { rateLimit } from "@/lib/security";
 
-export interface AuthState { error?: string; ok?: string; captcha?: CaptchaConfig; pending?: string; founding?: boolean }
+export interface AuthState { error?: string; ok?: string; captcha?: CaptchaConfig; pending?: string; founding?: boolean; next?: string }
+
+/** Where to go after logging in: only team-invitation links are allowed (no open redirects). */
+function nextPath(form: FormData): string | null {
+  const v = String(form.get("next") ?? "");
+  return /^\/invite\/[A-Za-z0-9_-]{10,100}$/.test(v) ? v : null;
+}
 
 /** Error answer with a fresh CAPTCHA (each challenge works once). */
 const fail = (error: string): AuthState => ({ error, captcha: captchaConfig() });
@@ -46,7 +52,7 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   const ga = await currentGaIds();
   rememberGaClient(user.id, ga);
   void trackEvent(ga, "sign_up", { method: "email" });
-  redirect(form.get("founding") === "1" ? "/app/founding" : `/app/p/${projectId}?welcome=1`);
+  redirect(nextPath(form) ?? (form.get("founding") === "1" ? "/app/founding" : `/app/p/${projectId}?welcome=1`));
 }
 
 export async function loginAction(_: AuthState, form: FormData): Promise<AuthState> {
@@ -64,10 +70,10 @@ export async function loginAction(_: AuthState, form: FormData): Promise<AuthSta
   const user = checkLogin(email, String(form.get("password") ?? ""));
   if (!user) return fail("Wrong email or password.");
   if (isSuspended(user.id)) return fail("This account is suspended. Contact support if you think this is a mistake.");
-  if (twoFactorEnabled(user.id)) return { pending: pendingLoginToken(user.id), founding: form.get("founding") === "1" };
+  if (twoFactorEnabled(user.id)) return { pending: pendingLoginToken(user.id), founding: form.get("founding") === "1", next: nextPath(form) ?? undefined };
   await startSession(user.id);
   await recordLogin(user.id, user.email, await userAgent(), ip);
-  redirect(form.get("founding") === "1" ? "/app/founding" : "/app");
+  redirect(nextPath(form) ?? (form.get("founding") === "1" ? "/app/founding" : "/app"));
 }
 
 /** Second login step for accounts with two-factor authentication. */
@@ -75,7 +81,7 @@ export async function verifyTwoFactorAction(_: AuthState, form: FormData): Promi
   const pending = String(form.get("pending") ?? "");
   const userId = readPendingLogin(pending);
   if (!userId) return fail("Your login took too long. Please enter your email and password again.");
-  const again = (error: string): AuthState => ({ error, pending, founding: form.get("founding") === "1" });
+  const again = (error: string): AuthState => ({ error, pending, founding: form.get("founding") === "1", next: nextPath(form) ?? undefined });
   if (!rateLimit(`2fa:${userId}`, 6, 900000)) return again("Too many wrong codes. Wait 15 minutes and try again.");
   const r = verifySecondFactor(userId, String(form.get("code") ?? ""));
   if (!r.ok) return again("That code is not right. Enter the 6-digit code from your authenticator app, or a recovery code.");
@@ -84,7 +90,7 @@ export async function verifyTwoFactorAction(_: AuthState, form: FormData): Promi
   await startSession(userId);
   await recordLogin(userId, email, await userAgent(), ip);
   if (r.usedRecovery) await securityNotice(email, "recovery_used", ip, await userAgent());
-  redirect(form.get("founding") === "1" ? "/app/founding" : "/app");
+  redirect(nextPath(form) ?? (form.get("founding") === "1" ? "/app/founding" : "/app"));
 }
 
 export async function logoutAction(): Promise<void> {

@@ -3,28 +3,30 @@ import { NavLinks, ProjectSwitcher, ThemeToggle, type NavItem } from "@/componen
 import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
-import { listProjects, ownedProject } from "@/lib/projects";
+import { accessibleProjects, projectAccess } from "@/lib/projects";
 import { logoutAction } from "../../../(auth)/actions";
 
 export default async function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const project = ownedProject(user.id, Number(id));
+  const { project, role } = projectAccess(user.id, Number(id));
   const base = `/app/p/${project.id}`;
   const open = get<{ n: number }>("SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND resolved = 0", project.id)?.n ?? 0;
 
   const monitor: NavItem[] = [
     { href: base, label: "Overview", icon: "📊" },
-    { href: `${base}/connect`, label: "Connect", icon: "➕" },
+    ...(role === "viewer" ? [] : [{ href: `${base}/connect`, label: "Connect", icon: "➕" }]),
     { href: `${base}/live`, label: "Live tracking", icon: "📡" },
     { href: `${base}/chatbot`, label: "Chatbot audits", icon: "💬" },
     { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪" },
     { href: `${base}/agents`, label: "AI agents", icon: "🤖" },
     { href: `${base}/workflows`, label: "n8n & Make", icon: "⚙️" },
+    { href: `${base}/uptime`, label: "Uptime", icon: "🟢", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM uptime_monitors WHERE project_id = ? AND status = 'down'", project.id)?.n ?? 0 },
     { href: `${base}/incidents`, label: "Incidents", icon: "🚨", badge: open },
   ];
   const manage: NavItem[] = [
-    { href: `${base}/settings`, label: "Settings & AI model", icon: "🛠️" },
+    ...(role === "owner" ? [{ href: `${base}/settings`, label: "Settings & AI model", icon: "🛠️" }] : []),
+    { href: `${base}/team`, label: "Team", icon: "👥" },
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
     { href: "/app/billing", label: "Plan & billing", icon: "💳" },
     { href: "/app/account", label: "Account", icon: "👤" },
@@ -37,7 +39,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     <div className="shell">
       <aside className="sidebar">
         <Link href="/app?new=1" className="logo"><span className="logo-mark">✓</span>ProofMyAI</Link>
-        <ProjectSwitcher projects={listProjects(user.id).map((p) => ({ id: p.id, name: p.name }))} current={project.id} />
+        <ProjectSwitcher projects={accessibleProjects(user.id).map((p) => ({ id: p.id, name: p.role === "owner" ? p.name : `${p.name} (shared)` }))} current={project.id} />
         <div className="nav-label">Monitor</div>
         <NavLinks items={monitor} />
         <div className="nav-label">Manage</div>
@@ -52,7 +54,10 @@ export default async function ProjectLayout({ children, params }: { children: Re
       </aside>
       <div className="main">
         <nav className="mobile-nav" aria-label="Sections"><NavLinks items={[...monitor, ...manage]} /></nav>
-        <div className="content">{children}</div>
+        <div className="content">
+          {role !== "owner" ? <div className="alert alert-info role-banner">{role === "viewer" ? "👁️ View-only access: you can see everything but not change it." : "✏️ Editor access: you can connect tools and run checks. Settings and team are managed by the owner."}</div> : null}
+          {children}
+        </div>
       </div>
     </div>
   );

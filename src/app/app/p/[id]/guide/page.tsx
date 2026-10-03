@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { YouTube } from "@/components/video";
 import { VIDEOS } from "@/lib/seo";
 
@@ -9,7 +9,7 @@ export const metadata = { title: "Setup guide" };
 
 export default async function GuidePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const b = `/app/p/${p.id}`;
   const steps: { title: string; time: string; body: React.ReactNode }[] = [
     {

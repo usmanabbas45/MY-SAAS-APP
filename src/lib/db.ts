@@ -267,6 +267,50 @@ function migrate(db: DatabaseSync): void {
     mrr REAL NOT NULL,
     ai_cost REAL NOT NULL DEFAULT 0
   )`);
+  // Uptime monitors: a URL checked every few minutes, with its latest state.
+  db.exec(`CREATE TABLE IF NOT EXISTS uptime_monitors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    keyword TEXT,
+    interval_min INTEGER NOT NULL DEFAULT 5,
+    status TEXT NOT NULL DEFAULT 'pending',
+    fails INTEGER NOT NULL DEFAULT 0,
+    last_checked_at TEXT,
+    last_ms INTEGER,
+    last_code INTEGER,
+    last_error TEXT,
+    down_since TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS uptime_checks (
+    monitor_id INTEGER NOT NULL REFERENCES uptime_monitors(id) ON DELETE CASCADE,
+    at TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    ms INTEGER,
+    code INTEGER
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_uptime_checks ON uptime_checks (monitor_id, at)");
+  // Team members: other users with access to a project, and pending email invites.
+  db.exec(`CREATE TABLE IF NOT EXISTS project_members (
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (project_id, user_id)
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS project_invites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    token_hash TEXT NOT NULL UNIQUE,
+    invited_by INTEGER,
+    expires_at TEXT NOT NULL,
+    accepted_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   // Emails ("name@x.com") or whole domains ("@x.com") that may not sign up.
   db.exec(`CREATE TABLE IF NOT EXISTS blocklist (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
