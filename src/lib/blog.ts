@@ -6,6 +6,8 @@
 export interface Post {
   slug: string;
   title: string;
+  /** Shorter title for Google (about 60 characters) when the headline is longer. */
+  seoTitle?: string;
   description: string;
   date: string;
   updated?: string;
@@ -183,6 +185,7 @@ The lesson from all of them: **the business owns what its bot says**, and proble
   {
     slug: "n8n-workflow-monitoring",
     title: "n8n Workflow Monitoring: Get Alerts for Failures and Silent Failures",
+    seoTitle: "n8n Workflow Monitoring: Alerts for Failed & Silent Runs",
     description: "How to monitor n8n workflows in production: error workflows, execution checks, silent failures that report success, workflows that stop running, and alerts in Slack, email or WhatsApp.",
     date: "2026-09-30",
     readMins: 7,
@@ -252,6 +255,7 @@ One failed execution in a thousand can be noise. A jump from 1% to 30% failed ru
   {
     slug: "make-com-scenario-monitoring",
     title: "Make.com Scenario Monitoring: Catch Errors and Scenarios That Stop Running",
+    seoTitle: "Make.com Scenario Monitoring: Catch Errors & Stopped Runs",
     description: "How to monitor Make (formerly Integromat) scenarios: error handlers, incomplete executions, silent failures, scenarios that get disabled, and alerts that reach you in time.",
     date: "2026-09-30",
     readMins: 6,
@@ -308,6 +312,7 @@ Make's API lets you read scenario status and execution logs with a token (Profil
   {
     slug: "ai-agent-monitoring",
     title: "AI Agent Monitoring: How to Catch Loops, Tool Errors and Runaway Costs",
+    seoTitle: "AI Agent Monitoring: Catch Loops, Tool Errors & Costs",
     description: "What can go wrong with AI agents in production and how to monitor them: loops, failed tool calls, ungrounded answers, goals not met, slow runs and cost spikes.",
     date: "2026-09-30",
     readMins: 7,

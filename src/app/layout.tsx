@@ -1,3 +1,4 @@
+import { metaDescription } from "@/lib/meta";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from "@/components/analytics";
@@ -6,7 +7,7 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "ProofMyAI · AI Chatbot, AI Agent & n8n Workflow Monitoring", template: "%s · ProofMyAI" },
-  description: SITE_DESCRIPTION,
+  description: metaDescription(SITE_DESCRIPTION),
   applicationName: SITE_NAME,
   keywords: [
     "AI chatbot monitoring", "chatbot hallucination checker", "AI chatbot QA", "chatbot quality assurance",

@@ -1,3 +1,4 @@
+import { metaDescription, metaTitle } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headings, Prose } from "@/components/prose";
@@ -16,11 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const p = postBySlug((await params).slug);
   if (!p) return {};
   return {
-    title: p.title,
-    description: p.description,
+    title: metaTitle(p.seoTitle ?? p.title),
+    description: metaDescription(p.description),
     alternates: { canonical: `/blog/${p.slug}` },
     authors: [{ name: LEGAL_NAME, url: DEVELOPER_URL }],
-    openGraph: { type: "article", title: p.title, description: p.description, url: `/blog/${p.slug}`, publishedTime: p.date, modifiedTime: p.updated ?? p.date, authors: [LEGAL_NAME] },
+    openGraph: { type: "article", title: p.title, description: metaDescription(p.description, 200), url: `/blog/${p.slug}`, publishedTime: p.date, modifiedTime: p.updated ?? p.date, authors: [LEGAL_NAME] },
   };
 }
 
