@@ -6,6 +6,8 @@ import { get } from "@/lib/db";
 import { accessibleProjects, projectAccess } from "@/lib/projects";
 import { logoutAction } from "../../../(auth)/actions";
 import { VerifyBanner } from "@/components/verify-banner";
+import { SubmitButton } from "@/components/client";
+import { deleteDemoAction } from "../../demo-actions";
 
 export default async function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -57,6 +59,15 @@ export default async function ProjectLayout({ children, params }: { children: Re
         <nav className="mobile-nav" aria-label="Sections"><NavLinks items={[...monitor, ...manage]} /></nav>
         <div className="content">
           <VerifyBanner userId={user.id} email={user.email} />
+          {project.is_demo ? (
+            <div className="alert alert-info verify-banner" role="status">
+              <span>✨ <strong>This is a demo project with sample data</strong> for a made-up shop. Click around: audits, safety checks, Fix with AI, agents, workflows and uptime are all filled in. It doesn&apos;t count towards your plan.</span>
+              <span className="row" style={{ gap: 8 }}>
+                <Link href="/app?new=1" className="btn btn-sm">Connect my own AI →</Link>
+                <form action={deleteDemoAction}><SubmitButton className="btn btn-ghost btn-sm" pendingText="Deleting…" confirm="Delete the demo project?">Delete demo</SubmitButton></form>
+              </span>
+            </div>
+          ) : null}
           {role !== "owner" ? <div className="alert alert-info role-banner">{role === "viewer" ? "👁️ View-only access: you can see everything but not change it." : "✏️ Editor access: you can connect tools and run checks. Settings and team are managed by the owner."}</div> : null}
           {children}
         </div>

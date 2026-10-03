@@ -133,21 +133,21 @@ export function usage(userId: number, plan: Plan): Record<Resource, number> {
   const since = monthStart();
   const n = (sql: string, ...args: (string | number)[]) => get<{ n: number }>(sql, ...args)?.n ?? 0;
   const agents = all<{ agent_name: string }>(
-    "SELECT DISTINCT r.agent_name FROM agent_runs r JOIN projects p ON p.id = r.project_id WHERE p.user_id = ?", userId,
+    "SELECT DISTINCT r.agent_name FROM agent_runs r JOIN projects p ON p.id = r.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId,
   ).length;
   return {
-    projects: n("SELECT COUNT(*) AS n FROM projects WHERE user_id = ?", userId),
+    projects: n("SELECT COUNT(*) AS n FROM projects WHERE user_id = ? AND is_demo = 0", userId),
     conversations: n(
       `SELECT COUNT(DISTINCT i.audit_id || ':' || i.conversation_id) AS n FROM audit_items i
        JOIN audits a ON a.id = i.audit_id JOIN projects p ON p.id = a.project_id
-       WHERE p.user_id = ? AND COALESCE(i.created_at, a.created_at) >= ?`, userId, since,
+       WHERE p.user_id = ? AND p.is_demo = 0 AND COALESCE(i.created_at, a.created_at) >= ?`, userId, since,
     ),
-    bots: n("SELECT COUNT(*) AS n FROM bot_targets b JOIN projects p ON p.id = b.project_id WHERE p.user_id = ?", userId),
-    monitors: agents + n("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ?", userId),
-    uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ?", userId),
+    bots: n("SELECT COUNT(*) AS n FROM bot_targets b JOIN projects p ON p.id = b.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
+    monitors: agents + n("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
+    uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     seats: n(
-      `SELECT COUNT(*) AS n FROM (SELECT u.email FROM project_members pm JOIN projects p ON p.id = pm.project_id JOIN users u ON u.id = pm.user_id WHERE p.user_id = ?
-         UNION SELECT i.email FROM project_invites i JOIN projects p ON p.id = i.project_id WHERE p.user_id = ? AND i.accepted_at IS NULL AND i.expires_at > datetime('now'))`,
+      `SELECT COUNT(*) AS n FROM (SELECT u.email FROM project_members pm JOIN projects p ON p.id = pm.project_id JOIN users u ON u.id = pm.user_id WHERE p.user_id = ? AND p.is_demo = 0
+         UNION SELECT i.email FROM project_invites i JOIN projects p ON p.id = i.project_id WHERE p.user_id = ? AND p.is_demo = 0 AND i.accepted_at IS NULL AND i.expires_at > datetime('now'))`,
       userId, userId,
     ),
   };

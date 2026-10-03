@@ -23,6 +23,7 @@ export interface Project {
   report_brand: string | null;
   weekly_digest: number;
   last_digest_at: string | null;
+  is_demo: number;
   created_at: string;
 }
 

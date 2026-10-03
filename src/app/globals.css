@@ -665,6 +665,8 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .cx-hero-card:hover { text-decoration: none; transform: translateY(-2px); border-color: var(--brand); }
 .cx-hero-card > span { font-size: 22px; }
 .cx-hero-card small { color: var(--faint); font-size: 12px; }
+.cx-hero-demo { flex-basis: 100%; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding-top: 14px; border-top: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
+.cx-hero-demo > span { min-width: 0; flex: 1 1 240px; }
 @media (max-width: 900px) {
   .cx-layout { grid-template-columns: minmax(0, 1fr); }
   .cx-side { position: static; }
