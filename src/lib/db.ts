@@ -431,6 +431,7 @@ function migrate(db: DatabaseSync): void {
     used INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  addColumn(db, "users", "renew_reminded_for", "TEXT");
   addColumn(db, "users", "plan_interval", "TEXT NOT NULL DEFAULT 'month'");
   addColumn(db, "projects", "is_demo", "INTEGER NOT NULL DEFAULT 0");
   // Welcome emails: last one sent (0-3), 9 = finished or not wanted. Existing accounts never get them.

@@ -13,14 +13,15 @@ import { get } from "@/lib/db";
 import { recordLogin, securityNotice } from "@/lib/securityevents";
 import { pendingLoginToken, readPendingLogin, twoFactorEnabled, verifySecondFactor } from "@/lib/twofactor";
 import { rateLimit } from "@/lib/security";
+import { safeNext } from "@/lib/next-path";
 import { sendVerification } from "@/lib/verify";
 
 export interface AuthState { error?: string; ok?: string; captcha?: CaptchaConfig; pending?: string; founding?: boolean; next?: string }
 
-/** Where to go after logging in: only team-invitation links are allowed (no open redirects). */
+/** Where to go after logging in: team invitations or the checkout of a plan picked on the pricing page. */
 function nextPath(form: FormData): string | null {
   const v = String(form.get("next") ?? "");
-  return /^\/invite\/[A-Za-z0-9_-]{10,100}$/.test(v) ? v : null;
+  return safeNext(v) ?? null;
 }
 
 /** Error answer with a fresh CAPTCHA (each challenge works once). */

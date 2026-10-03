@@ -9,7 +9,11 @@ export interface Release {
 export const RELEASES: Release[] = [
   {
     date: "2026-10-03", title: "Yearly plans: 2 months free", tag: "New",
-    items: ["Pay yearly and get 12 months for the price of 10. Switch between monthly and yearly any time on the Billing page; you only pay the difference."],
+    items: [
+      "Pay yearly and get 12 months for the price of 10. Switch between monthly and yearly any time on the Billing page; you only pay the difference.",
+      "Clear prices before checkout: yearly plans show the full yearly amount, and every trial shows what you'll pay when it ends.",
+      "Reminder emails 3 days before a free trial ends and 30 days before a yearly plan renews.",
+    ],
   },
   {
     date: "2026-10-03", title: "Try ProofMyAI with demo data", tag: "New",

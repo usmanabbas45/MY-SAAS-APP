@@ -1,4 +1,5 @@
 import { PLAN_FEATURES, PLANS as PLANS_BY_ID, priceId, yearlyAvailable, yearlyMonthly, yearlyPrice, type PlanId } from "@/lib/billing";
+import { planSignupHref } from "@/lib/next-path";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
@@ -31,6 +32,34 @@ const PLANS: { id: PlanId; name: string; price: number; featured: boolean; items
   { id: "agency", name: "Agency", price: PLANS_BY_ID.agency.price, featured: false, items: PLAN_FEATURES.agency },
   { id: "compliance", name: "Compliance", price: PLANS_BY_ID.compliance.price, featured: false, items: PLAN_FEATURES.compliance },
 ];
+
+/**
+ * Starter begins on the Free plan (no card); Growth and Agency go through sign-up straight to a
+ * 14-day trial checkout for the chosen billing period (card required by Paddle); Compliance is sold by talking to us.
+ */
+function PlanButton({ p, yearly }: { p: (typeof PLANS)[number]; yearly: boolean }) {
+  const cls = `btn ${p.featured ? "" : "btn-ghost"}`;
+  if (p.id === "compliance") return <Link href="/contact" className={cls} style={{ width: "100%" }}>Talk to us</Link>;
+  if (p.id === "starter") {
+    return (
+      <>
+        <Link href="/signup" className={cls} style={{ width: "100%" }}>Start free, no card</Link>
+        <p className="price-note plan-fine">Begin on the Free plan, upgrade to Starter any time</p>
+      </>
+    );
+  }
+  const yearlyTotal = `$${yearlyPrice(p.id).toLocaleString("en-US")}/year`;
+  return (
+    <>
+      <Link href={planSignupHref(p.id, "month")} className={`${cls} when-monthly-inline`} style={{ width: "100%" }}>Start 14-day free trial</Link>
+      {yearly ? <Link href={planSignupHref(p.id, "year")} className={`${cls} when-yearly-inline`} style={{ width: "100%" }}>Start 14-day free trial</Link> : null}
+      <p className="price-note plan-fine">
+        <span className="when-monthly-inline">Then ${p.price}/month</span>
+        {yearly ? <span className="when-yearly-inline">Then {yearlyTotal}</span> : null} · card required, no charge if you cancel before day 14
+      </p>
+    </>
+  );
+}
 
 export const dynamic = "force-dynamic"; // approved testimonials appear without a redeploy
 
@@ -235,12 +264,12 @@ export default function Landing() {
               <div className="price">${p.price}<small>/month</small></div>
               {yearlyAvailable() && priceId(p.id, "year") ? (
                 <div className="when-yearly">
-                  <div className="price">${yearlyMonthly(p.id)}<small>/month</small></div>
-                  <p className="price-note">Billed ${yearlyPrice(p.id)} yearly · save ${p.price * 12 - yearlyPrice(p.id)}</p>
+                  <div className="price">${yearlyPrice(p.id).toLocaleString("en-US")}<small>/year</small></div>
+                  <p className="price-note">Works out at ${yearlyMonthly(p.id)}/month · save ${p.price * 12 - yearlyPrice(p.id)}</p>
                 </div>
               ) : null}
               <ul>{p.items.map((i) => <li key={i}>{i}</li>)}</ul>
-              <Link href={p.name === "Compliance" ? "/contact" : "/signup"} className={`btn ${p.featured ? "" : "btn-ghost"}`} style={{ width: "100%" }}>{p.name === "Compliance" ? "Talk to us" : "Start free"}</Link>
+              <PlanButton p={p} yearly={yearlyAvailable() && Boolean(priceId(p.id, "year"))} />
             </div>
           ))}
         </div>
