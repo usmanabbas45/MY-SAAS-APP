@@ -1,6 +1,6 @@
 import { get } from "@/lib/db";
 import { esc } from "@/lib/emails";
-import { unsubscribeDigest, validUnsub } from "@/lib/unsubscribe";
+import { unsubscribeDigest, unsubscribeWelcome, validUnsub, validWelcomeUnsub } from "@/lib/unsubscribe";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +11,16 @@ const page = (title: string, body: string, status = 200) => new Response(
   { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
 );
 
-const params = (req: Request) => { const u = new URL(req.url); return { p: Number(u.searchParams.get("p")), t: u.searchParams.get("t") ?? "" }; };
+const params = (req: Request) => { const u = new URL(req.url); return { p: Number(u.searchParams.get("p")), t: u.searchParams.get("t") ?? "", welcome: u.searchParams.get("k") === "welcome" }; };
 const bad = () => page("Link not valid", `<h1>This link isn't valid</h1><p>Turn the weekly summary off in your dashboard instead: <strong>Settings → Privacy &amp; reports</strong>.</p><p><a href="/app">Open dashboard</a></p>`, 400);
 
 /** Asks first: email scanners open links, and a GET must never unsubscribe on its own. */
 export async function GET(req: Request) {
-  const { p, t } = params(req);
+  const { p, t, welcome } = params(req);
+  if (welcome) {
+    if (!validWelcomeUnsub(p, t)) return bad();
+    return page("Unsubscribe", `<h1>Stop the getting-started emails?</h1><p>You won't get any more tips about setting up ProofMyAI. Alerts and account emails are not affected.</p><form method="post"><button>Unsubscribe</button></form>`);
+  }
   if (!validUnsub(p, t)) return bad();
   const name = get<{ name: string }>("SELECT name FROM projects WHERE id = ?", p)?.name ?? "this project";
   return page("Unsubscribe", `<h1>Stop the weekly summary?</h1><p>You'll no longer get the weekly AI quality email for <strong>${esc(name)}</strong>. Problem alerts are not affected.</p><form method="post"><button>Unsubscribe</button></form>`);
@@ -24,7 +28,11 @@ export async function GET(req: Request) {
 
 /** The button above, and Gmail/Yahoo one-click unsubscribe (RFC 8058). */
 export async function POST(req: Request) {
-  const { p, t } = params(req);
+  const { p, t, welcome } = params(req);
+  if (welcome) {
+    if (!unsubscribeWelcome(p, t)) return bad();
+    return page("Unsubscribed", `<h1>✓ You're unsubscribed</h1><p>No more getting-started emails. Questions? Just reply to any email from us.</p><p><a href="/">proofmyai.com</a></p>`);
+  }
   if (!unsubscribeDigest(p, t)) return bad();
   return page("Unsubscribed", `<h1>✓ You're unsubscribed</h1><p>The weekly summary is off. You can turn it back on any time in <strong>Settings → Privacy &amp; reports</strong>.</p><p><a href="/">proofmyai.com</a></p>`);
 }

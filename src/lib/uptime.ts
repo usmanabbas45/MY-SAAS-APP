@@ -79,7 +79,8 @@ export async function checkMonitor(m: Monitor, fetcher?: Fetcher, now = new Date
 /** Checks every monitor that is due. Called every minute by the background timer and by the cron as a backup. */
 export async function runDueMonitors(now = new Date(), fetcher?: Fetcher): Promise<number> {
   const due = all<Monitor>(
-    `SELECT * FROM uptime_monitors WHERE last_checked_at IS NULL OR datetime(last_checked_at) <= datetime(?, '-' || (interval_min * 60 - 20) || ' seconds')`,
+    `SELECT * FROM uptime_monitors WHERE (last_checked_at IS NULL OR datetime(last_checked_at) <= datetime(?, '-' || (interval_min * 60 - 20) || ' seconds'))
+       AND project_id NOT IN (SELECT id FROM projects WHERE is_demo = 1)`,
     now.toISOString(),
   );
   let n = 0;

@@ -9,6 +9,9 @@ import { projectAccess } from "@/lib/projects";
 import { userHasGivenFeedback } from "@/lib/testimonials";
 import { cookies } from "next/headers";
 import { dismissFeedbackPromptAction } from "../../feedback/actions";
+import { tryDemoAction } from "../../demo-actions";
+import { SubmitButton } from "@/components/client";
+import { demoProjectOf } from "@/lib/demo";
 
 export const metadata = { title: "Overview" };
 
@@ -51,6 +54,14 @@ export default async function Overview({ params, searchParams }: { params: Promi
             <Link href={`${base}/connect#agents`} className="cx-hero-card"><span aria-hidden>🤖</span><strong>An AI agent</strong><small>LangChain, OpenAI, Claude, n8n agents…</small></Link>
             <Link href={`${base}/connect#workflows`} className="cx-hero-card"><span aria-hidden>⚙️</span><strong>Workflows</strong><small>n8n, Make, Zapier…</small></Link>
           </div>
+          {p.user_id === user.id ? (
+            <div className="cx-hero-demo">
+              <span>👀 Not ready to connect yet? See what ProofMyAI finds on a sample online shop first.</span>
+              {demoProjectOf(user.id)
+                ? <Link href={`/app/p/${demoProjectOf(user.id)}`} className="btn btn-ghost btn-sm">Open the demo →</Link>
+                : <form action={tryDemoAction}><SubmitButton className="btn btn-ghost btn-sm" pendingText="Loading sample data…">✨ Try with demo data</SubmitButton></form>}
+            </div>
+          ) : null}
         </div>
       ) : welcome ? <div className="alert alert-info">Welcome to ProofMyAI! Follow the checklist below. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
       {!llmAvailable() ? (

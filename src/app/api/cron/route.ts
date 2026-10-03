@@ -12,6 +12,7 @@ import { periodicWorkflowChecks } from "@/lib/workflows/monitor";
 import { pollAllSources } from "@/lib/workflows/pollers";
 import { runDueMonitors } from "@/lib/uptime";
 import { purgeOldErrors } from "@/lib/monitoring";
+import { sendDueOnboarding } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -43,6 +44,7 @@ async function runAll(started: number) {
   for (const p of projects) await periodicWorkflowChecks(p.id);
   const suites = await runDueSuites();
   const digests = await sendDueDigests();
+  const welcomeEmails = await sendDueOnboarding();
   const chatSources = await pollAllChatSources();
   const noReply = await alertMissingReplies();
   const uptimeChecks = await runDueMonitors();
@@ -51,5 +53,5 @@ async function runAll(started: number) {
   const founding = await processFoundingPeriods();
   recordDailyMetrics();
   recordCronRun(true);
-  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
+  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, welcomeEmails, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
 }

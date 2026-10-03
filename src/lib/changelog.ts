@@ -8,6 +8,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Try ProofMyAI with demo data", tag: "New",
+    items: [
+      "✨ Try with demo data: open a sample online-shop project with audits, safety findings, a Fix with AI result, agent runs, workflow failures and uptime, before connecting anything.",
+      "New accounts get three short getting-started emails (one-click unsubscribe). They stop as soon as you connect something.",
+    ],
+  },
+  {
     date: "2026-10-03", title: "Email confirmation and daily backups", tag: "Improved",
     items: [
       "New accounts confirm their email address with one click, so alerts always reach a real inbox. Until then, alerts to other addresses and team invitations are paused.",

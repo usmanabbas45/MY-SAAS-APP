@@ -24,6 +24,25 @@ export function validUnsub(projectId: number, token: string): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/** Welcome emails (per user rather than per project). */
+export const welcomeToken = (userId: number) => derivedKey(`unsub-welcome:${userId}`);
+export function welcomeUnsubUrl(userId: number): string {
+  return `${(process.env.APP_URL || SITE_URL).replace(/\/+$/, "")}/unsubscribe?k=welcome&p=${userId}&t=${welcomeToken(userId)}`;
+}
+export function welcomeUnsubHeaders(userId: number): Record<string, string> {
+  return { "List-Unsubscribe": `<${welcomeUnsubUrl(userId)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
+}
+export function validWelcomeUnsub(userId: number, token: string): boolean {
+  if (!Number.isInteger(userId) || userId <= 0 || !token) return false;
+  const a = Buffer.from(token), b = Buffer.from(welcomeToken(userId));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+export function unsubscribeWelcome(userId: number, token: string): boolean {
+  if (!validWelcomeUnsub(userId, token)) return false;
+  run("UPDATE users SET onboard_step = 9 WHERE id = ?", userId);
+  return true;
+}
+
 /** Turns off the weekly summary. Returns false for a wrong link. */
 export function unsubscribeDigest(projectId: number, token: string): boolean {
   if (!validUnsub(projectId, token)) return false;

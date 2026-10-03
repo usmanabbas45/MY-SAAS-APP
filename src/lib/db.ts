@@ -431,6 +431,11 @@ function migrate(db: DatabaseSync): void {
     used INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  addColumn(db, "projects", "is_demo", "INTEGER NOT NULL DEFAULT 0");
+  // Welcome emails: last one sent (0-3), 9 = finished or not wanted. Existing accounts never get them.
+  const hadOnboard = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).some((c) => c.name === "onboard_step");
+  addColumn(db, "users", "onboard_step", "INTEGER NOT NULL DEFAULT 0");
+  if (!hadOnboard) db.exec("UPDATE users SET onboard_step = 9");
   // Email verification. Accounts created before this column existed are treated as verified.
   const hadVerified = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).some((c) => c.name === "email_verified_at");
   addColumn(db, "users", "email_verified_at", "TEXT");

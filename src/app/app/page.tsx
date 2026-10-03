@@ -25,7 +25,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const user = await requireUser();
   const projects = accessibleProjects(user.id);
   const sp = await searchParams;
-  if (projects.length === 1 && !sp.new) redirect(`/app/p/${projects[0].id}`);
+  const real = projects.filter((p) => !p.is_demo);
+  if (real.length === 1 && !sp.new) redirect(`/app/p/${real[0].id}`);
   return (
     <div>
       <nav className="lp-nav">
