@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { all, get, run } from "./db";
 import { randomToken } from "./security";
+import { asSeenBy, projectRole, sharedProjects, type Role } from "./team";
 
 export interface Project {
   id: number;
@@ -34,11 +35,36 @@ export function createProject(userId: number, name: string): number {
   return run("INSERT INTO projects (user_id, name, api_key) VALUES (?, ?, ?)", userId, clean, newApiKey()).lastInsertRowid;
 }
 
+/** Projects the user owns. */
 export function listProjects(userId: number): Project[] {
   return all<Project>("SELECT * FROM projects WHERE user_id = ? ORDER BY id", userId);
 }
 
-/** Loads a project and 404s unless it belongs to the user (prevents cross-account access). */
+/** Owned projects plus projects shared with the user (team member), with the user's role. */
+export function accessibleProjects(userId: number): (Project & { role: Role })[] {
+  return [...listProjects(userId).map((p) => ({ ...p, role: "owner" as Role })), ...sharedProjects(userId)];
+}
+
+/**
+ * Loads a project the user can access (owner or team member) and 404s otherwise (prevents cross-account access).
+ * Pass `need` to require a minimum role: "editor" to change things, "owner" for settings, billing-related changes and team.
+ * Viewers get the project without its API key.
+ */
+export function projectAccess(userId: number, projectId: number, need: Role = "viewer"): { project: Project; role: Role } {
+  const role = Number.isInteger(projectId) ? projectRole(userId, projectId) : null;
+  if (!role) notFound();
+  const rank: Record<Role, number> = { viewer: 0, editor: 1, owner: 2 };
+  if (rank[role] < rank[need]) throw new AccessError(role);
+  const p = get<Project>("SELECT * FROM projects WHERE id = ?", projectId);
+  if (!p) notFound();
+  return { project: asSeenBy(p, role), role };
+}
+
+export class AccessError extends Error {
+  constructor(public role: Role) { super(role === "viewer" ? "You have view-only access to this project." : "Only the project owner can do that."); }
+}
+
+/** Loads a project and 404s unless it belongs to the user (owner only). */
 export function ownedProject(userId: number, projectId: number): Project {
   const p = Number.isInteger(projectId) ? get<Project>("SELECT * FROM projects WHERE id = ? AND user_id = ?", projectId, userId) : undefined;
   if (!p) notFound();

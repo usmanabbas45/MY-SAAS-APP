@@ -5,7 +5,8 @@ import { get } from "@/lib/db";
 import { FEATURE_NAMES } from "@/lib/judge/features";
 import { judgeLabel } from "@/lib/judge/llm";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
+import { projectRole } from "@/lib/team";
 import { CHANNEL_TYPES, channelsFor } from "@/lib/notify";
 import { addChannelAction, deleteChannelAction, deleteProjectAction, regenerateKeyAction, retrainAction, testAlertAction, updatePrivacyAction, updateSettingsAction } from "../actions";
 
@@ -13,8 +14,18 @@ export const metadata = { title: "Settings" };
 
 export default async function SettingsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const id = Number((await params).id);
   const flash = await searchParams;
+  const role = projectRole(user.id, id);
+  if (role && role !== "owner") {
+    return (
+      <div>
+        <PageHeader title="Settings" />
+        <div className="alert alert-info">Only the project owner can change settings, alerts, privacy and the API key. You have {role} access. See <a href={`/app/p/${id}/team`}>Team</a> for who owns this project.</div>
+      </div>
+    );
+  }
+  const p = projectAccess(user.id, id, "owner").project;
   const model = get<{ n_samples: number; val_accuracy: number; trained_at: string }>("SELECT n_samples, val_accuracy, trained_at FROM risk_models WHERE project_id = ?", p.id);
   const labels = get<{ n: number; bad: number | null }>(
     `SELECT COUNT(*) AS n, SUM(CASE WHEN COALESCE(i.corrected_verdict, i.verdict) <> 'correct' THEN 1 ELSE 0 END) AS bad
@@ -134,7 +145,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
               <div className="field">
                 <div className="stat-label" style={{ marginBottom: 6 }}>About</div>
                 <div className="row">
-                  {[["chatbot", "Chatbot answers & missing replies"], ["tests", "Nightly tests"], ["agents", "AI agents"], ["workflows", "n8n & Make"]].map(([v, l]) => (
+                  {[["chatbot", "Chatbot answers & missing replies"], ["tests", "Nightly tests"], ["agents", "AI agents"], ["workflows", "n8n & Make"], ["uptime", "Uptime"]].map(([v, l]) => (
                     <label key={v} className="check" style={{ margin: 0 }}><input type="checkbox" name="modules" value={v} defaultChecked /> {l}</label>
                   ))}
                 </div>

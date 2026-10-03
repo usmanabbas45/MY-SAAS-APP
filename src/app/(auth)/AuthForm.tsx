@@ -51,7 +51,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
 type Action = (s: AuthState, f: FormData) => Promise<AuthState>;
 
 /** Second login step: 6-digit code from the authenticator app, or a recovery code. */
-function TwoFactorStep({ action, pending, founding }: { action: Action; pending: string; founding?: boolean }) {
+function TwoFactorStep({ action, pending, founding, next }: { action: Action; pending: string; founding?: boolean; next?: string }) {
   const [state, formAction] = useActionState(action, {});
   if (state.captcha) return <div className="alert alert-bad" role="alert">{state.error} <Link href="/login">Log in again</Link></div>;
   return (
@@ -60,6 +60,7 @@ function TwoFactorStep({ action, pending, founding }: { action: Action; pending:
       <form action={formAction}>
         <input type="hidden" name="pending" value={state.pending ?? pending} />
         {founding ? <input type="hidden" name="founding" value="1" /> : null}
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <div className="field">
           <label htmlFor="code">Authentication code</label>
           <input id="code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={20} placeholder="123456" autoFocus className="otp-input" />
@@ -71,15 +72,15 @@ function TwoFactorStep({ action, pending, founding }: { action: Action; pending:
   );
 }
 
-export function AuthForm({ mode, action, notice, founding, captcha, twoFactorAction }: {
-  mode: "login" | "signup"; action: Action; notice?: string; founding?: boolean; captcha: CaptchaConfig; twoFactorAction?: Action;
+export function AuthForm({ mode, action, notice, founding, captcha, twoFactorAction, next, email: presetEmail }: {
+  mode: "login" | "signup"; action: Action; notice?: string; founding?: boolean; captcha: CaptchaConfig; twoFactorAction?: Action; next?: string; email?: string;
 }) {
   const [state, formAction] = useActionState(action, {});
   // Controlled so a failed attempt (weak password, wrong code...) doesn't wipe what the visitor typed.
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(presetEmail ?? "");
   const [company, setCompany] = useState("");
   const signup = mode === "signup";
-  if (state.pending && twoFactorAction) return <TwoFactorStep action={twoFactorAction} pending={state.pending} founding={state.founding} />;
+  if (state.pending && twoFactorAction) return <TwoFactorStep action={twoFactorAction} pending={state.pending} founding={state.founding} next={state.next} />;
   return (
     <AuthShell
       title={signup ? "Create your free account" : "Welcome back"}
@@ -90,6 +91,7 @@ export function AuthForm({ mode, action, notice, founding, captcha, twoFactorAct
       {founding ? <div className="alert alert-info" role="status">🎉 {signup ? "Create your account" : "Log in"} to claim your founding-customer spot: the Growth plan free for 3 months.</div> : null}
       <form action={formAction}>
         {founding ? <input type="hidden" name="founding" value="1" /> : null}
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         {signup ? (
           <div className="field">
             <label htmlFor="company">Company or project name</label>
@@ -115,7 +117,7 @@ export function AuthForm({ mode, action, notice, founding, captcha, twoFactorAct
         ) : null}
       </form>
       <p className="sub" style={{ marginTop: 16 }}>
-        {signup ? <>Already have an account? <Link href={founding ? "/login?founding=1" : "/login"}>Log in</Link></> : <>New here? <Link href={founding ? "/signup?founding=1" : "/signup"}>Create a free account</Link></>}
+        {signup ? <>Already have an account? <Link href={next ? `/login?next=${encodeURIComponent(next)}` : founding ? "/login?founding=1" : "/login"}>Log in</Link></> : <>New here? <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : founding ? "/signup?founding=1" : "/signup"}>Create a free account</Link></>}
       </p>
     </AuthShell>
   );

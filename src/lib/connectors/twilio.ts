@@ -1,6 +1,6 @@
 import { processLiveChat } from "../audit/live";
 import { limitError, projectOwner } from "../billing";
-import { all, get, run } from "../db";
+import { get, run } from "../db";
 import { decrypt, safeFetch, sha256 } from "../security";
 import { truncate } from "../text";
 
@@ -125,10 +125,4 @@ export async function pollChatSource(src: ChatSource, fetcher: Fetcher = safeFet
     run("UPDATE chat_sources SET cursor = ?, last_polled_at = ?, last_error = ? WHERE id = ?", new Date(newest).toISOString(), new Date().toISOString(), error, src.id);
     return { replies, waiting, error };
   }
-}
-
-export async function pollAllChatSources(): Promise<number> {
-  const sources = all<ChatSource>("SELECT * FROM chat_sources");
-  for (const s of sources) await pollChatSource(s);
-  return sources.length;
 }

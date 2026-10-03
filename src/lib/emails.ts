@@ -95,7 +95,7 @@ const SEVERITY_STYLE = {
   medium: { text: "MEDIUM SEVERITY", color: "#9a6100", bg: "#fdf3dc", label: "Medium" },
   low: { text: "LOW SEVERITY", color: "#1f5fae", bg: "#e4f0fd", label: "Low" },
 } as const;
-const MODULE_LABEL: Record<string, string> = { chatbot: "Chatbot", tests: "Chatbot tests", agents: "AI agents", workflows: "n8n & Make workflows" };
+const MODULE_LABEL: Record<string, string> = { chatbot: "Chatbot", tests: "Chatbot tests", agents: "AI agents", workflows: "n8n & Make workflows", uptime: "Uptime" };
 const NEXT_STEP: Record<string, string> = {
   NO_REPLY: "Check that your bot is online and still sending replies to ProofMyAI. If customers are waiting, answer them manually while you fix it.",
   TEST_ALERT: "Nothing to fix. This confirms the channel works.",
@@ -105,6 +105,7 @@ const MODULE_STEP: Record<string, string> = {
   tests: "Open the incident to compare the new answer with the expected facts.",
   agents: "Open the incident to see the run's steps, tool errors and cost.",
   workflows: "Open the incident to see the failing executions and error messages.",
+  uptime: "Open the URL in your browser to confirm, then check your hosting or bot provider's status page.",
 };
 
 export interface AlertInput {
@@ -138,6 +139,17 @@ export function alertEmail(m: AlertInput, recipient: string): Mail {
 }
 
 // ── Account ─────────────────────────────────────────────────────────────────
+
+export function inviteEmail(inviter: string, projectName: string, role: "viewer" | "editor", link: string, days: number): Mail {
+  const what = role === "editor" ? "view results and connect chatbots, agents and workflows" : "view results and reports";
+  return compose(`${inviter} invited you to ${projectName} on ProofMyAI`, `Join ${projectName} as ${role === "editor" ? "an editor" : "a viewer"}.`, {
+    icon: "👋",
+    title: `Join ${projectName} on ProofMyAI`,
+    paragraphs: [`${inviter} invited you to the ${projectName} project as ${role === "editor" ? "an editor" : "a viewer"}, so you can ${what}.`],
+    cta: { label: "Accept invitation", url: link },
+    after: [`The invitation expires in ${days} days. Log in or create a free account with this email address to accept it.`, `Button not working? Copy this link into your browser: ${link}`],
+  }, "You're receiving this because someone invited this email address to a ProofMyAI project.");
+}
 
 export function passwordResetEmail(link: string, minutes: number): Mail {
   return compose("Reset your ProofMyAI password", "Use this link to choose a new password.", {

@@ -6,7 +6,7 @@ import type { ChatSource } from "@/lib/connectors/twilio";
 import { all } from "@/lib/db";
 import { addChatSourceAction, deleteChatSourceAction, pollChatSourceAction, sendTestEventAction } from "../actions";
 import { liveFeed, sourceStatuses, type Source } from "@/lib/live";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { liveChatSnippets } from "@/lib/snippets";
 
 export const metadata = { title: "Live" };
@@ -19,12 +19,14 @@ const SOURCE_LABEL: Record<Source, { icon: string; name: string; empty: string }
 
 export default async function LivePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ only?: string; ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const flash = await searchParams;
   const { only } = flash;
   const m = liveMetrics(p.id);
   const unanswered = unansweredMessages(p.id, 5);
-  const sources = all<ChatSource>("SELECT * FROM chat_sources WHERE project_id = ? ORDER BY id", p.id);
+  const allSources = all<ChatSource>("SELECT * FROM chat_sources WHERE project_id = ? ORDER BY id", p.id);
+  const sources = allSources.filter((s) => s.platform !== "intercom");
+  const intercom = allSources.filter((s) => s.platform === "intercom");
   const pid = <input type="hidden" name="projectId" value={p.id} />;
   const statuses = sourceStatuses(p.id);
   const feed = liveFeed(p.id, 80).filter((e) => !only || e.source === only || (only === "problems" && !e.ok));
@@ -140,6 +142,28 @@ export default async function LivePage({ params, searchParams }: { params: Promi
             <li>JSON body: <code>{`{"conversation_id": "<conversation id>", "question": "<customer message>", "answer": "<bot reply>"}`}</code></li>
           </ol>
         </details>
+      </div>
+
+      <div className="card" id="intercom">
+        <div className="card-head">
+          <div>
+            <h3>💬 Intercom (Fin and other Intercom bots)</h3>
+            <span className="sub">Read-only: every 15 minutes ProofMyAI reads new conversations and checks each bot reply. Human replies are never graded and nothing is written to Intercom.</span>
+          </div>
+          <a className="btn btn-sm" href={`/app/p/${p.id}/connect?with=intercom`}>{intercom.length ? "+ Add another" : "Connect Intercom"}</a>
+        </div>
+        {intercom.length === 0 ? <p className="sub" style={{ margin: 0 }}>Not connected yet.</p> : intercom.map((s) => (
+          <div key={s.id} className="row between" style={{ padding: "10px 0", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <strong>{s.name}</strong> <span className="faint">{s.bot_address.toUpperCase()} region</span>
+              <div className="sub" style={{ margin: 0 }}>{s.last_error ? <span style={{ color: "var(--bad)" }}>⚠ {s.last_error}</span> : s.last_polled_at ? `Checked ${timeAgo(s.last_polled_at)}` : "Not checked yet"}</div>
+            </div>
+            <div className="row">
+              <form action={pollChatSourceAction}>{pid}<input type="hidden" name="sourceId" value={s.id} /><SubmitButton className="btn btn-ghost btn-sm" pendingText="Checking…">Check now</SubmitButton></form>
+              <form action={deleteChatSourceAction}>{pid}<input type="hidden" name="sourceId" value={s.id} /><SubmitButton className="btn btn-ghost btn-sm" pendingText="…" confirm="Remove this Intercom connection? Data already checked stays.">Remove</SubmitButton></form>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="card" id="whatsapp">

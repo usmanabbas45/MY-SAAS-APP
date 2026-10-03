@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/admin";
 import { limitError } from "@/lib/billing";
 import { requireUser } from "@/lib/auth";
 import { projectHealth } from "@/lib/health";
-import { createProject, listProjects } from "@/lib/projects";
+import { accessibleProjects, createProject } from "@/lib/projects";
 import { logoutAction } from "../(auth)/actions";
 
 export const metadata = { title: "Projects" };
@@ -22,7 +22,7 @@ async function newProjectAction(form: FormData) {
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ new?: string; error?: string }> }) {
   const user = await requireUser();
-  const projects = listProjects(user.id);
+  const projects = accessibleProjects(user.id);
   const sp = await searchParams;
   if (projects.length === 1 && !sp.new) redirect(`/app/p/${projects[0].id}`);
   return (
@@ -46,7 +46,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             const h = projectHealth(p.id, 7);
             return (
               <Link key={p.id} href={`/app/p/${p.id}`} className="card" style={{ color: "inherit", textDecoration: "none" }}>
-                <div className="row between"><h3>{p.name}</h3><ScoreBadge score={h.overall} /></div>
+                <div className="row between"><h3>{p.name}{p.role !== "owner" ? <span className="badge" style={{ marginLeft: 8, fontSize: 12 }}>Shared · {p.role}</span> : null}</h3><ScoreBadge score={h.overall} /></div>
                 <p className="sub" style={{ margin: 0 }}>{h.openIncidents} open incident{h.openIncidents === 1 ? "" : "s"}</p>
               </Link>
             );

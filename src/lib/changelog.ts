@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Safety checks, uptime monitoring, team access and Intercom", tag: "New",
+    items: [
+      "Every answer is now checked for prompt-injection and jailbreak attempts, leaked system prompts, exposed card or bank numbers, rude replies and replies in the wrong language.",
+      "Uptime & speed: add any chatbot, website or API URL and get an alert when it goes down, gets slow or comes back.",
+      "Team: invite teammates or clients as viewers or editors. Viewers never see your API key.",
+      "Intercom (Fin): connect with an access token and every bot reply is checked automatically, with no n8n or Make needed.",
+    ],
+  },
+  {
     date: "2026-10-02", title: "One place to connect everything", tag: "New",
     items: [
       "New Connect page: pick your chatbot, AI agent or workflow tool and follow 3 numbered steps with copy buttons.",

@@ -1,4 +1,5 @@
 import { tokenize } from "../text";
+import { safetyFindings, type SafetyFlag } from "./safety";
 import type { Exchange, Severity } from "./types";
 
 /**
@@ -7,16 +8,30 @@ import type { Exchange, Severity } from "./types";
  * generic fallback replies and replies that contradict an earlier bot message.
  * Deterministic, so they also work with AI checking switched off.
  */
-export type ConvFlag = "re_ask" | "restart" | "fallback" | "contradiction";
+export type ConvFlag = "re_ask" | "restart" | "fallback" | "contradiction" | SafetyFlag;
+
+/** Safety and security flags (shown with a shield, grouped in their own filter). */
+export const SAFETY_FLAGS: ConvFlag[] = ["injection", "attack_blocked", "prompt_leak", "data_leak", "toxic", "wrong_language"];
+/** Flags that are recorded for the owner but are not a mistake by the bot. */
+export const INFO_FLAGS: ConvFlag[] = ["attack_blocked"];
 
 export const FLAG_LABELS: Record<ConvFlag, string> = {
   re_ask: "Asked again",
   restart: "Restarted",
   fallback: "Fallback reply",
   contradiction: "Contradiction",
+  injection: "Prompt injection",
+  attack_blocked: "Attack blocked",
+  prompt_leak: "Prompt leaked",
+  data_leak: "Data leak",
+  toxic: "Rude reply",
+  wrong_language: "Wrong language",
 };
 
-export const FLAG_SEVERITY: Record<ConvFlag, Severity> = { re_ask: "medium", restart: "medium", fallback: "low", contradiction: "high" };
+export const FLAG_SEVERITY: Record<ConvFlag, Severity> = {
+  re_ask: "medium", restart: "medium", fallback: "low", contradiction: "high",
+  injection: "high", attack_blocked: "none", prompt_leak: "high", data_leak: "high", toxic: "high", wrong_language: "medium",
+};
 
 interface Detail { key: string; label: string; ask: RegExp; given: RegExp }
 
@@ -52,6 +67,9 @@ function containsSeq(hay: string[], needle: string[]): boolean {
 }
 
 export interface ConvFinding { flag: ConvFlag; reason: string }
+
+const SAFETY_SET = new Set<ConvFlag>(SAFETY_FLAGS);
+export const isSafetyFlag = (f: string) => SAFETY_SET.has(f as ConvFlag);
 
 export function conversationFindings(e: Exchange): ConvFinding[] {
   const out: ConvFinding[] = [];
@@ -98,5 +116,7 @@ export function conversationFindings(e: Exchange): ConvFinding[] {
       }
     }
   }
+  // 5. Safety and security.
+  out.push(...safetyFindings(e));
   return out;
 }

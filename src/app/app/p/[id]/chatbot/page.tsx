@@ -4,7 +4,7 @@ import { Badge, Empty, Flash, PageHeader, ScoreBadge, StatusBadge, timeAgo } fro
 import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 import { judgeProvider, llmAvailable } from "@/lib/judge/llm";
-import { ownedProject } from "@/lib/projects";
+import { projectAccess } from "@/lib/projects";
 import { addKbDocAction, addRuleAction, deleteAuditAction, deleteKbDocAction, deleteRuleAction, startAuditAction } from "../actions";
 import { Sparkline } from "@/components/charts";
 import { projectRules, RULE_KINDS } from "@/lib/rules";
@@ -19,7 +19,7 @@ const SAMPLE_CSV = `conversation_id,role,message
 
 export default async function ChatbotPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = ownedProject(user.id, Number((await params).id));
+  const p = projectAccess(user.id, Number((await params).id)).project;
   const flash = await searchParams;
   const docs = all<{ id: number; title: string; chars: number; updated_at: string }>(
     "SELECT id, title, LENGTH(content) AS chars, updated_at FROM kb_docs WHERE project_id = ? ORDER BY id DESC", p.id,

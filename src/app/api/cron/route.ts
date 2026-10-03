@@ -6,10 +6,11 @@ import { recordCronRun } from "@/lib/status";
 import { processFoundingPeriods } from "@/lib/founding";
 import { recordDailyMetrics } from "@/lib/analytics";
 import { alertMissingReplies } from "@/lib/audit/live";
-import { pollAllChatSources } from "@/lib/connectors/twilio";
+import { pollAllChatSources } from "@/lib/connectors";
 import { runDueSuites } from "@/lib/tests/runner";
 import { periodicWorkflowChecks } from "@/lib/workflows/monitor";
 import { pollAllSources } from "@/lib/workflows/pollers";
+import { runDueMonitors } from "@/lib/uptime";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -43,9 +44,10 @@ async function runAll(started: number) {
   const digests = await sendDueDigests();
   const chatSources = await pollAllChatSources();
   const noReply = await alertMissingReplies();
+  const uptimeChecks = await runDueMonitors();
   const purged = purgeExpired();
   const founding = await processFoundingPeriods();
   recordDailyMetrics();
   recordCronRun(true);
-  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, chatSources, unansweredAlerted: noReply, purged, founding, ms: Date.now() - started });
+  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
 }
