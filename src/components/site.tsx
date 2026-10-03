@@ -84,6 +84,10 @@ export function SiteFooter() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="https://launchstag.com/badge-light.svg" alt="Featured on Launchstag" width={198} height={62} style={{ height: 44, width: "auto" }} />
         </a>
+        <a href="https://1000saas.best/projects/proofmyai?utm_source=badge" target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://1000saas.best/images/badges/featured-on-light.svg" alt="Featured on 1000 Saas" style={{ height: 44, width: "auto" }} />
+        </a>
       </div>
       <p className="sub" style={{ textAlign: "center", marginTop: 24 }}>
         Need a custom AI chatbot, agent or n8n automation? <a href={DEVELOPER_URL} target="_blank" rel="noopener">Hire the developer behind ProofMyAI: {DEVELOPER_NAME} ↗</a>
