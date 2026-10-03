@@ -25,10 +25,11 @@ export async function changePlanAction(form: FormData) {
   const user = await requireUser();
   const plan = String(form.get("plan")) as PlanId;
   if (!PAID_PLANS.includes(plan)) back({ error: "Unknown plan." });
+  const interval = form.get("interval") === "year" ? "year" : "month";
   let msg: { ok?: string; error?: string };
   try {
-    await changePlan(user.id, plan);
-    msg = { ok: `You are now on the ${PLANS[plan].name} plan.` };
+    await changePlan(user.id, plan, interval);
+    msg = { ok: `You are now on the ${PLANS[plan].name} plan, billed ${interval === "year" ? "yearly" : "monthly"}.` };
   } catch (err) {
     msg = { error: err instanceof Error ? err.message : "Could not change the plan." };
   }

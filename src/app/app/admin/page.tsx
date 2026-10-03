@@ -7,7 +7,7 @@ import { KEEP_DAYS, lastBackup, listBackups, sizeLabel } from "@/lib/backup";
 import { errorCount, recentErrors } from "@/lib/monitoring";
 import { get } from "@/lib/db";
 import { BulkBar } from "./BulkBar";
-import { PLANS } from "@/lib/billing";
+import { PLANS, yearlyPrice } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
 import { testimonialCounts } from "@/lib/testimonials";
 import { costSummary, customerCosts } from "@/lib/aicost";
@@ -87,7 +87,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <thead><tr><th>Plan</th><th>Paying</th><th>On trial</th><th>MRR</th></tr></thead>
               <tbody>
                 {s.byPlan.map((p) => (
-                  <tr key={p.plan}><td>{PLANS[p.plan].name} <span className="faint">{money(PLANS[p.plan].price)}</span></td><td>{p.paying}</td><td>{p.trialing}</td><td>{money(p.paying * PLANS[p.plan].price)}</td></tr>
+                  <tr key={p.plan}><td>{PLANS[p.plan].name} <span className="faint">{money(PLANS[p.plan].price)}</span></td><td>{p.paying}{p.yearly ? <span className="faint"> ({p.yearly} yearly)</span> : null}</td><td>{p.trialing}</td><td>{money(Math.round((p.paying - p.yearly) * PLANS[p.plan].price + (p.yearly * yearlyPrice(p.plan)) / 12))}</td></tr>
                 ))}
                 <tr><td className="faint">Free plan given</td><td colSpan={3}>{s.comped}</td></tr>
                 <tr><td className="faint">Suspended</td><td colSpan={3}>{s.suspended}</td></tr>

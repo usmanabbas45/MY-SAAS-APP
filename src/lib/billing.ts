@@ -56,13 +56,34 @@ export function paddleEnv(): "sandbox" | "production" {
   return process.env.PADDLE_ENV?.trim() === "production" ? "production" : "sandbox";
 }
 
-export function priceId(plan: PlanId): string {
-  return (process.env[`PADDLE_PRICE_${plan.toUpperCase()}`] ?? "").trim();
+export type Interval = "month" | "year";
+/** Yearly billing: 12 months for the price of 10 ("2 months free"). */
+export const YEARLY_MONTHS = 10;
+export const yearlyPrice = (plan: PlanId) => PLANS[plan].price * YEARLY_MONTHS;
+/** Price per month when billed yearly, rounded down to whole dollars for display. */
+export const yearlyMonthly = (plan: PlanId) => Math.floor(yearlyPrice(plan) / 12);
+
+/** Paddle price ID for a plan: PADDLE_PRICE_GROWTH (monthly) or PADDLE_PRICE_GROWTH_YEARLY. */
+export function priceId(plan: PlanId, interval: Interval = "month"): string {
+  return (process.env[`PADDLE_PRICE_${plan.toUpperCase()}${interval === "year" ? "_YEARLY" : ""}`] ?? "").trim();
 }
 
 export function planForPrice(price: string | undefined): PlanId | null {
+  return priceInfo(price)?.plan ?? null;
+}
+
+export function priceInfo(price: string | undefined): { plan: PlanId; interval: Interval } | null {
   if (!price) return null;
-  return PAID_PLANS.find((p) => priceId(p) === price) ?? null;
+  for (const plan of PAID_PLANS) {
+    if (priceId(plan) === price) return { plan, interval: "month" };
+    if (priceId(plan, "year") === price) return { plan, interval: "year" };
+  }
+  return null;
+}
+
+/** True when at least one plan can be bought yearly (its Paddle price is set). */
+export function yearlyAvailable(): boolean {
+  return billingEnabled() && PAID_PLANS.some((p) => priceId(p, "year"));
 }
 
 export function billingEnabled(): boolean {
@@ -86,6 +107,8 @@ export function billingConfigProblems(): string[] {
     if (!id && OPTIONAL_PLANS.includes(p)) continue; // optional plan shown as "Talk to us"
     if (!id) out.push(`PADDLE_PRICE_${p.toUpperCase()} is missing.`);
     else if (!/^pri_\w+$/.test(id)) out.push(`PADDLE_PRICE_${p.toUpperCase()} should be a price ID starting with pri_ (not the product ID pro_).`);
+    const y = priceId(p, "year");
+    if (y && !/^pri_\w+$/.test(y)) out.push(`PADDLE_PRICE_${p.toUpperCase()}_YEARLY should be a price ID starting with pri_ (not the product ID pro_).`);
   }
   if (!process.env.PADDLE_WEBHOOK_SECRET?.trim()) out.push("PADDLE_WEBHOOK_SECRET is missing, so plan changes made in Paddle will not sync automatically.");
   return out;
@@ -95,6 +118,7 @@ export function billingConfigProblems(): string[] {
 
 export interface BillingState {
   plan: Plan;
+  interval: Interval;
   status: string | null;
   customerId: string | null;
   subscriptionId: string | null;
@@ -108,13 +132,14 @@ function unlimitedEmail(email: string): boolean {
 }
 
 export function billingState(userId: number): BillingState {
-  const u = get<{ email: string; plan: string; plan_status: string | null; paddle_customer_id: string | null; paddle_subscription_id: string | null; plan_renews_at: string | null; plan_cancel_at: string | null; trial_ends_at: string | null }>(
-    "SELECT email, plan, plan_status, paddle_customer_id, paddle_subscription_id, plan_renews_at, plan_cancel_at, trial_ends_at FROM users WHERE id = ?", userId,
+  const u = get<{ email: string; plan: string; plan_interval: string | null; plan_status: string | null; paddle_customer_id: string | null; paddle_subscription_id: string | null; plan_renews_at: string | null; plan_cancel_at: string | null; trial_ends_at: string | null }>(
+    "SELECT email, plan, plan_interval, plan_status, paddle_customer_id, paddle_subscription_id, plan_renews_at, plan_cancel_at, trial_ends_at FROM users WHERE id = ?", userId,
   );
   const paid = u && ACTIVE_STATUSES.has(u.plan_status ?? "") && u.plan in PLANS ? PLANS[u.plan as PlanId] : PLANS.free;
   const plan = !billingEnabled() || (u && unlimitedEmail(u.email)) ? UNLIMITED : paid;
   return {
     plan,
+    interval: u?.plan_interval === "year" ? "year" : "month",
     status: u?.plan_status ?? null,
     customerId: u?.paddle_customer_id ?? null,
     subscriptionId: u?.paddle_subscription_id ?? null,
@@ -239,11 +264,13 @@ export function applySubscription(sub: PaddleSubscription): number | null {
   }
   // Webhooks can arrive out of order: ignore anything older than what we already stored.
   if (current.paddle_subscription_id === sub.id && current.plan_updated_at && sub.updated_at && sub.updated_at < current.plan_updated_at) return userId;
-  const plan = planForPrice(sub.items?.[0]?.price?.id);
+  const info = priceInfo(sub.items?.[0]?.price?.id);
+  const plan = info?.plan ?? null;
   run(
-    `UPDATE users SET plan = ?, plan_status = ?, paddle_customer_id = ?, paddle_subscription_id = ?, plan_renews_at = ?,
+    `UPDATE users SET plan = ?, plan_interval = ?, plan_status = ?, paddle_customer_id = ?, paddle_subscription_id = ?, plan_renews_at = ?,
        plan_cancel_at = ?, trial_ends_at = ?, plan_updated_at = ? WHERE id = ?`,
     plan ?? "free",
+    info?.interval ?? "month",
     sub.status,
     sub.customer_id,
     sub.id,
@@ -255,7 +282,7 @@ export function applySubscription(sub: PaddleSubscription): number | null {
   );
   // Conversions for Google Analytics, once per transition (the webhook and the checkout sync may both arrive).
   const same = current.paddle_subscription_id === sub.id;
-  const price = plan ? PLANS[plan].price : 0;
+  const price = plan ? (info?.interval === "year" ? yearlyPrice(plan) : PLANS[plan].price) : 0;
   if (sub.status === "trialing" && !(same && current.plan_status === "trialing")) {
     void trackEvent(userGaIds(userId), "begin_trial", { plan: plan ?? "unknown", value: price, currency: "USD" });
   }
@@ -286,11 +313,13 @@ export async function syncTransaction(userId: number, transactionId: string): Pr
   return applySubscription(await paddleApi<PaddleSubscription>(`/subscriptions/${txn.subscription_id}`)) === userId;
 }
 
-/** Switches an existing subscription to another plan (prorated; free while trialing). */
-export async function changePlan(userId: number, plan: PlanId): Promise<void> {
+/** Switches an existing subscription to another plan and/or billing period (prorated; free while trialing). */
+export async function changePlan(userId: number, plan: PlanId, interval?: Interval): Promise<void> {
   const state = billingState(userId);
-  const price = priceId(plan);
-  if (!state.subscriptionId || !price) throw new Error("No subscription to change.");
+  if (!state.subscriptionId) throw new Error("No subscription to change.");
+  // Keep the current billing period; plans that aren't sold yearly fall back to monthly.
+  const price = interval ? priceId(plan, interval) : priceId(plan, state.interval) || priceId(plan);
+  if (!price) throw new Error(`The ${PLANS[plan].name} plan isn't available ${interval === "year" ? "yearly" : "monthly"} yet. Contact us and we'll set it up.`);
   const sub = await paddleApi<PaddleSubscription>(`/subscriptions/${state.subscriptionId}`, {
     method: "PATCH",
     body: {
@@ -354,17 +383,19 @@ export async function checkPaddlePrices(): Promise<string[]> {
   if (!billingEnabled()) return [];
   const where = paddleEnv() === "production" ? "live (vendors.paddle.com)" : "sandbox (sandbox-vendors.paddle.com)";
   const out: string[] = [];
-  for (const plan of PAID_PLANS) {
-    const id = priceId(plan);
+  for (const [plan, interval] of PAID_PLANS.flatMap((p) => [[p, "month"], [p, "year"]] as [PlanId, Interval][])) {
+    const id = priceId(plan, interval);
     if (!/^pri_\w+$/.test(id)) continue;
-    const name = `PADDLE_PRICE_${plan.toUpperCase()}`;
+    const name = `PADDLE_PRICE_${plan.toUpperCase()}${interval === "year" ? "_YEARLY" : ""}`;
+    const expected = interval === "year" ? yearlyPrice(plan) : PLANS[plan].price;
     try {
       const p = await paddleApi<{ status?: string; billing_cycle?: { interval?: string } | null; trial_period?: unknown; unit_price?: { amount?: string; currency_code?: string } }>(`/prices/${id}`);
       if (p.status !== "active") out.push(`${name}: this price is ${p.status ?? "not active"} in Paddle. Un-archive it or create a new one.`);
-      if (!p.billing_cycle) out.push(`${name}: this price is one-time. Create a Recurring (monthly) price instead.`);
+      if (!p.billing_cycle) out.push(`${name}: this price is one-time. Create a Recurring (${interval === "year" ? "yearly" : "monthly"}) price instead.`);
+      else if (p.billing_cycle.interval && p.billing_cycle.interval !== interval) out.push(`${name}: this price bills every ${p.billing_cycle.interval}, but it should bill every ${interval}.`);
       if (!p.trial_period) out.push(`${name}: this price has no free trial. Edit it and set Trial period = 14 days.`);
       const dollars = Number(p.unit_price?.amount) / 100;
-      if (p.unit_price && dollars !== PLANS[plan].price) out.push(`${name}: Paddle price is ${dollars} ${p.unit_price.currency_code}, the website shows $${PLANS[plan].price}.`);
+      if (p.unit_price && dollars !== expected) out.push(`${name}: Paddle price is ${dollars} ${p.unit_price.currency_code}, the website shows $${expected}.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.startsWith("Paddle:")) return [`Could not reach Paddle to check your prices (${msg}). Reload this page to try again.`];

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser, type User } from "./auth";
-import { billingState, PLANS, usage, type PlanId } from "./billing";
+import { billingState, PLANS, usage, yearlyPrice, type PlanId } from "./billing";
 import { all, get, run } from "./db";
 
 /** Admins are listed in ADMIN_EMAILS (comma-separated); falls back to UNLIMITED_EMAILS. */
@@ -42,7 +42,7 @@ export interface AdminStats {
   comped: number;
   suspended: number;
   mrr: number;
-  byPlan: { plan: PlanId; paying: number; trialing: number }[];
+  byPlan: { plan: PlanId; paying: number; yearly: number; trialing: number }[];
   signups: { day: string; count: number }[];
   projects: number;
   conversations30: number;
@@ -55,6 +55,7 @@ export function adminStats(): AdminStats {
   const byPlan = (["starter", "growth", "agency", "compliance"] as PlanId[]).map((plan) => ({
     plan,
     paying: n("SELECT COUNT(*) AS n FROM users WHERE plan = ? AND plan_status IN ('active','past_due')", plan),
+    yearly: n("SELECT COUNT(*) AS n FROM users WHERE plan = ? AND plan_status IN ('active','past_due') AND plan_interval = 'year'", plan),
     trialing: n("SELECT COUNT(*) AS n FROM users WHERE plan = ? AND plan_status = 'trialing'", plan),
   }));
   // created_at is "YYYY-MM-DD HH:MM:SS" (SQLite datetime), so compare with the same format.
@@ -77,7 +78,8 @@ export function adminStats(): AdminStats {
     canceling: n(`SELECT COUNT(*) AS n FROM users WHERE plan_cancel_at IS NOT NULL AND plan_status IN ('active','trialing','past_due')`),
     comped: n("SELECT COUNT(*) AS n FROM users WHERE plan_status = 'comped'"),
     suspended: n("SELECT COUNT(*) AS n FROM users WHERE suspended_at IS NOT NULL"),
-    mrr: byPlan.reduce((sum, p) => sum + p.paying * PLANS[p.plan].price, 0),
+    // Yearly subscriptions count as their yearly price spread over 12 months.
+    mrr: Math.round(byPlan.reduce((sum, p) => sum + (p.paying - p.yearly) * PLANS[p.plan].price + (p.yearly * yearlyPrice(p.plan)) / 12, 0)),
     byPlan,
     signups,
     projects: n("SELECT COUNT(*) AS n FROM projects"),

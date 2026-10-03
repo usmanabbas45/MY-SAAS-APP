@@ -698,3 +698,17 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .fix-result { margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--brand-soft); border: 1px solid var(--border); }
 .fix-notes { margin: 8px 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
 .fix-text { white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.55; margin: 0 0 10px; font-family: inherit; }
+
+/* Monthly / yearly billing switch (billing page uses links; the homepage is CSS-only) */
+.period-toggle { display: inline-flex; gap: 4px; padding: 4px; margin: 4px 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.period-toggle a, .period-toggle label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; }
+.period-toggle a.active, .period-toggle input:checked + label { background: var(--brand); color: #fff; }
+.period-toggle a.active .badge, .period-toggle input:checked + label .badge { background: rgba(255,255,255,.22); color: #fff; }
+.period-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.period-toggle input:focus-visible + label { outline: 2px solid var(--brand); outline-offset: 2px; }
+.lp-period { display: flex; width: max-content; margin: 0 auto 18px; }
+.price-note { margin: 2px 0 10px; font-size: 13px; color: var(--muted); }
+.when-yearly { display: none; }
+.lp-period:has(#lp-year:checked) + .lp-plans .when-yearly { display: block; }
+.lp-period:has(#lp-year:checked) + .lp-plans .when-yearly ~ ul { margin-top: 0; }
+.lp-period:has(#lp-year:checked) + .lp-plans .card:has(.when-yearly) > .price { display: none; }

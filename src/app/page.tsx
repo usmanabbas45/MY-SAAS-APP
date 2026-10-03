@@ -1,4 +1,4 @@
-import { PLAN_FEATURES, PLANS as PLANS_BY_ID } from "@/lib/billing";
+import { PLAN_FEATURES, PLANS as PLANS_BY_ID, priceId, yearlyAvailable, yearlyMonthly, yearlyPrice, type PlanId } from "@/lib/billing";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
@@ -25,11 +25,11 @@ const FEATURES = [
   { icon: "🧠", title: "Learns your business", text: "Mark any verdict right or wrong. A neural network trained on your own feedback re-ranks risk so the answers that matter rise to the top." },
 ];
 
-const PLANS = [
-  { name: "Starter", price: PLANS_BY_ID.starter.price, featured: false, items: PLAN_FEATURES.starter },
-  { name: "Growth", price: PLANS_BY_ID.growth.price, featured: true, items: PLAN_FEATURES.growth },
-  { name: "Agency", price: PLANS_BY_ID.agency.price, featured: false, items: PLAN_FEATURES.agency },
-  { name: "Compliance", price: PLANS_BY_ID.compliance.price, featured: false, items: PLAN_FEATURES.compliance },
+const PLANS: { id: PlanId; name: string; price: number; featured: boolean; items: string[] }[] = [
+  { id: "starter", name: "Starter", price: PLANS_BY_ID.starter.price, featured: false, items: PLAN_FEATURES.starter },
+  { id: "growth", name: "Growth", price: PLANS_BY_ID.growth.price, featured: true, items: PLAN_FEATURES.growth },
+  { id: "agency", name: "Agency", price: PLANS_BY_ID.agency.price, featured: false, items: PLAN_FEATURES.agency },
+  { id: "compliance", name: "Compliance", price: PLANS_BY_ID.compliance.price, featured: false, items: PLAN_FEATURES.compliance },
 ];
 
 export const dynamic = "force-dynamic"; // approved testimonials appear without a redeploy
@@ -217,7 +217,15 @@ export default function Landing() {
       <section className="lp-section" id="pricing">
         <h2>Simple pricing</h2>
         <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>, no card needed. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
-        <div className="grid grid-4">
+        {yearlyAvailable() ? (
+          <div className="period-toggle lp-period" role="radiogroup" aria-label="Billing period">
+            <input type="radio" name="lp-period" id="lp-month" defaultChecked />
+            <label htmlFor="lp-month">Monthly</label>
+            <input type="radio" name="lp-period" id="lp-year" />
+            <label htmlFor="lp-year">Yearly <span className="badge badge-ok">2 months free</span></label>
+          </div>
+        ) : null}
+        <div className="grid grid-4 lp-plans">
           {PLANS.map((p) => (
             <div className={`card plan ${p.featured ? "featured" : ""}`} key={p.name}>
               <div className="row between">
@@ -225,6 +233,12 @@ export default function Landing() {
                 {p.featured ? <span className="badge badge-brand">Most popular</span> : p.name === "Compliance" ? <span className="badge badge-info">Regulated</span> : null}
               </div>
               <div className="price">${p.price}<small>/month</small></div>
+              {yearlyAvailable() && priceId(p.id, "year") ? (
+                <div className="when-yearly">
+                  <div className="price">${yearlyMonthly(p.id)}<small>/month</small></div>
+                  <p className="price-note">Billed ${yearlyPrice(p.id)} yearly · save ${p.price * 12 - yearlyPrice(p.id)}</p>
+                </div>
+              ) : null}
               <ul>{p.items.map((i) => <li key={i}>{i}</li>)}</ul>
               <Link href={p.name === "Compliance" ? "/contact" : "/signup"} className={`btn ${p.featured ? "" : "btn-ghost"}`} style={{ width: "100%" }}>{p.name === "Compliance" ? "Talk to us" : "Start free"}</Link>
             </div>

@@ -8,6 +8,10 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03", title: "Yearly plans: 2 months free", tag: "New",
+    items: ["Pay yearly and get 12 months for the price of 10. Switch between monthly and yearly any time on the Billing page; you only pay the difference."],
+  },
+  {
     date: "2026-10-03", title: "Try ProofMyAI with demo data", tag: "New",
     items: [
       "✨ Try with demo data: open a sample online-shop project with audits, safety findings, a Fix with AI result, agent runs, workflow failures and uptime, before connecting anything.",
