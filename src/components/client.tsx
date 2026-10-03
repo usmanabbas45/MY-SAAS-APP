@@ -86,7 +86,7 @@ export function ThemeToggle() {
   );
 }
 
-export interface NavItem { href: string; label: string; icon: string; badge?: number }
+export interface NavItem { href: string; label: string; icon: string; badge?: number; badgeTone?: "bad" | "brand" }
 
 export function NavLinks({ items }: { items: NavItem[] }) {
   const path = usePathname();
@@ -98,7 +98,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
           <Link key={it.href} href={it.href} className={`nav-link ${active ? "active" : ""}`}>
             <span className="nav-icon" aria-hidden>{it.icon}</span>
             <span>{it.label}</span>
-            {it.badge ? <span className="badge badge-bad" style={{ marginLeft: "auto" }}>{it.badge}</span> : null}
+            {it.badge ? <span className={`badge badge-${it.badgeTone ?? "bad"}`} style={{ marginLeft: "auto" }} title={it.badgeTone === "brand" ? "New suggestions" : undefined}>{it.badge}</span> : null}
           </Link>
         );
       })}

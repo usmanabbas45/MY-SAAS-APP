@@ -432,6 +432,18 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   addColumn(db, "users", "renew_reminded_for", "TEXT");
+  // AI-suggested chatbot tests, waiting for the customer to add or dismiss them.
+  db.exec(`CREATE TABLE IF NOT EXISTS test_suggestions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    question TEXT NOT NULL,
+    expected TEXT NOT NULL,
+    must_not TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL,
+    why TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  addColumn(db, "projects", "tests_generated_at", "TEXT");
   // Referral program: each user's invite code, and who invited them.
   addColumn(db, "users", "ref_code", "TEXT");
   addColumn(db, "users", "referred_by", "INTEGER");

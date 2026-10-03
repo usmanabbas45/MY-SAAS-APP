@@ -12,7 +12,7 @@ import { projectRules, RULE_KINDS } from "./rules";
  * hosted for them; they paste the result into their own bot (or save the article to ProofMyAI's
  * knowledge base so future checks use it).
  */
-export type FixKind = "article" | "prompt";
+export type FixKind = "article" | "prompt" | "tests";
 export interface AiFix { id: number; project_id: number; audit_id: number | null; kind: FixKind; target: string; title: string | null; output: string; notes: string | null; applied_at: string | null; created_at: string }
 
 /** Fixes per calendar month on the free plan (paid plans: unlimited, rate-limited per hour by the caller). */

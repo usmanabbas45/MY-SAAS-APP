@@ -29,6 +29,7 @@ import { JudgeError } from "@/lib/judge/llm";
 import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
 import { isVerified, VERIFY_FIRST } from "@/lib/verify";
+import { acceptSuggestions, dismissSuggestions, generateTestSuggestions } from "@/lib/testgen";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -648,4 +649,34 @@ export async function applyFixAction(form: FormData) {
     if (err instanceof Error && err.message === "Fix not found.") done(path, { error: err.message });
     throw err;
   }
+}
+
+// ---------- Auto test generator ----------
+export async function generateTestsAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/tests`;
+  fixGate(p, path);
+  let added = 0;
+  try {
+    added = await generateTestSuggestions(p.id);
+  } catch (err) {
+    done(path, { error: fixError(err) });
+  }
+  done(`${path}#suggested`, added
+    ? { ok: `✨ ${added} test question${added === 1 ? "" : "s"} suggested. Check them below and click “Add” on the ones you want.` }
+    : { error: "No new test questions this time: your tests already cover your help articles. Add more articles or wait for new chats." });
+}
+
+export async function acceptSuggestionsAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("suggestionId"));
+  const n = acceptSuggestions(p.id, id ? [id] : null);
+  done(`/app/p/${p.id}/tests`, { ok: `${n} test question${n === 1 ? "" : "s"} added. They run every night with your other tests.` });
+}
+
+export async function dismissSuggestionsAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("suggestionId"));
+  dismissSuggestions(p.id, id ? [id] : null);
+  done(`/app/p/${p.id}/tests`, { ok: id ? "Suggestion dismissed." : "All suggestions dismissed." });
 }
