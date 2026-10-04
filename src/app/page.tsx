@@ -4,8 +4,8 @@ import { planSignupHref } from "@/lib/next-path";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
-import { DemoVideo } from "@/components/video";
-import { CatchDemo, HeroMockup, IntegrationStrip, StepArt } from "@/components/illustrations";
+import { CatchDemo, HeroMockup, IntegrationMarquee, StepArt } from "@/components/illustrations";
+import { CopyBox, ProductTour, ScrollVideo, ShortcutLink, StartTabs, type TourTab } from "@/components/landing";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { LEGAL_NAME } from "@/lib/legal";
@@ -27,6 +27,110 @@ const FEATURES = [
   { icon: "👥", title: "Team & client access", text: "Invite teammates or clients as viewers or editors. Perfect for agencies sharing results without sharing passwords." },
   { icon: "🧠", title: "Learns your business", text: "Mark any verdict right or wrong. A neural network trained on your own feedback re-ranks risk so the answers that matter rise to the top." },
 ];
+
+const TOUR: TourTab[] = [
+  { id: "overview", name: "Overview", subtitle: "One health score for your chatbot, agents and workflows, with open incidents first.", img: "/tour/overview.webp", alt: "ProofMyAI overview: AI health score 66, 14-day chart of workflow runs and agent score, accuracy cards and open incidents" },
+  { id: "audit", name: "Chatbot audit", subtitle: "Every answer graded against your help docs: correct, made up, not in docs, should escalate.", img: "/tour/audit.webp", alt: "Chatbot audit report with verdict counts and the answers that were made up" },
+  { id: "fixes", name: "Fix list", subtitle: "Problems grouped by the help article that caused them, worst first.", img: "/tour/fixes.webp", alt: "Fix list grouping wrong answers by help article: returns, warranty, shipping and missing documentation" },
+  { id: "fix-ai", name: "Fix with AI", subtitle: "One click writes the corrected article and a safe system prompt for your bot.", img: "/tour/fixres.webp", alt: "Fix with AI result showing a corrected help article ready to copy" },
+  { id: "analytics", name: "Analytics", subtitle: "Topics customers ask about, accuracy per topic, resolution, satisfaction and gaps in your docs.", img: "/tour/analytics.webp", alt: "Chatbot analytics: topics, accuracy per topic, resolution rate and customer satisfaction" },
+  { id: "connect", name: "Connect", subtitle: "Intercom, WhatsApp, Zendesk, n8n, Make or one HTTP call. Each takes 2 to 5 minutes.", img: "/tour/connect.webp", alt: "Connect page with no-code options for chatbots, AI agents and workflows" },
+];
+
+const WHY = [
+  { icon: "⚖️", title: "Independent auditor", text: "Works with every bot platform, so you are not trusting the vendor to mark its own homework." },
+  { icon: "✨", title: "Fixes, not just scores", text: "You get the corrected help article and a safer bot prompt, ready to paste." },
+  { icon: "🧩", title: "One place for all your AI", text: "Chatbots, AI agents and n8n/Make workflows checked side by side." },
+  { icon: "⏱️", title: "No code, minutes to start", text: "Upload a chat export or connect Intercom, WhatsApp or n8n in 2 to 5 minutes." },
+  { icon: "🔒", title: "Privacy first", text: "Emails, phone and card numbers are masked before storage. Results-only mode, auto-delete and self-hosting available." },
+  { icon: "🔔", title: "Alerts where you work", text: "Slack, Teams, Discord, Telegram, Google Chat, WhatsApp, email or any webhook." },
+  { icon: "🧠", title: "Learns your business", text: "Mark a verdict right or wrong and the risk ranking adapts to what matters to you." },
+  { icon: "📄", title: "Agency ready", text: "Branded client reports, read-only share links and viewer access for clients." },
+  { icon: "🤝", title: "A real person behind it", text: "Talk directly to the developer on WhatsApp. New improvements ship every week." },
+];
+
+const AGENT_PROMPT = `Add ProofMyAI monitoring to this app (docs: ${SITE_URL}/docs).
+1. Read the API key from the environment variable PROOFMYAI_KEY. Never hard-code it or expose it to the browser.
+2. After each AI chatbot reply, send a fire-and-forget POST to ${SITE_URL}/api/v1/chat-events with the header "Authorization: Bearer <key>" and JSON { conversation_id, question, answer, latency_ms }.
+3. When an AI agent run finishes, POST to ${SITE_URL}/api/v1/agent-runs with { run_id, agent_name, goal, status, final_output, steps }.
+4. Use a short timeout and catch every error, so the app never slows down or fails because of monitoring.`;
+
+const CURL_SNIPPET = `curl -X POST ${SITE_URL}/api/v1/chat-events \\
+  -H "Authorization: Bearer $PROOFMYAI_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"conversation_id": "chat-8841",
+       "question": "How much is shipping to Germany?",
+       "answer": "Shipping to Germany is free on all orders."}'`;
+
+function StatsStrip() {
+  const left = foundingSpotsLeft();
+  const items = [
+    <>Every answer checked against <b>your own docs</b></>,
+    <><b>15+ integrations</b>, no code needed</>,
+    <>Set up in <b>2 minutes</b></>,
+    <><b>Free</b> for 50 conversations a month</>,
+    ...(left > 0 ? [<>🔥 <b>{left} of {FOUNDING_OFFER.spots}</b> founding spots left</>] : []),
+  ];
+  const row = (copy: number) => (
+    <div className="stats-track" key={copy} aria-hidden={copy === 1}>
+      {items.map((it, i) => <span key={i} className="stat-item">{it}<span className="stat-dot" aria-hidden>•</span></span>)}
+    </div>
+  );
+  return <div className="stats-strip">{row(0)}{row(1)}</div>;
+}
+
+function GetStarted() {
+  return (
+    <section className="lp-section reveal" id="get-started" aria-labelledby="start-title">
+      <h2 id="start-title">Get started in minutes</h2>
+      <p className="lp-lead">Pick the way that suits you. Your first results arrive the moment data does.</p>
+      <StartTabs tabs={[
+        { id: "nocode", label: "🧩 No code", body: (
+          <ol className="start-steps">
+            <li><b>Create a free account</b>, no install needed.</li>
+            <li><b>Connect your AI</b>: upload a chat export, paste an Intercom token, add the WhatsApp webhook or connect n8n/Make.</li>
+            <li><b>Add your help articles</b> so answers are checked against your real policies.</li>
+            <li><b>Get your audit</b> and fix list in minutes, then turn on alerts.</li>
+          </ol>
+        ) },
+        { id: "api", label: "💻 Developer API", body: (
+          <>
+            <p className="sub">Send each conversation with one HTTP call. Agents and workflows work the same way.</p>
+            <CopyBox label="cURL example" text={CURL_SNIPPET} />
+            <p className="faint" style={{ marginTop: 8 }}>Full reference: <Link href="/docs#chat-events">chat events</Link> · <Link href="/docs#agent-runs">agent runs</Link> · <Link href="/docs#workflow-runs">workflow runs</Link></p>
+          </>
+        ) },
+        { id: "agent", label: "✨ Set up with AI", body: (
+          <>
+            <p className="sub">Using Cursor, Claude Code or Copilot? Paste this prompt into your coding agent and it adds ProofMyAI for you.</p>
+            <CopyBox label="coding agent prompt" text={AGENT_PROMPT} />
+          </>
+        ) },
+      ]} />
+      <div className="row" style={{ justifyContent: "center", marginTop: 22 }}>
+        <Link href="/signup" className="btn btn-lg">Create free account →</Link>
+        <Link href="/docs" className="btn btn-ghost btn-lg">Read the docs</Link>
+      </div>
+    </section>
+  );
+}
+
+function WhyProofMyAI() {
+  return (
+    <section className="lp-section reveal" id="why" aria-labelledby="why-title">
+      <h2 id="why-title">Why businesses choose ProofMyAI</h2>
+      <p className="lp-lead">Built for teams that rely on AI to talk to customers but don&apos;t have time to read every chat.</p>
+      <div className="why-grid">
+        {WHY.map((w) => (
+          <div className="why-item" key={w.title}>
+            <span className="why-icon" aria-hidden>{w.icon}</span>
+            <div><h3>{w.title}</h3><p>{w.text}</p></div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 const PLANS: { id: PlanId; name: string; price: number; featured: boolean; items: string[] }[] = [
   { id: "starter", name: "Starter", price: PLANS_BY_ID.starter.price, featured: false, items: PLAN_FEATURES.starter },
@@ -155,14 +259,15 @@ export default function Landing() {
       <SiteHeader />
 
       <main>
+      <StatsStrip />
       <section className="lp-hero lp-hero-split">
         <div className="lp-hero-copy">
           <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
           <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
           <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
           <div className="row lp-hero-ctas">
-            <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
-            <a href="#video" className="btn btn-ghost btn-lg">▶ Watch the 75-sec demo</a>
+            <ShortcutLink href="/signup" k="s" className="btn btn-lg" event="hero_start">Get your free AI audit →</ShortcutLink>
+            <ShortcutLink href="#tour" k="d" className="btn btn-ghost btn-lg" event="hero_demo">▶ See it in action</ShortcutLink>
           </div>
           <ul className="lp-trust">
             <li>✓ Free for 50 conversations a month</li>
@@ -173,22 +278,28 @@ export default function Landing() {
         <HeroMockup />
       </section>
 
-      <section className="lp-section lp-works" aria-label="Works with">
-        <p className="lp-works-title">Works with the tools you already use</p>
-        <IntegrationStrip />
+      <section className="lp-section reveal" id="tour" aria-labelledby="tour-title">
+        <h2 id="tour-title">Take the 30-second tour</h2>
+        <p className="lp-lead">Real screens from ProofMyAI with sample data. Click a tab, or just watch.</p>
+        <ProductTour tabs={TOUR} video={DEMO_VIDEO.src} poster={DEMO_VIDEO.poster} />
       </section>
 
-      <section className="lp-section lp-band" id="how-it-catches" aria-labelledby="catch-title">
+      <section className="lp-section lp-works" aria-label="Works with">
+        <p className="lp-works-title">Works with the tools you already use</p>
+        <IntegrationMarquee />
+      </section>
+
+      <section className="lp-section lp-band reveal" id="how-it-catches" aria-labelledby="catch-title">
         <h2 id="catch-title">See a wrong answer caught in seconds</h2>
         <p className="lp-lead">Your bot sounds confident even when it&apos;s wrong. ProofMyAI checks every answer against your own help docs and tells you what to fix.</p>
         <CatchDemo />
       </section>
 
-      <section className="lp-section" id="video" aria-labelledby="video-title">
+      <section className="lp-section reveal" id="video" aria-labelledby="video-title">
         <h2 id="video-title">See ProofMyAI in 75 seconds</h2>
         <p className="lp-lead">Connect in 2 minutes, catch wrong answers with the exact fix, and get alerted before your customers notice.</p>
         <div className="video-wrap">
-          <DemoVideo src={DEMO_VIDEO.src} webm={DEMO_VIDEO.webm} poster={DEMO_VIDEO.poster} title={DEMO_VIDEO.title} />
+          <ScrollVideo src={DEMO_VIDEO.src} webm={DEMO_VIDEO.webm} poster={DEMO_VIDEO.poster} title={DEMO_VIDEO.title} />
           <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>
             Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
           </p>
@@ -211,7 +322,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="lp-section lp-band lp-band-alt" id="features">
+      <section className="lp-section lp-band lp-band-alt reveal" id="features">
         <h2>Everything your AI does, checked in one place</h2>
         <p className="lp-lead">Customers are losing trust in support bots, and most bot platforms have no built-in quality control. ProofMyAI is the independent auditor that works with all of them.</p>
         <div className="grid grid-3">
@@ -225,7 +336,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="lp-section">
+      <section className="lp-section reveal">
         <h2>Set up in 3 steps</h2>
         <p className="lp-lead">No code needed for chatbots and workflows. Agents need one HTTP call.</p>
         <div className="grid grid-3 steps" style={{ marginTop: 24 }}>
@@ -243,9 +354,13 @@ export default function Landing() {
         </div>
       </section>
 
+      <WhyProofMyAI />
+
+      <GetStarted />
+
       <SocialProof />
 
-      <section className="lp-section lp-band" id="pricing">
+      <section className="lp-section lp-band reveal" id="pricing">
         <h2>Simple pricing</h2>
         <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
         {yearlyAvailable() ? (
@@ -278,10 +393,13 @@ export default function Landing() {
         <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>Strict data rules? Results-only storage, auto-delete, AI provider off, a signed DPA or a <strong>self-hosted</strong> ProofMyAI. <Link href="/security">See the Trust Center</Link>.</p>
       </section>
 
-      <section className="lp-section faq" id="faq">
-        <h2>Frequently asked questions</h2>
-        <p className="lp-lead">Everything you need to know before your first AI audit.</p>
-        <div style={{ maxWidth: 820, margin: "0 auto" }}>
+      <section className="lp-section faq faq-split reveal" id="faq">
+        <div className="faq-side">
+          <h2>Frequently asked questions</h2>
+          <p className="lp-lead">Everything you need to know before your first AI audit.</p>
+          <p className="faint">Still unsure? <Link href="/support">Ask the developer</Link>, usually answered the same day.</p>
+        </div>
+        <div className="faq-list">
           {FAQS.map((f) => (
             <details key={f.q}>
               <summary>{f.q}</summary>

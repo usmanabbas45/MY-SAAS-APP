@@ -54,7 +54,7 @@ ${(["starter", "growth", "agency", "compliance"] as const).map((id) => `### ${PL
 ## Frequently asked questions
 ${FAQS.map((f) => `### ${f.q}\n${f.a}`).join("\n\n")}
 
-${SOLUTIONS.map((s) => `## ${s.title}\n${s.intro}\n\nProblems it solves:\n${s.problems.map((p) => `- ${p}`).join("\n")}\n\nHow it works:\n${s.steps.map((st, i) => `${i + 1}. ${st.title}: ${st.text}`).join("\n")}\n\n${s.faqs.map((f) => `### ${f.q}\n${f.a}`).join("\n\n")}`).join("\n\n")}
+${SOLUTIONS.map((s) => `## ${s.title}\n${s.definition ? `${s.definition}\n\n` : ""}${s.intro}\n\n${s.metrics ? `Key metrics to monitor:\n${s.metrics.map((m) => `- ${m.name}: ${m.text}`).join("\n")}\n\n` : ""}Problems it solves:\n${s.problems.map((p) => `- ${p}`).join("\n")}\n\nHow it works:\n${s.steps.map((st, i) => `${i + 1}. ${st.title}: ${st.text}`).join("\n")}\n\n${s.faqs.map((f) => `### ${f.q}\n${f.a}`).join("\n\n")}`).join("\n\n")}
 
 ${POSTS.map((p) => `## Guide: ${p.title}\nURL: ${SITE_URL}/blog/${p.slug}\n\n${p.answer}\n\n${p.body.trim()}\n\nKey takeaways:\n${p.takeaways.map((t) => `- ${t}`).join("\n")}`).join("\n\n")}
 `;

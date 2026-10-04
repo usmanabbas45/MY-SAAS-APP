@@ -133,3 +133,36 @@ export function IntegrationStrip() {
     </div>
   );
 }
+
+const MORE_INTEGRATIONS: [string, string][] = [
+  ["Twilio SMS", "#f22f46"], ["Zapier", "#ff4f00"], ["CrewAI", "#ef5b3f"], ["Slack alerts", "#4a154b"], ["Discord alerts", "#5865f2"],
+  ["Any HTTP bot", "#5b4bf5"], ["Website widgets", "#0ea5e9"], ["Uptime checks", "#16a34a"],
+];
+
+function MarqueeRow({ items, reverse }: { items: [string, string][]; reverse?: boolean }) {
+  // The list is rendered twice so the -50% scroll loops without a gap; the copy is hidden from screen readers.
+  return (
+    <div className={`marquee-row ${reverse ? "reverse" : ""}`}>
+      {[0, 1].map((copy) => (
+        <div className="marquee-track" key={copy} aria-hidden={copy === 1}>
+          {items.map(([name, color]) => (
+            <span key={name} className="integration">
+              <span className="integration-mark" style={{ background: color }} aria-hidden>{name[0]}</span>
+              {name}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Two rows of integrations drifting in opposite directions (pauses on hover, static with reduced motion). */
+export function IntegrationMarquee() {
+  return (
+    <div className="marquee">
+      <MarqueeRow items={INTEGRATIONS.slice(0, 7)} />
+      <MarqueeRow items={[...INTEGRATIONS.slice(7), ...MORE_INTEGRATIONS]} reverse />
+    </div>
+  );
+}

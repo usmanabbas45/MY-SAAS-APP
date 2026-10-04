@@ -35,6 +35,8 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
         { "@type": "ListItem", position: 1, name: "ProofMyAI", item: SITE_URL },
         { "@type": "ListItem", position: 2, name: s.kicker, item: `${SITE_URL}/solutions/${s.slug}` },
       ] },
+      ...(s.definition ? [{ "@type": "DefinedTerm", name: s.kicker, description: s.definition, url: `${SITE_URL}/solutions/${s.slug}#what-is` }] : []),
+      ...(s.metrics ? [{ "@type": "ItemList", name: `Key ${s.kicker} metrics`, itemListElement: s.metrics.map((m, i) => ({ "@type": "ListItem", position: i + 1, name: m.name, description: m.text })) }] : []),
       { "@type": "FAQPage", mainEntity: s.faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
       videoJsonLd(VIDEOS.tutorial),
     ],
@@ -52,6 +54,31 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
             <Link href="/#pricing" className="btn btn-ghost btn-lg">See pricing</Link>
           </div>
         </section>
+
+        {s.definition ? (
+          <section className="lp-section" id="what-is">
+            <h2>What is {s.kicker}?</h2>
+            <p className="lp-lead definition">{s.definition}</p>
+          </section>
+        ) : null}
+
+        {s.metrics ? (
+          <section className="lp-section" id="metrics">
+            <h2>Key metrics to monitor</h2>
+            <ol className="metric-list">
+              {s.metrics.map((m) => <li key={m.name} className="card"><strong>{m.name}:</strong> {m.text}</li>)}
+            </ol>
+          </section>
+        ) : null}
+
+        {s.objectives ? (
+          <section className="lp-section" id="objectives">
+            <h2>Main objectives</h2>
+            <div className="grid grid-3" style={{ marginTop: 20 }}>
+              {s.objectives.map((o) => <div key={o.name} className="card"><h3>{o.name}</h3><p className="sub" style={{ margin: 0 }}>{o.text}</p></div>)}
+            </div>
+          </section>
+        ) : null}
 
         <section className="lp-section">
           <h2>The problem</h2>
@@ -87,6 +114,16 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
             {s.features.map((f) => <li key={f} className="card">✅ {f}</li>)}
           </ul>
         </section>
+
+        {s.tools ? (
+          <section className="lp-section" id="tools">
+            <h2>Popular {s.kicker} tools</h2>
+            <p className="lp-lead">Which one fits depends on who runs your bot and whether you want to write code.</p>
+            <ul className="tool-list">
+              {s.tools.map((t) => <li key={t.name} className="card"><strong>{t.name}</strong><span>{t.text}</span></li>)}
+            </ul>
+          </section>
+        ) : null}
 
         <section className="lp-section faq">
           <h2>Questions</h2>
