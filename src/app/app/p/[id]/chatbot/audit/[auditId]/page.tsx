@@ -143,7 +143,7 @@ export default async function AuditPage({ params, searchParams }: {
             </div>
           ) : null}
 
-          <div className="card">
+          <div className="card" id="fixes">
             <div className="card-head">
               <div><h3>📋 Fix list</h3><span className="sub">Fix these first: help articles to update, and bot prompt, memory or hand-over problems for your developer.</span></div>
               <Badge tone={problems ? "bad" : "ok"}>{problems} problem answer{problems === 1 ? "" : "s"}</Badge>

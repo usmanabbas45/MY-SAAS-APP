@@ -15,6 +15,7 @@ const TOC = [
   ["no-code", "🧩 Connect without code"],
   ["auth", "🔑 Authentication"],
   ["chat-events", "💬 POST /chat-events (live chatbot)"],
+  ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
   ["errors", "⚠️ Errors & limits"],
@@ -97,6 +98,13 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
   "severity": "high", "reason": "The shipping article says Germany costs €9.90; free shipping is not mentioned."}]}`}</Code>
       <p>Verdicts: <code>correct</code>, <code>unsupported</code> (not in your docs), <code>hallucination</code> (made up), <code>should_escalate</code>, <code>off_policy</code>, <code>unclear</code>.</p>
       <p><strong>Tip:</strong> call the API without waiting for it (fire-and-forget) so your bot never slows down. The <em>Live tracking</em> page in your dashboard has ready-made cURL, JavaScript and Python snippets that do this safely, plus no-code steps for Intercom, Zendesk, Crisp and Tidio through n8n or Make.</p>
+
+      <h2 id="feedback">👍 POST /feedback: customer ratings</h2>
+      <p>Send each thumbs up/down or star rating your customers give the bot. ProofMyAI shows customer satisfaction overall and per topic on the <em>Analytics</em> page. Use the same <code>conversation_id</code> you send to <code>/chat-events</code>.</p>
+      <Code>{`curl -X POST ${API}/feedback \
+  -H "Authorization: Bearer ap_live_your_key" -H "Content-Type: application/json" \
+  -d '{"conversation_id": "chat-8812", "rating": "down", "comment": "Wrong delivery price"}'`}</Code>
+      <p><code>rating</code>: <code>"up"</code> / <code>"down"</code>, <code>true</code> / <code>false</code>, whole stars <code>1</code>–<code>5</code>, or a decimal score from <code>0</code> to <code>1</code>. Optional: <code>turn_index</code> (which reply was rated) and <code>comment</code>. Response <code>201</code>: <code>{`{"ok": true, "id": 42}`}</code>.</p>
 
       <h2 id="agent-runs">🤖 POST /agent-runs: AI agent monitoring</h2>
       <p>Send one request when an agent run finishes. ProofMyAI checks it for loops, tool errors, runaway cost, slow runs, empty output and answers the tools didn&apos;t support.</p>

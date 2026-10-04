@@ -45,6 +45,8 @@ export interface Grade {
   reason: string;
   sourceDoc: string | null;
   confidence: number;
+  /** Short label for what the customer asked about (AI judge only). */
+  topic?: string | null;
 }
 
 export function exchangesOf(conv: Conversation): Exchange[] {

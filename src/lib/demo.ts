@@ -4,6 +4,7 @@ import { all, get, run, transaction } from "./db";
 import type { Severity, Verdict } from "./judge/types";
 import { newApiKey } from "./projects";
 import { recordWorkflowRun } from "./workflows/monitor";
+import { topicFor } from "./topics";
 
 /**
  * "Try with demo data": a separate, clearly-labelled sample project (a fictional online shop) filled with
@@ -75,11 +76,11 @@ export async function createDemoProject(userId: number): Promise<number> {
     for (const [ago, slice, name] of [[8, ITEMS.slice(0, 10), "Website chat · previous week"], [1, ITEMS, "Website chat · this week"]] as const) {
       const audit = run("INSERT INTO audits (project_id, name, mode, status, judge, created_at) VALUES (?, ?, 'ai', 'done', 'Demo data', ?)", id, name, isoDaysAgo(ago).replace("T", " ").slice(0, 19)).lastInsertRowid;
       slice.forEach((it, i) => run(
-        `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, conv_flags, rule_hit, latency_ms)
-         VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, 0.9, '[]', ?, ?, ?, ?, ?)`,
+        `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, conv_flags, rule_hit, latency_ms, topic)
+         VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, 0.9, '[]', ?, ?, ?, ?, ?, ?)`,
         audit, `demo-${ago}-${i + 1}`, it.q, it.a, it.v, it.sev, it.reason, it.doc ?? null,
         it.sev === "high" ? 0.92 : it.sev === "medium" ? 0.6 : it.sev === "low" ? 0.35 : 0.05,
-        isoDaysAgo(ago, 10 - (i % 9)), it.flags ?? null, it.rule ?? null, it.ms,
+        isoDaysAgo(ago, 10 - (i % 9)), it.flags ?? null, it.rule ?? null, it.ms, topicFor(it.q, it.doc ?? null),
       ));
       run("UPDATE audits SET score = ? WHERE id = ?", scoreFromSeverities(slice.map((s) => s.sev)), audit);
       if (ago === 1) {
@@ -94,6 +95,25 @@ export async function createDemoProject(userId: number): Promise<number> {
     for (let h = 7 * 24; h >= 0; h--) {
       const down = h === 50 || h === 49;
       run("INSERT INTO uptime_checks (monitor_id, at, ok, ms, code) VALUES (?, ?, ?, ?, ?)", mon, new Date(Date.now() - h * 3600000).toISOString(), down ? 0 : 1, down ? null : 350 + ((h * 37) % 300), down ? 503 : 200);
+    }
+    // Two weeks of live tracking (mostly good answers, getting better), with some 👍/👎 ratings, for Analytics.
+    const live = run("INSERT INTO audits (project_id, name, mode, status, judge, created_at) VALUES (?, 'Live tracking', 'ai', 'live', 'Demo data', ?)", id, isoDaysAgo(14).replace("T", " ").slice(0, 19)).lastInsertRowid;
+    const good = ITEMS.filter((it) => it.v === "correct");
+    let conv = 0;
+    for (let d = 13; d >= 0; d--) {
+      const count = 4 + ((d * 7) % 5) + (13 - d) / 3;
+      for (let c = 0; c < count; c++) {
+        conv++;
+        const bad = (conv * 5 + d) % (d > 6 ? 4 : 7) === 0; // fewer problems in the second week
+        const it = bad ? ITEMS.filter((x) => x.v !== "correct")[conv % 11] : good[conv % good.length];
+        run(
+          `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, conv_flags, latency_ms, topic)
+           VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, 0.9, '[]', ?, ?, ?, ?, ?)`,
+          live, `live-${conv}`, it.q, it.a, it.v, it.sev, it.reason, it.doc ?? null, it.sev === "high" ? 0.9 : 0.1,
+          isoDaysAgo(d, (c * 3) % 11), it.flags ?? null, it.ms + ((conv * 137) % 900), topicFor(it.q, it.doc ?? null),
+        );
+        if (conv % 3 === 0) run("INSERT INTO chat_feedback (project_id, conversation_id, value, created_at) VALUES (?, ?, ?, ?)", id, `live-${conv}`, bad ? 0 : 1, isoDaysAgo(d, (c * 3) % 11));
+      }
     }
     run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'chatbot', 'HALLUCINATION', 'high', 'Chatbot promised a refund on sale items', 'The bot told 3 customers that sale items get a full refund. Your policy says store credit only.', 'demo:refund')", id);
     return id;
