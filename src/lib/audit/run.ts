@@ -8,6 +8,7 @@ import { loadModel, riskScore } from "../ml/risk";
 import { applyRules, parseMustInclude, projectRules, type Rule } from "../rules";
 import { conversationFindings, FLAG_SEVERITY, INFO_FLAGS, isSafetyFlag, type ConvFlag } from "../judge/conversation";
 import { isFrustrated } from "../sentiment";
+import { topicFor } from "../topics";
 import { raiseIncident } from "../incidents";
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { none: 0, low: 0.3, medium: 0.6, high: 1 };
@@ -100,16 +101,17 @@ export function storeGradedItem(auditId: number, e: Exchange, g: Grade, index: K
   const features = featureVector(signalsFor(e, index), grade.verdict, grade.confidence);
   // "Don't store transcripts" mode: keep the verdict, reason and scores, but not the chat text itself.
   const frustrated = isFrustrated(e.question) ? 1 : 0;
+  const topic = topicFor(e.question, grade.sourceDoc, g.topic);
   const storeText = get<{ s: number }>("SELECT p.store_text AS s FROM audits a JOIN projects p ON p.id = a.project_id WHERE a.id = ?", auditId)?.s ?? 1;
   if (!storeText) e = { ...e, question: NOT_STORED, answer: NOT_STORED };
   run(
     `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, frustrated, rule_hit,
-       conv_flags, latency_ms, cost_usd, bot_error)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?)`,
+       conv_flags, latency_ms, cost_usd, bot_error, topic)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?)`,
     auditId, e.conversationId, e.turnIndex, e.question, e.answer, grade.verdict, grade.severity, grade.reason + note, grade.sourceDoc,
     grade.confidence, JSON.stringify(features), riskScore(model, features, grade.verdict, grade.confidence),
     frustrated, hit, flags.length ? flags.join(",") : null,
-    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null,
+    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null, topic,
   );
   return grade;
 }

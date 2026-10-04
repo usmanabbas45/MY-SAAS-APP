@@ -35,7 +35,7 @@ describe("demo data", () => {
     expect(usage(userId, billingState(userId).plan)).toEqual(before);
 
     const audits = all<{ id: number; score: number }>("SELECT id, score FROM audits WHERE project_id = ? ORDER BY id", id);
-    expect(audits).toHaveLength(2);
+    expect(audits).toHaveLength(3); // last week, this week, and two weeks of live tracking
     const groups = fixList(audits[1].id).map((g) => g.doc);
     expect(groups).toEqual(expect.arrayContaining(["Returns & refunds", "Warranty", "Bot prompt/logic: rule \"price match\" broken"]));
     expect(get<{ n: number }>("SELECT COUNT(*) AS n FROM ai_fixes WHERE project_id = ?", id)?.n).toBe(1);

@@ -902,3 +902,23 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
     var(--page-base);
 }
 .lp-page .site-footer, .lp-page footer { background: transparent; }
+
+/* Chatbot analytics */
+.an-kpis { margin-bottom: 12px; }
+.an-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.an-grid { stroke: var(--border); stroke-width: 1; }
+.an-axis { fill: var(--faint); font-size: 11px; }
+.an-label { fill: var(--text); font-size: 12px; font-weight: 700; }
+.an-bar { fill: var(--brand); }
+.an-line { fill: none; stroke: var(--brand); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.an-dot { fill: var(--brand); stroke: var(--surface); stroke-width: 2; }
+.an-hit:hover .an-bar { fill: var(--brand-2); }
+.an-hit:hover .an-dot { r: 6; }
+.an-up { color: var(--ok); }
+.an-down { color: var(--bad); }
+.an-share { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin-bottom: 4px; }
+.an-share span { display: block; height: 100%; border-radius: 4px; background: var(--brand); }
+.an-gaps { list-style: none; margin: 0; padding: 0; }
+.an-gaps li { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.an-gaps li:last-child { border-bottom: 0; }
+.an-table-toggle { margin: 8px 0 0; }

@@ -23,6 +23,92 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "chatbot-analytics-metrics",
+    title: "Chatbot Analytics: The 9 Metrics That Matter and How to Track Them",
+    seoTitle: "Chatbot Analytics: 9 Metrics That Matter (2026)",
+    description: "Which chatbot analytics metrics actually matter: answer accuracy, resolution rate, escalation, topics, customer satisfaction and response time, plus how to track them without code.",
+    date: "2026-10-04",
+    readMins: 9,
+    tags: ["AI chatbots", "Analytics", "Metrics"],
+    answer: "Chatbot analytics is the measurement of what customers ask an AI chatbot and how well it answers. The metrics that matter most are answer accuracy (is the answer correct according to your own docs), resolution rate, escalation rate, topics, customer satisfaction from thumbs up/down ratings, response time and unanswered questions. Volume metrics like message counts only matter next to quality metrics.",
+    body: `
+## What chatbot analytics is (and what it isn't)
+
+Classic chatbot analytics counted things: messages, sessions, clicks on quick replies. With AI chatbots that is no longer enough. An AI bot can hold a long, friendly conversation and still give a customer the wrong refund rule or an invented price. A dashboard that only shows "1,200 conversations this week" will look healthy while the bot is costing you money.
+
+Modern chatbot analytics answers three questions:
+
+1. **What are customers asking?** (topics and volume)
+2. **How well does the bot answer?** (accuracy, resolution, escalation)
+3. **How do customers feel about it?** (satisfaction, repeats, hand-overs)
+
+## The 9 metrics that matter
+
+### 1. Answer accuracy
+
+The share of bot replies that are correct **according to your own help docs and policies**. This is the most important AI chatbot metric because it is the one your customers feel. It is measured by comparing every answer with your knowledge base, with an AI judge or with rules, and labelling it correct, made up, not in the docs, should have escalated, or off policy.
+
+### 2. Resolution rate
+
+The share of conversations the bot handled fully: every answer correct, no repeated questions, no restart, and no bad rating. A high conversation count with a low resolution rate means customers are getting stuck.
+
+### 3. Escalation rate ("needed a human")
+
+How often a customer needed a person: a complaint, a refund dispute, a safety issue, or a direct request for a human. Watch both directions. A rising escalation rate can mean missing documentation; a bot that never escalates is often hiding problems.
+
+### 4. Topics
+
+What customers ask about, grouped into topics such as Delivery, Returns & refunds or Pricing. Topics turn thousands of messages into a short list you can act on. The most useful view puts **accuracy per topic** next to volume: a topic with many questions and low accuracy is where to fix the help docs first.
+
+### 5. Customer satisfaction
+
+Thumbs up/down or 1–5 star ratings under the bot's replies, shown as the share of positive ratings, overall and per topic. Ratings are sparse (most customers don't click), so read them together with accuracy rather than on their own.
+
+### 6. Unanswered questions (documentation gaps)
+
+Questions the bot had nothing in your docs to answer from. Each one is a help article to write. This list is often the fastest way to raise accuracy.
+
+### 7. Response time
+
+How long customers wait for a reply: the average and the 95th percentile (the slow replies that make people leave). Slow replies usually come from long prompts, slow tools or retries.
+
+### 8. Conversation length
+
+Replies per conversation. Very short conversations can mean quick answers or customers giving up; very long ones often mean the bot is going round in circles. Look at it next to resolution rate.
+
+### 9. Safety signals
+
+Prompt-injection attempts, leaked system prompts, exposed card numbers, rude replies and answers in the wrong language. These are rare but expensive, so they should alert you instead of waiting in a monthly report.
+
+## How to track chatbot analytics
+
+You need two things: the conversations, and a way to judge them.
+
+- **Collect conversations** from your chat platform (Intercom, Tidio, Crisp, Zendesk, WhatsApp) or send them live from your own bot with one API call.
+- **Judge every answer** against your help docs, automatically, so accuracy and resolution are real numbers instead of guesses.
+- **Add a thumbs up/down** under bot replies and send each click with the conversation ID.
+- **Review weekly:** topics with low accuracy, the unanswered-questions list, and conversations customers rated badly.
+
+## Developer tools vs. business tools
+
+Developer-focused LLM observability platforms such as Langfuse are excellent for engineering teams: they trace every model call, manage prompts and run evaluations, and they need SDK instrumentation in your code. If you are a business owner or agency running a chatbot built on Intercom, Tidio, Chatbase or n8n, a no-code tool that connects to your existing bot and grades answers against your help docs is usually faster to get value from. Many teams use both: the developer tool for debugging, and an answer-quality monitor for the business.
+`,
+    takeaways: [
+      "Volume metrics only matter next to quality metrics: track answer accuracy and resolution rate first.",
+      "Put accuracy per topic next to topic volume to see where to fix your help docs first.",
+      "Collect thumbs up/down ratings, but read them together with accuracy because most customers don't rate.",
+      "The unanswered-questions list is the fastest way to raise accuracy: each item is a help article to write.",
+    ],
+    faqs: [
+      { q: "What is chatbot analytics?", a: "Chatbot analytics is the measurement of what customers ask a chatbot and how well it answers: topics, answer accuracy, resolution rate, escalations, satisfaction ratings and response times." },
+      { q: "What are the most important chatbot metrics?", a: "For AI chatbots: answer accuracy against your own docs, resolution rate, escalation rate, accuracy per topic, customer satisfaction and unanswered questions. Message and session counts are useful context, not goals." },
+      { q: "How do I measure chatbot accuracy?", a: "Compare every bot answer with your help docs and policies, either with an AI judge or with rules, and label it correct, made up, not in the docs, should have escalated or off policy. ProofMyAI does this automatically for every conversation." },
+      { q: "How do I collect chatbot user feedback?", a: "Add a thumbs up/down or star rating under bot replies and send each click, with the conversation ID, to your analytics tool. In ProofMyAI that is one POST request to /api/v1/feedback." },
+      { q: "Is ProofMyAI a Langfuse alternative?", a: "For business owners and agencies, yes: ProofMyAI connects to an existing chatbot without code and focuses on answer accuracy, fixes and alerts. Langfuse is a developer platform for tracing and evaluating LLM applications. Engineering teams often use a developer platform alongside an answer-quality monitor." },
+    ],
+    cta: { text: "See your chatbot's analytics free", href: "/signup" },
+  },
+  {
     slug: "how-to-test-ai-chatbot-accuracy",
     title: "How to Test an AI Chatbot for Accuracy (Step-by-Step Guide)",
     description: "A practical, repeatable process to test whether your AI chatbot gives correct answers: build a test set from real questions, grade answers against your own docs, and monitor quality every day.",

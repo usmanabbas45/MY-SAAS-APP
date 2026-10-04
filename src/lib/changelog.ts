@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-04", title: "Chatbot analytics", tag: "New",
+    items: [
+      "📈 New Analytics page: conversations, answer accuracy, resolution rate, how often customers needed a human, response times and trends over 7, 30 or 90 days.",
+      "🗂️ Topics: see what customers ask about most and how well your bot handles each topic.",
+      "👍👎 Customer feedback: send thumbs up/down or star ratings to /api/v1/feedback and see satisfaction overall and per topic.",
+      "❓ A list of questions your help docs don't answer yet, with one click to Fix with AI.",
+    ],
+  },
+  {
     date: "2026-10-03", title: "Auto test generator", tag: "New",
     items: [
       "✨ On the Chatbot tests page, AI now writes test questions for you from your help articles, your rules and the questions your bot already got wrong, including prompt-injection and “talk to a human” checks.",

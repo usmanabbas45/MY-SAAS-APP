@@ -444,6 +444,18 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   addColumn(db, "projects", "tests_generated_at", "TEXT");
+  // Chatbot analytics: topic of each answer, and ratings from the bot's own users (thumbs up/down, stars).
+  addColumn(db, "audit_items", "topic", "TEXT");
+  db.exec(`CREATE TABLE IF NOT EXISTS chat_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    conversation_id TEXT NOT NULL,
+    turn_index INTEGER,
+    value REAL NOT NULL,
+    comment TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_chat_feedback ON chat_feedback(project_id, created_at)");
   // Referral program: each user's invite code, and who invited them.
   addColumn(db, "users", "ref_code", "TEXT");
   addColumn(db, "users", "referred_by", "INTEGER");

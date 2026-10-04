@@ -141,7 +141,8 @@ greeting or restarting as if the conversation just began, and generic fallback r
 Severity reflects business harm: high = could cost money, legal exposure or a lost customer; medium = misleading or frustrating; low = minor quality issue; none = for correct replies.
 source_doc: the exact title of the knowledge-base doc that should back this answer (or that needs fixing/adding), or null if none applies.
 reason: one or two plain-English sentences a non-technical business owner can act on.
-confidence: 0 to 1, how sure you are of the verdict.`;
+confidence: 0 to 1, how sure you are of the verdict.
+topic: what the customer asked about, as a short 1-3 word category in Title Case (for example "Delivery", "Returns & Refunds", "Pricing", "Account & Login", "Talk to a Human", "Greetings"). Use the title of the matching knowledge-base doc when one fits, and reuse the same wording for the same subject.`;
 
 const ChatGrades = z.object({
   grades: z.array(
@@ -152,6 +153,7 @@ const ChatGrades = z.object({
       reason: z.string(),
       source_doc: z.string().nullable(),
       confidence: z.number(),
+      topic: z.string().optional(), // optional: a missing topic must never fail the grading
     }),
   ),
 });
@@ -178,6 +180,7 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
       reason: g.reason,
       sourceDoc: g.source_doc && titles.has(g.source_doc) ? g.source_doc : null,
       confidence: clamp(g.confidence, 0, 1),
+      topic: g.topic?.trim().slice(0, 40) || null,
     };
   });
 }
