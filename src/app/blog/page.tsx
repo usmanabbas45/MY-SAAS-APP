@@ -20,7 +20,7 @@ export default function BlogIndex() {
     blogPost: POSTS.map((p) => ({ "@type": "BlogPosting", headline: p.title, url: `${SITE_URL}/blog/${p.slug}`, datePublished: p.date })),
   };
   return (
-    <>
+    <div className="lp-page">
       <SiteHeader />
       <main className="legal blog">
         <h1>📚 Guides</h1>
@@ -38,6 +38,6 @@ export default function BlogIndex() {
       </main>
       <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(data)} />
-    </>
+    </div>
   );
 }

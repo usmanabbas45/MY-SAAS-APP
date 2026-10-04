@@ -9,6 +9,11 @@
   --brand: #5b4bf5;
   --brand-2: #8b5cf6;
   --brand-soft: #eeebff;
+  --aurora-1: rgba(124, 92, 255, 0.26);
+  --aurora-2: rgba(56, 189, 248, 0.20);
+  --aurora-3: rgba(236, 72, 153, 0.13);
+  --grid-dot: rgba(91, 75, 245, 0.14);
+  --band: rgba(238, 235, 255, 0.65);
   --ok: #10a36e;
   --ok-soft: #e3f7ee;
   --warn: #d98a06;
@@ -35,6 +40,16 @@
     --brand: #7c6cff;
     --brand-2: #a78bfa;
     --brand-soft: #211d45;
+  --aurora-1: rgba(124, 108, 255, 0.30);
+  --aurora-2: rgba(56, 189, 248, 0.16);
+  --aurora-3: rgba(236, 72, 153, 0.12);
+  --grid-dot: rgba(255, 255, 255, 0.07);
+  --band: rgba(33, 29, 69, 0.45);
+    --aurora-1: rgba(124, 108, 255, 0.30);
+    --aurora-2: rgba(56, 189, 248, 0.16);
+    --aurora-3: rgba(236, 72, 153, 0.12);
+    --grid-dot: rgba(255, 255, 255, 0.07);
+    --band: rgba(33, 29, 69, 0.45);
     --ok: #34d399;
     --ok-soft: #0f2d24;
     --warn: #fbbf24;
@@ -320,6 +335,9 @@ details[open] summary { margin-bottom: 10px; }
 .pw-toggle:hover { color: var(--text); }
 /* ---------- Public site ---------- */
 .site-header { border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 20; }
+@supports (backdrop-filter: blur(1px)) {
+  .site-header { background: color-mix(in srgb, var(--surface) 72%, transparent); backdrop-filter: saturate(170%) blur(14px); -webkit-backdrop-filter: saturate(170%) blur(14px); }
+}
 .site-links { display: flex; gap: 22px; font-weight: 560; }
 .site-links a { color: var(--muted); }
 .site-links a:hover { color: var(--text); text-decoration: none; }
@@ -608,7 +626,7 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .cta-banner p { color: rgba(255, 255, 255, .88); margin: 0 auto 24px; max-width: 520px; font-size: 17px; }
 .btn.btn-white { background: #fff; color: #3b2fc9; }
 .btn.btn-outline-white { background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, .7); }
-.lp-hero-split { overflow-x: clip; }
+/* Sideways overflow is clipped by .lp-page, so the mockup's shadow can fade out naturally. */
 .mock-feed li.bad .mock-src { background: var(--surface); }
 .integration-mark { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
 .step-art { height: 140px; }
@@ -727,3 +745,50 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .ref-link code { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; font-size: 15px; background: none; }
 .ref-shares { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ref-steps { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; }
+
+
+/* ── Public pages: soft animated colour glow, fading dot grid and tinted section bands ── */
+.lp-page { position: relative; isolation: isolate; overflow-x: clip; min-height: 100vh; }
+.lp-page::before, .lp-page::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1200px; z-index: -1; pointer-events: none; }
+/* The glow layer is wider and taller than the page and fades out at the bottom, so its drift never shows an edge. */
+.lp-page::before { left: -12%; right: -12%; top: -80px; height: 1500px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%); }
+.lp-page::before {
+  background:
+    radial-gradient(560px 420px at 18% 12%, var(--aurora-1), transparent 70%),
+    radial-gradient(640px 460px at 84% 8%, var(--aurora-2), transparent 70%),
+    radial-gradient(760px 520px at 58% 48%, var(--aurora-3), transparent 72%);
+  animation: lp-aurora 22s ease-in-out infinite alternate;
+}
+.lp-page::after {
+  background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.3px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+}
+@keyframes lp-aurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-2%, 2%, 0) scale(1.05); }
+  100% { transform: translate3d(2%, -1%, 0) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { .lp-page::before { animation: none; } }
+
+/* Full-width tinted band behind a centred section, with a faint glow in the middle */
+.lp-band { position: relative; }
+.lp-band::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(700px 300px at 50% 35%, var(--aurora-1), transparent 75%),
+    var(--band);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  opacity: 0.9;
+}
+.lp-band-alt::before {
+  background:
+    radial-gradient(600px 280px at 15% 70%, var(--aurora-2), transparent 75%),
+    radial-gradient(600px 280px at 85% 30%, var(--aurora-3), transparent 75%),
+    var(--band);
+}
+/* Cards on tinted areas read as frosted glass */
+.lp-page .lp-band .card { background: color-mix(in srgb, var(--surface) 88%, transparent); }

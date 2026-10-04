@@ -100,7 +100,7 @@ export function SiteFooter() {
 /** Layout for simple public pages (legal, contact). */
 export async function PublicPage({ title, updated, children }: { title: string; updated?: string; children: React.ReactNode }) {
   return (
-    <>
+    <div className="lp-page">
       <SiteHeader />
       <main className="legal">
         <h1>{title}</h1>
@@ -108,6 +108,6 @@ export async function PublicPage({ title, updated, children }: { title: string; 
         {children}
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

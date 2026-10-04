@@ -150,7 +150,7 @@ function SocialProof() {
 
 export default function Landing() {
   return (
-    <div>
+    <div className="lp-page">
       <SiteHeader />
 
       <main>
@@ -177,7 +177,7 @@ export default function Landing() {
         <IntegrationStrip />
       </section>
 
-      <section className="lp-section" id="how-it-catches" aria-labelledby="catch-title">
+      <section className="lp-section lp-band" id="how-it-catches" aria-labelledby="catch-title">
         <h2 id="catch-title">See a wrong answer caught in seconds</h2>
         <p className="lp-lead">Your bot sounds confident even when it&apos;s wrong. ProofMyAI checks every answer against your own help docs and tells you what to fix.</p>
         <CatchDemo />
@@ -210,7 +210,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="lp-section" id="features">
+      <section className="lp-section lp-band lp-band-alt" id="features">
         <h2>Everything your AI does, checked in one place</h2>
         <p className="lp-lead">Customers are losing trust in support bots, and most bot platforms have no built-in quality control. ProofMyAI is the independent auditor that works with all of them.</p>
         <div className="grid grid-3">
@@ -244,7 +244,7 @@ export default function Landing() {
 
       <SocialProof />
 
-      <section className="lp-section" id="pricing">
+      <section className="lp-section lp-band" id="pricing">
         <h2>Simple pricing</h2>
         <p className="lp-lead"><strong>Free forever for 50 conversations a month</strong>. Every paid plan includes a 14-day free trial and a 14-day money-back guarantee.</p>
         {yearlyAvailable() ? (
