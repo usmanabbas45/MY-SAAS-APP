@@ -14,6 +14,10 @@
   --aurora-3: rgba(236, 72, 153, 0.13);
   --grid-dot: rgba(91, 75, 245, 0.14);
   --band: rgba(238, 235, 255, 0.65);
+  --grid-line: rgba(91, 75, 245, 0.07);
+  --card-border: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(226, 232, 240, 0.9) 38%, rgba(226, 232, 240, 0.9) 62%, rgba(34, 211, 238, 0.4));
+  --hover-glow: 0 22px 44px -22px rgba(91, 75, 245, 0.45);
+  --heading-grad: linear-gradient(120deg, #0f1729 30%, #5b4bf5 75%, #a855f7);
   --ok: #10a36e;
   --ok-soft: #e3f7ee;
   --warn: #d98a06;
@@ -40,16 +44,24 @@
     --brand: #7c6cff;
     --brand-2: #a78bfa;
     --brand-soft: #211d45;
-  --aurora-1: rgba(124, 108, 255, 0.30);
-  --aurora-2: rgba(56, 189, 248, 0.16);
-  --aurora-3: rgba(236, 72, 153, 0.12);
+  --aurora-1: rgba(124, 108, 255, 0.38);
+  --aurora-2: rgba(34, 211, 238, 0.20);
+  --aurora-3: rgba(236, 72, 153, 0.16);
   --grid-dot: rgba(255, 255, 255, 0.07);
-  --band: rgba(33, 29, 69, 0.45);
-    --aurora-1: rgba(124, 108, 255, 0.30);
-    --aurora-2: rgba(56, 189, 248, 0.16);
-    --aurora-3: rgba(236, 72, 153, 0.12);
+  --band: rgba(91, 75, 245, 0.07);
+  --grid-line: rgba(167, 139, 250, 0.07);
+  --card-border: linear-gradient(135deg, rgba(167, 139, 250, 0.55), rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.06) 62%, rgba(34, 211, 238, 0.45));
+  --hover-glow: 0 22px 50px -20px rgba(124, 108, 255, 0.55);
+  --heading-grad: linear-gradient(120deg, #ffffff 30%, #c4b5fd 70%, #67e8f9);
+    --aurora-1: rgba(124, 108, 255, 0.38);
+    --aurora-2: rgba(34, 211, 238, 0.20);
+    --aurora-3: rgba(236, 72, 153, 0.16);
     --grid-dot: rgba(255, 255, 255, 0.07);
-    --band: rgba(33, 29, 69, 0.45);
+    --band: rgba(91, 75, 245, 0.07);
+    --grid-line: rgba(167, 139, 250, 0.07);
+    --card-border: linear-gradient(135deg, rgba(167, 139, 250, 0.55), rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.06) 62%, rgba(34, 211, 238, 0.45));
+    --hover-glow: 0 22px 50px -20px rgba(124, 108, 255, 0.55);
+    --heading-grad: linear-gradient(120deg, #ffffff 30%, #c4b5fd 70%, #67e8f9);
     --ok: #34d399;
     --ok-soft: #0f2d24;
     --warn: #fbbf24;
@@ -792,3 +804,76 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 }
 /* Cards on tinted areas read as frosted glass */
 .lp-page .lp-band .card { background: color-mix(in srgb, var(--surface) 88%, transparent); }
+
+
+/* ── Modern look v2: grid-lit bands, gradient-border cards, glowing featured plan, radar art ── */
+/* Bands: tint + top spotlight (fades in/out vertically) and a fine grid that fades on every side. */
+.lp-band::before {
+  background: radial-gradient(900px 340px at 50% 22%, var(--aurora-1), transparent 72%), var(--band);
+}
+.lp-band::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); z-index: -1; pointer-events: none;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px; background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 45%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 45%, #000 35%, transparent 100%);
+}
+.lp-band-alt::before {
+  background:
+    radial-gradient(620px 300px at 12% 70%, var(--aurora-2), transparent 75%),
+    radial-gradient(620px 300px at 88% 30%, var(--aurora-3), transparent 75%),
+    var(--band);
+}
+
+/* Gradient section headings */
+.lp-page .lp-section > h2, .lp-page .lp-section h2#catch-title {
+  background: var(--heading-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-size: clamp(28px, 3.4vw, 40px); letter-spacing: -0.03em; line-height: 1.15;
+}
+.lp-page .cta-banner h2 { background: none; color: #fff; -webkit-background-clip: border-box; background-clip: border-box; }
+
+/* Cards: hairline gradient border, lift + glow on hover */
+.lp-page .card:not(.founding) {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--card-border) border-box;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.lp-page .card:not(.founding):hover { transform: translateY(-4px); box-shadow: var(--hover-glow); }
+.lp-page .feature-card .feature-icon {
+  background: linear-gradient(135deg, #7c6cff, #22d3ee); color: #fff; box-shadow: 0 10px 24px -10px rgba(124, 108, 255, .7);
+}
+
+/* Pricing */
+.lp-page .plan { border-radius: 20px; padding: 26px 22px; }
+.lp-page .plan .price { font-size: 44px; }
+.lp-page .plan.featured {
+  border: 2px solid transparent; position: relative; transform: translateY(-8px);
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(from var(--spin, 0deg), #7c6cff, #22d3ee, #f472b6, #a78bfa, #7c6cff) border-box;
+  box-shadow: 0 30px 70px -28px rgba(124, 108, 255, .75), 0 0 0 1px rgba(124, 108, 255, .15);
+  animation: plan-spin 6s linear infinite;
+}
+.lp-page .plan.featured:hover { transform: translateY(-12px); }
+.lp-page .plan.featured .price { background: linear-gradient(120deg, #7c6cff, #c084fc 55%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-page .plan.featured .price small { -webkit-text-fill-color: var(--muted); }
+.lp-page .plan.featured .badge-brand { background: linear-gradient(120deg, #7c6cff, #c084fc); color: #fff; }
+.lp-page .plan.featured .btn:not(.btn-ghost) { background: linear-gradient(120deg, #6d5bff, #a855f7); box-shadow: 0 12px 28px -12px rgba(124, 92, 255, .9); border: 0; }
+@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes plan-spin { to { --spin: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .lp-page .plan.featured { animation: none; } }
+@media (max-width: 900px) { .lp-page .plan.featured, .lp-page .plan.featured:hover { transform: none; } }
+
+/* Monthly / yearly switch: glassy pill */
+.lp-page .period-toggle { background: color-mix(in srgb, var(--surface) 70%, transparent); backdrop-filter: blur(10px); box-shadow: 0 8px 30px -14px rgba(91, 75, 245, .5); }
+.lp-page .period-toggle input:checked + label { background: linear-gradient(120deg, #6d5bff, #a855f7); }
+
+/* Hero: radar illustration behind the dashboard mockup, glowing waves under the integrations */
+.lp-page .mock::before {
+  inset: -12% -4%; background: url("/bg/radar.svg") center / contain no-repeat; opacity: .8;
+}
+.lp-page .lp-works { background: url("/bg/wave.svg") center bottom / 100% 150px no-repeat; padding-bottom: 64px; }
+.lp-page .lp-hero h1 span, .lp-page .lp-hero .grad { filter: drop-shadow(0 6px 24px rgba(124, 92, 255, .25)); }
+
+/* Primary buttons: gradient with soft glow */
+.lp-page .btn:not(.btn-ghost):not(.btn-outline-white):not(.btn-white) { background: linear-gradient(120deg, #6d5bff, #8b5cf6 60%, #a855f7); border-color: transparent; box-shadow: 0 10px 24px -12px rgba(109, 91, 255, .85); }
+.lp-page .btn:not(.btn-ghost):not(.btn-outline-white):not(.btn-white):hover { filter: brightness(1.08); }
