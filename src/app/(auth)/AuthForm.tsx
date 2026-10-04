@@ -38,6 +38,7 @@ export function PasswordInput({ id = "password", name = "password", autoComplete
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <main className="auth-wrap">
+      <div className="auth-glow" aria-hidden />
       <div className="card auth-card">
         <Link href="/" className="logo" aria-label="ProofMyAI home"><span className="logo-mark" aria-hidden>✓</span>ProofMyAI</Link>
         <h1 style={{ fontSize: 22 }}>{title}</h1>
@@ -107,7 +108,7 @@ export function AuthForm({ mode, action, notice, founding, captcha, twoFactorAct
           <p style={{ marginTop: -6, marginBottom: 14, textAlign: "right" }}><Link href="/forgot-password">Forgot password?</Link></p>
         ) : null}
         <Captcha key={JSON.stringify(state.captcha ?? captcha)} config={state.captcha ?? captcha} />
-        <SubmitButton className="btn btn-lg" pendingText={signup ? "Creating account…" : "Logging in…"}>
+        <SubmitButton className="btn btn-lg btn-shimmer" pendingText={signup ? "Creating account…" : "Logging in…"}>
           {signup ? "Create account" : "Log in"}
         </SubmitButton>
         {signup ? (

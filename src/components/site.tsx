@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CookieSettingsLink } from "@/components/analytics";
 import { ThemeToggle } from "@/components/client";
+import { PointerGlow, ScrollPerf } from "@/components/landing";
 import { currentUser } from "@/lib/auth";
 import { SOLUTIONS, SUPPORT_EMAIL } from "@/lib/seo";
 import { DEVELOPER_NAME, DEVELOPER_URL, whatsappLink } from "@/lib/support";
@@ -8,6 +9,10 @@ import { DEVELOPER_NAME, DEVELOPER_URL, whatsappLink } from "@/lib/support";
 export async function SiteHeader() {
   const user = await currentUser();
   return (
+    <>
+    <div className="scroll-progress" aria-hidden />
+    <PointerGlow />
+    <ScrollPerf />
     <header className="site-header">
       <nav className="lp-nav" aria-label="Main">
         <Link href="/" className="logo" aria-label="ProofMyAI home"><span className="logo-mark" aria-hidden>✓</span>ProofMyAI</Link>
@@ -32,6 +37,7 @@ export async function SiteHeader() {
         </div>
       </nav>
     </header>
+    </>
   );
 }
 
