@@ -30,6 +30,12 @@ export interface Solution {
   steps: { title: string; text: string }[];
   features: string[];
   faqs: { q: string; a: string }[];
+  /** "What is …?" answer: the first sentence is a stand-alone definition that search and AI engines can quote. */
+  definition?: string;
+  metrics?: { name: string; text: string }[];
+  objectives?: { name: string; text: string }[];
+  /** Neutral overview of other tools in the category, so the page answers "which tool should I use?". */
+  tools?: { name: string; text: string }[];
 }
 
 export const SOLUTIONS: Solution[] = [
@@ -51,7 +57,32 @@ export const SOLUTIONS: Solution[] = [
       { title: "Fix what matters", text: "A fix list groups wrong answers by the help article that caused them, and alerts reach Slack or email." },
     ],
     features: ["Hallucination detection against your own docs", "Missed-escalation and frustration detection", "Your own rules: “never say…”, “always hand over when…”", "Nightly regression tests for your bot", "Live tracking and instant alerts", "Client-ready reports and CSV export"],
+    definition: "AI chatbot monitoring is the practice of tracking and checking every answer an AI chatbot gives customers, in real time, for accuracy, safety, cost and customer outcome. It shows when the bot makes things up, breaks your policies, fails to hand over to a human or leaks personal data, so you can fix the cause before customers are affected.",
+    metrics: [
+      { name: "Hallucination rate", text: "How often the bot gives answers that are made up or not supported by your help docs." },
+      { name: "Resolution rate", text: "The share of conversations where the customer's question was actually answered." },
+      { name: "Escalation rate", text: "How often the bot hands a conversation to a human, and how often it should have but didn't." },
+      { name: "Accuracy per topic", text: "Correct answers per topic (shipping, refunds, pricing…), which shows which help article to fix first." },
+      { name: "Response latency", text: "The delay between a customer's message and the bot's reply, including replies that never came." },
+      { name: "Cost per conversation", text: "Model and API cost for each conversation, so spend spikes are caught early." },
+      { name: "Customer satisfaction", text: "Thumbs up/down or star ratings, overall and per topic." },
+      { name: "Knowledge gaps", text: "Questions your help docs don't answer yet." },
+    ],
+    objectives: [
+      { name: "Quality assurance", text: "Check every answer for accuracy against your own docs, tone and helpfulness." },
+      { name: "Security & compliance", text: "Catch leaked personal or card data, prompt injection, jailbreak attempts and policy breaches." },
+      { name: "Continuous improvement", text: "Find knowledge gaps and the articles or prompts causing wrong answers, then fix them." },
+    ],
+    tools: [
+      { name: "ProofMyAI", text: "No-code monitoring for support chatbots, AI agents and n8n/Make workflows. Checks every answer against your help docs and writes the fix. Built for businesses and agencies." },
+      { name: "Langfuse", text: "Open-source LLM engineering platform for developers: tracing, prompt management, evaluations and cost tracking. Needs code integration." },
+      { name: "LangSmith", text: "Debugging, testing and monitoring suite from the LangChain team, aimed at developers building LLM apps and agents." },
+      { name: "MaestroQA", text: "Customer support QA platform covering human agents and chatbots, focused on conversation scoring, compliance and tone." },
+    ],
     faqs: [
+      { q: "What is AI chatbot monitoring?", a: "AI chatbot monitoring is the practice of tracking and checking every answer an AI chatbot gives customers, in real time, for accuracy, safety, cost and customer outcome. It catches made-up answers, policy breaches, missed hand-overs and data leaks so you can fix them before customers are affected." },
+      { q: "Which metrics should I monitor for an AI chatbot?", a: "The key chatbot metrics are hallucination rate, resolution rate, escalation rate, accuracy per topic, response latency, cost per conversation, customer satisfaction and knowledge gaps. ProofMyAI tracks all of them on its Analytics page." },
+      { q: "What is the best AI chatbot monitoring tool?", a: "It depends on who runs the bot. Developers building LLM apps often use Langfuse or LangSmith for tracing. Support QA teams use MaestroQA. Businesses and agencies that want every customer answer checked against their help docs, without code, use ProofMyAI." },
       { q: "How do I check if my chatbot is giving wrong answers?", a: "Upload a transcript export to ProofMyAI together with your help articles. Every answer is graded against your docs within minutes, and wrong or made-up answers are listed with the reason and the article to update." },
       { q: "Does it work with Intercom Fin, Tidio Lyro and Chatbase?", a: "Yes. Any chatbot works: export conversations as CSV or JSON, or send them live through the API or an n8n/Make webhook." },
     ],
