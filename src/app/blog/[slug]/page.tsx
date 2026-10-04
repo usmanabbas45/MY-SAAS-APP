@@ -52,7 +52,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     ],
   };
   return (
-    <>
+    <div className="lp-page">
       <SiteHeader />
       <main className="legal blog">
         <nav className="faint" aria-label="Breadcrumb"><Link href="/">Home</Link> › <Link href="/blog">Guides</Link></nav>
@@ -83,6 +83,6 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       </main>
       <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(data)} />
-    </>
+    </div>
   );
 }

@@ -40,7 +40,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
     ],
   };
   return (
-    <>
+    <div className="lp-page">
       <SiteHeader />
       <main>
         <section className="lp-hero">
@@ -106,6 +106,6 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
       </main>
       <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(data)} />
-    </>
+    </div>
   );
 }
