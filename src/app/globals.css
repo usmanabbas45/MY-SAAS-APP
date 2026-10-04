@@ -18,6 +18,10 @@
   --card-border: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(226, 232, 240, 0.9) 38%, rgba(226, 232, 240, 0.9) 62%, rgba(34, 211, 238, 0.4));
   --hover-glow: 0 22px 44px -22px rgba(91, 75, 245, 0.45);
   --heading-grad: linear-gradient(120deg, #0f1729 30%, #5b4bf5 75%, #a855f7);
+  --page-base: linear-gradient(180deg, #f5f3ff 0%, #eef4ff 26%, #fbf5ff 52%, #eefaff 78%, #f7f7fc 100%);
+  --orb-a: rgba(124, 92, 255, 0.16);
+  --orb-b: rgba(34, 211, 238, 0.14);
+  --orb-c: rgba(236, 72, 153, 0.10);
   --ok: #10a36e;
   --ok-soft: #e3f7ee;
   --warn: #d98a06;
@@ -44,15 +48,6 @@
     --brand: #7c6cff;
     --brand-2: #a78bfa;
     --brand-soft: #211d45;
-  --aurora-1: rgba(124, 108, 255, 0.38);
-  --aurora-2: rgba(34, 211, 238, 0.20);
-  --aurora-3: rgba(236, 72, 153, 0.16);
-  --grid-dot: rgba(255, 255, 255, 0.07);
-  --band: rgba(91, 75, 245, 0.07);
-  --grid-line: rgba(167, 139, 250, 0.07);
-  --card-border: linear-gradient(135deg, rgba(167, 139, 250, 0.55), rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.06) 62%, rgba(34, 211, 238, 0.45));
-  --hover-glow: 0 22px 50px -20px rgba(124, 108, 255, 0.55);
-  --heading-grad: linear-gradient(120deg, #ffffff 30%, #c4b5fd 70%, #67e8f9);
     --aurora-1: rgba(124, 108, 255, 0.38);
     --aurora-2: rgba(34, 211, 238, 0.20);
     --aurora-3: rgba(236, 72, 153, 0.16);
@@ -62,6 +57,10 @@
     --card-border: linear-gradient(135deg, rgba(167, 139, 250, 0.55), rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.06) 62%, rgba(34, 211, 238, 0.45));
     --hover-glow: 0 22px 50px -20px rgba(124, 108, 255, 0.55);
     --heading-grad: linear-gradient(120deg, #ffffff 30%, #c4b5fd 70%, #67e8f9);
+    --page-base: linear-gradient(180deg, #0a0a1f 0%, #0d1030 28%, #120d2b 55%, #0b1226 80%, #0a0b18 100%);
+    --orb-a: rgba(124, 92, 255, 0.30);
+    --orb-b: rgba(34, 211, 238, 0.16);
+    --orb-c: rgba(236, 72, 153, 0.16);
     --ok: #34d399;
     --ok-soft: #0f2d24;
     --warn: #fbbf24;
@@ -77,6 +76,19 @@
 
 :root[data-theme="dark"] {
   --bg: #0b0e17;
+  --aurora-1: rgba(124, 108, 255, 0.38);
+  --aurora-2: rgba(34, 211, 238, 0.20);
+  --aurora-3: rgba(236, 72, 153, 0.16);
+  --grid-dot: rgba(255, 255, 255, 0.07);
+  --band: rgba(91, 75, 245, 0.07);
+  --grid-line: rgba(167, 139, 250, 0.07);
+  --card-border: linear-gradient(135deg, rgba(167, 139, 250, 0.55), rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.06) 62%, rgba(34, 211, 238, 0.45));
+  --hover-glow: 0 22px 50px -20px rgba(124, 108, 255, 0.55);
+  --heading-grad: linear-gradient(120deg, #ffffff 30%, #c4b5fd 70%, #67e8f9);
+  --page-base: linear-gradient(180deg, #0a0a1f 0%, #0d1030 28%, #120d2b 55%, #0b1226 80%, #0a0b18 100%);
+  --orb-a: rgba(124, 92, 255, 0.30);
+  --orb-b: rgba(34, 211, 238, 0.16);
+  --orb-c: rgba(236, 72, 153, 0.16);
   --surface: #121624;
   --surface-2: #181d2e;
   --border: #252b40;
@@ -877,3 +889,16 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 /* Primary buttons: gradient with soft glow */
 .lp-page .btn:not(.btn-ghost):not(.btn-outline-white):not(.btn-white) { background: linear-gradient(120deg, #6d5bff, #8b5cf6 60%, #a855f7); border-color: transparent; box-shadow: 0 10px 24px -12px rgba(109, 91, 255, .85); }
 .lp-page .btn:not(.btn-ghost):not(.btn-outline-white):not(.btn-white):hover { filter: brightness(1.08); }
+
+
+/* ── Full-page background: rich gradient base with colour orbs spread down the whole page ── */
+.lp-page {
+  background:
+    radial-gradient(48vw 40vw at 105% 18%, var(--orb-b), transparent 70%),
+    radial-gradient(52vw 44vw at -8% 36%, var(--orb-a), transparent 70%),
+    radial-gradient(46vw 40vw at 104% 58%, var(--orb-c), transparent 70%),
+    radial-gradient(50vw 42vw at -6% 78%, var(--orb-b), transparent 70%),
+    radial-gradient(54vw 40vw at 100% 96%, var(--orb-a), transparent 70%),
+    var(--page-base);
+}
+.lp-page .site-footer, .lp-page footer { background: transparent; }
