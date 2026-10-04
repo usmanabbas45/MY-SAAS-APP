@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { YouTube } from "@/components/video";
+import { Meteors } from "@/components/illustrations";
 import { jsonLd, SITE_URL, SOLUTIONS, VIDEOS, videoJsonLd } from "@/lib/seo";
 
 export function generateStaticParams() {
@@ -45,25 +46,26 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
     <div className="lp-page">
       <SiteHeader />
       <main>
-        <section className="lp-hero">
-          <span className="badge badge-brand">{s.kicker}</span>
-          <h1 style={{ marginTop: 16 }}>{s.title}</h1>
+        <section className="lp-hero lp-hero-fx">
+          <div className="hero-spotlight" aria-hidden />
+          <span className="shiny-pill"><span className="shiny-pill-new">Solution</span><span className="shiny-text">{s.kicker}</span></span>
+          <h1 style={{ marginTop: 18 }}><span className="gradient-anim">{s.title}</span></h1>
           <p>{s.intro}</p>
           <div className="row" style={{ justifyContent: "center" }}>
-            <Link href="/signup" className="btn btn-lg">Start free →</Link>
+            <Link href="/signup" className="btn btn-lg btn-shimmer">Start free →</Link>
             <Link href="/#pricing" className="btn btn-ghost btn-lg">See pricing</Link>
           </div>
         </section>
 
         {s.definition ? (
-          <section className="lp-section" id="what-is">
+          <section className="lp-section reveal" id="what-is">
             <h2>What is {s.kicker}?</h2>
             <p className="lp-lead definition">{s.definition}</p>
           </section>
         ) : null}
 
         {s.metrics ? (
-          <section className="lp-section" id="metrics">
+          <section className="lp-section reveal" id="metrics">
             <h2>Key metrics to monitor</h2>
             <ol className="metric-list">
               {s.metrics.map((m) => <li key={m.name} className="card"><strong>{m.name}:</strong> {m.text}</li>)}
@@ -72,7 +74,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
         ) : null}
 
         {s.objectives ? (
-          <section className="lp-section" id="objectives">
+          <section className="lp-section reveal" id="objectives">
             <h2>Main objectives</h2>
             <div className="grid grid-3" style={{ marginTop: 20 }}>
               {s.objectives.map((o) => <div key={o.name} className="card"><h3>{o.name}</h3><p className="sub" style={{ margin: 0 }}>{o.text}</p></div>)}
@@ -80,14 +82,14 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
           </section>
         ) : null}
 
-        <section className="lp-section">
+        <section className="lp-section reveal">
           <h2>The problem</h2>
           <div className="grid grid-2" style={{ marginTop: 20 }}>
-            {s.problems.map((p) => <div key={p} className="card"><p style={{ margin: 0 }}>⚠️ {p}</p></div>)}
+            {s.problems.map((p) => <div key={p} className="card problem-card"><p style={{ margin: 0 }}>⚠️ {p}</p></div>)}
           </div>
         </section>
 
-        <section className="lp-section">
+        <section className="lp-section reveal">
           <h2>How ProofMyAI solves it</h2>
           <div className="grid grid-3" style={{ marginTop: 20 }}>
             {s.steps.map((st, i) => (
@@ -100,7 +102,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
           </div>
         </section>
 
-        <section className="lp-section">
+        <section className="lp-section reveal">
           <h2>Watch how to set it up</h2>
           <p className="lp-lead">{start ? `The video starts at the ${s.kicker} part of the full 3-minute tutorial.` : "The full setup in 3 minutes, click by click."}</p>
           <div className="video-wrap">
@@ -108,7 +110,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
           </div>
         </section>
 
-        <section className="lp-section">
+        <section className="lp-section reveal">
           <h2>What you get</h2>
           <ul className="grid grid-2" style={{ listStyle: "none", padding: 0, marginTop: 20 }}>
             {s.features.map((f) => <li key={f} className="card">✅ {f}</li>)}
@@ -116,7 +118,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
         </section>
 
         {s.tools ? (
-          <section className="lp-section" id="tools">
+          <section className="lp-section reveal" id="tools">
             <h2>Popular {s.kicker} tools</h2>
             <p className="lp-lead">Which one fits depends on who runs your bot and whether you want to write code.</p>
             <ul className="tool-list">
@@ -125,7 +127,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
           </section>
         ) : null}
 
-        <section className="lp-section faq">
+        <section className="lp-section faq reveal">
           <h2>Questions</h2>
           <div style={{ maxWidth: 820, margin: "20px auto 0" }}>
             {s.faqs.map((f) => <details key={f.q}><summary>{f.q}</summary><p className="sub" style={{ margin: 0 }}>{f.a}</p></details>)}
@@ -133,9 +135,12 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
         </section>
 
         <section className="lp-section" style={{ textAlign: "center" }}>
-          <h2>Try it free today</h2>
-          <p className="lp-lead">Set up in minutes. Free plan available.</p>
-          <Link href="/signup" className="btn btn-lg">Get your free AI audit →</Link>
+          <div className="cta-banner">
+            <Meteors />
+            <h2>Try it free today</h2>
+            <p>Set up in minutes. Free plan available.</p>
+            <Link href="/signup" className="btn btn-lg btn-white btn-glow">Get your free AI audit →</Link>
+          </div>
           <p className="sub" style={{ marginTop: 18 }}>
             Also see: {SOLUTIONS.filter((x) => x.slug !== s.slug).map((x, i) => <span key={x.slug}>{i ? " · " : ""}<Link href={`/solutions/${x.slug}`}>{x.kicker}</Link></span>)}
           </p>

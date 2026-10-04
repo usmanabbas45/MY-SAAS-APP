@@ -1157,3 +1157,64 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
   .meteors { display: none; }
   .beam-flow { stroke-dasharray: none; opacity: .5; }
 }
+
+/* ── Effects on solution, pricing and sign-up pages ── */
+.lp-hero-fx { position: relative; }
+.lp-hero-fx .hero-spotlight { left: -20%; width: 80%; }
+.lp-page .card:not(.founding)::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(124, 108, 255, .14), transparent 70%); }
+.lp-page .card:not(.founding):hover::after { opacity: 1; }
+.lp-page .card { position: relative; }
+.problem-card { border-left: 3px solid var(--bad) !important; }
+
+/* Sign-up / log-in: drifting colour glow, border beam around the card, shimmer button */
+.auth-wrap { position: relative; overflow: hidden; isolation: isolate; }
+.auth-glow { position: absolute; inset: -20%; z-index: -1; pointer-events: none;
+  background: radial-gradient(420px 320px at 30% 30%, var(--aurora-1), transparent 70%), radial-gradient(460px 340px at 72% 68%, var(--aurora-2), transparent 70%), radial-gradient(380px 300px at 70% 20%, var(--aurora-3), transparent 70%);
+  animation: lp-aurora 18s ease-in-out infinite alternate; will-change: transform; }
+.auth-card { position: relative; isolation: isolate; box-shadow: 0 30px 80px -30px rgba(60, 40, 180, .45); }
+.auth-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--spin, 0deg), transparent 0 70%, #22d3ee 80%, #a855f7 90%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: plan-spin 6s linear infinite; }
+.auth-card .btn-shimmer { width: 100%; }
+
+/* ── Smooth, fast scrolling ── */
+html { scroll-padding-top: 84px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* Reveal uses only opacity + transform so the browser can animate it on the GPU while scrolling (no blur repaints) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes reveal-up { from { opacity: 0; transform: translate3d(0, 28px, 0); } to { opacity: 1; transform: none; } }
+  }
+}
+.lp-page::before, .stats-track, .marquee-track, .meteors span, .btn-shimmer::after { will-change: transform; }
+/* Side-scrolling strips: quicker and GPU-smooth */
+.marquee-track { animation-duration: 26s; }
+.marquee-row.reverse .marquee-track { animation-duration: 30s; }
+.stats-track { animation-duration: 28s; }
+@keyframes marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-100%, 0, 0); } }
+/* Swipeable tab rows snap to each tab */
+.tour-tabs, .start-tabs .seg { scroll-snap-type: x proximity; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.tour-tab, .start-tabs .seg button { scroll-snap-align: center; }
+/* Frosted header is expensive to repaint while scrolling on phones: use a solid one there */
+@media (max-width: 700px) {
+  .site-header { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: var(--surface) !important; }
+}
+@media (prefers-reduced-motion: reduce) { .auth-glow, .auth-card::after { animation: none; } }
+.tour-tabs { position: relative; }
+
+/* Pause paint-heavy decorations while the page scrolls (class set by <ScrollPerf />) */
+html.is-scrolling .shiny-pill, html.is-scrolling .shiny-text, html.is-scrolling .gradient-anim, html.is-scrolling .word-rotate > span,
+html.is-scrolling .lp-page .plan.featured, html.is-scrolling .lp-page .mock-window::after, html.is-scrolling .btn-glow::before,
+html.is-scrolling .beam-flow, html.is-scrolling .beam-hub-mark, html.is-scrolling .auth-card::after,
+html.is-scrolling .live-dot, html.is-scrolling .mock-toast, html.is-scrolling .mock-chip, html.is-scrolling .meteors span,
+html.is-scrolling .btn-shimmer::after { animation-play-state: paused !important; }
+/* Cheaper versions: no filter around the moving gradient headline, no glow filter on beams, pulse via a GPU ring */
+.lp-page .lp-hero h1 span, .lp-page .lp-hero .grad { filter: none; }
+.beam-flow { filter: none; stroke-width: 3.5; }
+.beam-hub-mark { animation: none; position: relative; }
+.beam-hub-mark::after { content: ""; position: absolute; inset: -14px; border-radius: 32px; border: 2px solid rgba(124, 108, 255, .35); animation: hub-ring 2.6s ease-out infinite; will-change: transform, opacity; }
+@keyframes hub-ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
+html.is-scrolling .beam-hub-mark::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .beam-hub-mark::after { animation: none; display: none; } }

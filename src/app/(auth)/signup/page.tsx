@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { get } from "@/lib/db";
 import { COOKIE as REF_COOKIE, isRefCode } from "@/lib/referrals";
 
-export const metadata = { title: "Sign up" };
+export const metadata = { title: "Sign up", alternates: { canonical: "/signup" } };
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ founding?: string; next?: string; email?: string }> }) {
   const { founding, next: rawNext, email } = await searchParams;

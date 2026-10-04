@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { BeamDiagram, CatchDemo, HeroMockup, IntegrationMarquee, Meteors, StepArt } from "@/components/illustrations";
-import { CopyBox, NumberTicker, PointerGlow, ProductTour, ScrollVideo, ShortcutLink, StartTabs, WordRotate, type TourTab } from "@/components/landing";
+import { CopyBox, NumberTicker, ProductTour, ScrollVideo, ShortcutLink, StartTabs, WordRotate, type TourTab } from "@/components/landing";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { LEGAL_NAME } from "@/lib/legal";
@@ -144,7 +144,7 @@ const PLANS: { id: PlanId; name: string; price: number; featured: boolean; items
  * 14-day trial checkout for the chosen billing period; Compliance is sold by talking to us.
  */
 function PlanButton({ p, yearly }: { p: (typeof PLANS)[number]; yearly: boolean }) {
-  const cls = `btn ${p.featured ? "" : "btn-ghost"}`;
+  const cls = `btn ${p.featured ? "btn-shimmer" : "btn-ghost"}`;
   if (p.id === "compliance") return <Link href="/contact" className={cls} style={{ width: "100%" }}>Talk to us</Link>;
   if (p.id === "starter") {
     return (
@@ -256,8 +256,6 @@ function SocialProof() {
 export default function Landing() {
   return (
     <div className="lp-page">
-      <div className="scroll-progress" aria-hidden />
-      <PointerGlow />
       <SiteHeader />
 
       <main>

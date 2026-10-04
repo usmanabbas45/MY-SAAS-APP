@@ -84,6 +84,14 @@ export function ProductTour({ tabs, video, poster }: { tabs: TourTab[]; video: s
     return () => clearTimeout(t);
   }, [running, active, tabs.length]);
 
+  // Keep the active tab visible in the swipeable row on phones (scrolls the row only, never the page).
+  useEffect(() => {
+    const btn = tabRefs.current[active];
+    const row = btn?.parentElement;
+    if (!btn || !row || row.scrollWidth <= row.clientWidth) return;
+    row.scrollTo({ left: btn.offsetLeft - row.clientWidth / 2 + btn.clientWidth / 2, behavior: reduce ? "auto" : "smooth" });
+  }, [active, reduce]);
+
   const choose = useCallback((i: number) => {
     setStopped(true);
     setDemo(false);
@@ -329,7 +337,7 @@ export function PointerGlow() {
     const onMove = (e: PointerEvent) => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const el = (e.target as Element | null)?.closest?.(".spot") as HTMLElement | null;
+        const el = (e.target as Element | null)?.closest?.(".spot, .lp-page .card") as HTMLElement | null;
         if (!el) return;
         const r = el.getBoundingClientRect();
         el.style.setProperty("--mx", `${e.clientX - r.left}px`);
@@ -338,6 +346,25 @@ export function PointerGlow() {
     };
     document.addEventListener("pointermove", onMove, { passive: true });
     return () => { document.removeEventListener("pointermove", onMove); cancelAnimationFrame(raf); };
+  }, []);
+  return null;
+}
+
+/**
+ * Keeps scrolling fast: while the page is moving, `html.is-scrolling` pauses decorative animations
+ * that repaint every frame (spinning borders, shiny text, beams). They resume 150 ms after scrolling stops.
+ */
+export function ScrollPerf() {
+  useEffect(() => {
+    const root = document.documentElement;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      if (!t) root.classList.add("is-scrolling");
+      clearTimeout(t);
+      t = setTimeout(() => { root.classList.remove("is-scrolling"); t = undefined; }, 150);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); clearTimeout(t); root.classList.remove("is-scrolling"); };
   }, []);
   return null;
 }
