@@ -166,3 +166,78 @@ export function IntegrationMarquee() {
     </div>
   );
 }
+
+const BEAM_IN: { name: string; icon: string; color: string }[] = [
+  { name: "Intercom", icon: "I", color: "#1f8ded" },
+  { name: "WhatsApp", icon: "W", color: "#25d366" },
+  { name: "Zendesk", icon: "Z", color: "#03363d" },
+  { name: "n8n / Make", icon: "n", color: "#ea4b71" },
+  { name: "AI agents", icon: "🤖", color: "#6d5bff" },
+];
+const BEAM_OUT: { name: string; icon: string }[] = [
+  { name: "Slack alert", icon: "🔔" },
+  { name: "Fix list", icon: "✨" },
+  { name: "Weekly report", icon: "📄" },
+];
+
+/**
+ * "Animated beam" diagram (after Magic UI): sources on the left stream into ProofMyAI, which sends
+ * alerts, fixes and reports out to the right. Pure SVG + CSS, scales with the container.
+ */
+export function BeamDiagram() {
+  const W = 900, H = 400, hub = { x: 450, y: 200 };
+  const inY = BEAM_IN.map((_, i) => 50 + i * 75);
+  const outY = BEAM_OUT.map((_, i) => 110 + i * 90);
+  const inPath = (y: number) => `M 150 ${y} C 300 ${y}, 300 ${hub.y}, ${hub.x - 50} ${hub.y}`;
+  const outPath = (y: number) => `M ${hub.x + 50} ${hub.y} C 600 ${hub.y}, 600 ${y}, 735 ${y}`;
+  const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+  return (
+    <figure className="beam" role="img" aria-label="Chatbots, WhatsApp, Zendesk, n8n, Make and AI agents send their data to ProofMyAI, which sends Slack alerts, a fix list and weekly reports">
+      <svg viewBox={`0 0 ${W} ${H}`} aria-hidden>
+        <defs>
+          <linearGradient id="beam-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
+            <stop offset="0" stopColor="#22d3ee" />
+            <stop offset=".5" stopColor="#7c6cff" />
+            <stop offset="1" stopColor="#f472b6" />
+          </linearGradient>
+        </defs>
+        {inY.map((y, i) => (
+          <g key={`in${i}`}>
+            <path d={inPath(y)} className="beam-track" />
+            <path d={inPath(y)} className="beam-flow" pathLength={100} style={{ animationDelay: `${i * 0.45}s` }} />
+          </g>
+        ))}
+        {outY.map((y, i) => (
+          <g key={`out${i}`}>
+            <path d={outPath(y)} className="beam-track" />
+            <path d={outPath(y)} className="beam-flow" pathLength={100} style={{ animationDelay: `${1.2 + i * 0.5}s` }} />
+          </g>
+        ))}
+      </svg>
+      {BEAM_IN.map((n, i) => (
+        <div key={n.name} className="beam-node" style={{ left: pct(110, W), top: pct(inY[i], H) }}>
+          <span className="beam-ic" style={{ background: n.color }}>{n.icon}</span><span className="beam-label">{n.name}</span>
+        </div>
+      ))}
+      <div className="beam-hub" style={{ left: pct(hub.x, W), top: pct(hub.y, H) }}>
+        <span className="beam-hub-mark">✓</span><span className="beam-hub-label">ProofMyAI</span>
+      </div>
+      {BEAM_OUT.map((n, i) => (
+        <div key={n.name} className="beam-node out" style={{ left: pct(790, W), top: pct(outY[i], H) }}>
+          <span className="beam-ic light">{n.icon}</span><span className="beam-label">{n.name}</span>
+        </div>
+      ))}
+    </figure>
+  );
+}
+
+/** Falling meteors for dark banners (after Aceternity). Positions are fixed so server and browser match. */
+export function Meteors({ count = 14 }: { count?: number }) {
+  return (
+    <span className="meteors" aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${((i * 7) % 10) * 0.6}s`, animationDuration: `${3 + ((i * 3) % 5)}s` }} />
+      ))}
+    </span>
+  );
+}

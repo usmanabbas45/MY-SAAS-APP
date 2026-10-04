@@ -4,8 +4,8 @@ import { planSignupHref } from "@/lib/next-path";
 import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
-import { CatchDemo, HeroMockup, IntegrationMarquee, StepArt } from "@/components/illustrations";
-import { CopyBox, ProductTour, ScrollVideo, ShortcutLink, StartTabs, type TourTab } from "@/components/landing";
+import { BeamDiagram, CatchDemo, HeroMockup, IntegrationMarquee, Meteors, StepArt } from "@/components/illustrations";
+import { CopyBox, NumberTicker, PointerGlow, ProductTour, ScrollVideo, ShortcutLink, StartTabs, WordRotate, type TourTab } from "@/components/landing";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
 import { LEGAL_NAME } from "@/lib/legal";
@@ -122,7 +122,7 @@ function WhyProofMyAI() {
       <p className="lp-lead">Built for teams that rely on AI to talk to customers but don&apos;t have time to read every chat.</p>
       <div className="why-grid">
         {WHY.map((w) => (
-          <div className="why-item" key={w.title}>
+          <div className="why-item spot" key={w.title}>
             <span className="why-icon" aria-hidden>{w.icon}</span>
             <div><h3>{w.title}</h3><p>{w.text}</p></div>
           </div>
@@ -256,17 +256,20 @@ function SocialProof() {
 export default function Landing() {
   return (
     <div className="lp-page">
+      <div className="scroll-progress" aria-hidden />
+      <PointerGlow />
       <SiteHeader />
 
       <main>
       <StatsStrip />
       <section className="lp-hero lp-hero-split">
+        <div className="hero-spotlight" aria-hidden />
         <div className="lp-hero-copy">
-          <span className="badge badge-brand">For businesses running AI chatbots, agents and automations</span>
-          <h1 style={{ marginTop: 16 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text">Know when it gets things wrong.</span></h1>
+          <Link href="/blog/chatbot-analytics-metrics" className="shiny-pill"><span className="shiny-pill-new">New</span><span className="shiny-text">Chatbot analytics &amp; topic insights</span> →</Link>
+          <h1 style={{ marginTop: 18 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text gradient-anim">Know when it</span> <WordRotate words={["gets things wrong.", "makes things up.", "breaks your policy.", "leaks card data.", "misses a hand-over."]} /></h1>
           <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
           <div className="row lp-hero-ctas">
-            <ShortcutLink href="/signup" k="s" className="btn btn-lg" event="hero_start">Get your free AI audit →</ShortcutLink>
+            <ShortcutLink href="/signup" k="s" className="btn btn-lg btn-shimmer" event="hero_start">Get your free AI audit →</ShortcutLink>
             <ShortcutLink href="#tour" k="d" className="btn btn-ghost btn-lg" event="hero_demo">▶ See it in action</ShortcutLink>
           </div>
           <ul className="lp-trust">
@@ -287,6 +290,12 @@ export default function Landing() {
       <section className="lp-section lp-works" aria-label="Works with">
         <p className="lp-works-title">Works with the tools you already use</p>
         <IntegrationMarquee />
+      </section>
+
+      <section className="lp-section reveal" id="flow" aria-labelledby="flow-title">
+        <h2 id="flow-title">Plug in once. Every answer gets checked.</h2>
+        <p className="lp-lead">Your chatbots, WhatsApp, help desk, automations and agents stream into ProofMyAI. You get alerts, a fix list and reports.</p>
+        <BeamDiagram />
       </section>
 
       <section className="lp-section lp-band reveal" id="how-it-catches" aria-labelledby="catch-title">
@@ -315,7 +324,7 @@ export default function Landing() {
               <span className="faint">Sample numbers, not a real customer</span>
             </div>
             <h3>What a first audit report looks like for an online store</h3>
-            <p className="sub">412 chatbot answers checked · 31 made-up answers (mostly shipping prices) · 9 refund disputes never handed to a human · 1 n8n order-sync workflow silently returning zero orders for 3 days.</p>
+            <p className="sub"><b><NumberTicker value={412} /></b> chatbot answers checked · <b><NumberTicker value={31} /></b> made-up answers (mostly shipping prices) · <b><NumberTicker value={9} /></b> refund disputes never handed to a human · 1 n8n order-sync workflow silently returning zero orders for 3 days.</p>
             <p className="sub" style={{ margin: 0 }}>Top fix: <strong>update the &quot;Shipping rates&quot; article</strong>. It caused 22 of the 31 wrong answers.</p>
             <p className="faint" style={{ margin: "8px 0 0" }}>These figures show the format of a ProofMyAI report. <Link href="/signup">Run a free audit</Link> to see your own numbers.</p>
           </div>
@@ -327,7 +336,7 @@ export default function Landing() {
         <p className="lp-lead">Customers are losing trust in support bots, and most bot platforms have no built-in quality control. ProofMyAI is the independent auditor that works with all of them.</p>
         <div className="grid grid-3">
           {FEATURES.map((f) => (
-            <div className="card feature-card" key={f.title}>
+            <div className="card feature-card spot" key={f.title}>
               <div className="feature-icon" aria-hidden>{f.icon}</div>
               <h3>{f.title}</h3>
               <p className="sub" style={{ margin: 0 }}>{f.text}</p>
@@ -345,7 +354,7 @@ export default function Landing() {
             [2, "Check", "AI grades every answer and run against your own docs and limits. Results in minutes."],
             [3, "Fix & relax", "Follow the fix list. Nightly tests and live monitoring alert you on Slack or email if anything breaks again."],
           ] as const).map(([n, t, d]) => (
-            <div className="card step-card" key={n}>
+            <div className="card step-card spot" key={n}>
               <StepArt step={n} />
               <div className="row" style={{ gap: 10, marginTop: 16 }}><span className="step-num">{n}</span><h3 style={{ margin: 0 }}>{t}</h3></div>
               <p className="sub" style={{ margin: "8px 0 0" }}>{d}</p>
@@ -411,10 +420,11 @@ export default function Landing() {
 
       <section className="lp-section">
         <div className="cta-banner">
+          <Meteors />
           <h2>Is your AI telling customers the truth?</h2>
           <p>Find out in 5 minutes with a free AI audit.</p>
           <div className="row" style={{ justifyContent: "center" }}>
-            <Link href="/signup" className="btn btn-lg btn-white">Get your free AI audit →</Link>
+            <Link href="/signup" className="btn btn-lg btn-white btn-glow">Get your free AI audit →</Link>
             <a href="#pricing" className="btn btn-lg btn-outline-white">See pricing</a>
           </div>
         </div>
