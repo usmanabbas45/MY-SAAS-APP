@@ -272,3 +272,72 @@ export function StartTabs({ tabs }: { tabs: StartTab[] }) {
     </div>
   );
 }
+
+/**
+ * Rotating words (Magic UI "word rotate"): every word sits in the same grid cell so the line is as wide
+ * as the longest word and nothing below jumps. Screen readers get the first word only.
+ */
+export function WordRotate({ words, interval = 2400 }: { words: string[]; interval?: number }) {
+  const [i, setI] = useState(0);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (reduce) return;
+    const t = setInterval(() => setI((n) => (n + 1) % words.length), interval);
+    return () => clearInterval(t);
+  }, [reduce, words.length, interval]);
+  return (
+    <>
+      <span className="sr-only">{words[0]}</span>
+      <span className="word-rotate" aria-hidden>
+        {words.map((w, n) => <span key={w} className={n === i ? "on" : ""}>{w}</span>)}
+      </span>
+    </>
+  );
+}
+
+/** Counts up from 0 to the value the first time it scrolls into view (Magic UI "number ticker"). */
+export function NumberTicker({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
+  const [ref, inView] = useInView<HTMLSpanElement>(0.6);
+  const [n, setN] = useState(value);
+  const done = useRef(false);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (!inView || done.current || reduce) return;
+    done.current = true;
+    const start = performance.now(), dur = 1400;
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - start) / dur);
+      setN(Math.round(value * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    setN(0);
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, reduce, value]);
+  return <span ref={ref} className="ticker">{prefix}{n.toLocaleString("en-US")}{suffix}</span>;
+}
+
+/**
+ * Cursor spotlight for cards (Aceternity "card spotlight" / Magic UI "magic card"): one listener for
+ * the whole page writes the pointer position into the hovered `.spot` element as --mx / --my.
+ */
+export function PointerGlow() {
+  useEffect(() => {
+    if (!window.matchMedia("(hover: hover)").matches) return;
+    let raf = 0;
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const el = (e.target as Element | null)?.closest?.(".spot") as HTMLElement | null;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+        el.style.setProperty("--my", `${e.clientY - r.top}px`);
+      });
+    };
+    document.addEventListener("pointermove", onMove, { passive: true });
+    return () => { document.removeEventListener("pointermove", onMove); cancelAnimationFrame(raf); };
+  }, []);
+  return null;
+}
