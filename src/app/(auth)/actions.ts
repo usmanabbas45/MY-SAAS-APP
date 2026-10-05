@@ -9,13 +9,14 @@ import { currentGaIds, rememberGaClient, trackEvent } from "@/lib/ga";
 import { strongPasswordProblem } from "@/lib/breach";
 import { captchaConfig, checkCaptcha, type CaptchaConfig } from "@/lib/captcha";
 import { isDisposableEmail } from "@/lib/disposable";
-import { get } from "@/lib/db";
+import { get, run } from "@/lib/db";
 import { recordLogin, securityNotice } from "@/lib/securityevents";
 import { pendingLoginToken, readPendingLogin, twoFactorEnabled, verifySecondFactor } from "@/lib/twofactor";
 import { rateLimit } from "@/lib/security";
 import { safeNext } from "@/lib/next-path";
 import { COOKIE as REF_COOKIE, recordReferral } from "@/lib/referrals";
 import { sendVerification } from "@/lib/verify";
+import { ATTR_COOKIE, channelOf, parseAttribution } from "@/lib/attribution";
 
 export interface AuthState { error?: string; ok?: string; captcha?: CaptchaConfig; pending?: string; founding?: boolean; next?: string }
 
@@ -50,7 +51,12 @@ export async function signupAction(_: AuthState, form: FormData): Promise<AuthSt
   const { user, error } = createUser(email, password);
   if (!user) return fail(error ?? "Could not create the account.");
   const projectId = createProject(user.id, String(form.get("company") ?? "") || "My first project");
-  recordReferral(user.id, (await cookies()).get(REF_COOKIE)?.value);
+  const jar = await cookies();
+  recordReferral(user.id, jar.get(REF_COOKIE)?.value);
+  const attr = parseAttribution(jar.get(ATTR_COOKIE)?.value);
+  const channel = jar.get(REF_COOKIE)?.value && !attr ? "Referral program" : channelOf(attr);
+  run("UPDATE users SET signup_channel = ?, signup_source = ?, signup_campaign = ?, signup_landing = ? WHERE id = ?",
+    channel, attr?.source ?? attr?.referrer ?? null, attr?.campaign ?? null, attr?.landing ?? null, user.id);
   try {
     await sendVerification(user.id);
   } catch (err) {

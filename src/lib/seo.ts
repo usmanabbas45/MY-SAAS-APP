@@ -166,6 +166,31 @@ SOLUTIONS.push({
   ],
 });
 
+SOLUTIONS.push({
+  slug: "ai-chatbot-monitoring-for-agencies",
+  title: "AI Chatbot & Automation Monitoring for Agencies",
+  description: "For agencies that build chatbots, AI agents and n8n/Make automations for clients: monitor every client's AI in one place, catch problems before the client does, and send branded monthly quality reports.",
+  kicker: "Agencies",
+  intro: "You build the bots and automations; when one gives a wrong answer or a workflow silently stops, your client blames you. ProofMyAI watches every client project, alerts you first, and gives you branded reports that prove the work is paying off, so retainers renew.",
+  problems: [
+    "Clients find bot mistakes before you do, and trust drops",
+    "n8n and Make workflows break quietly and nobody notices for days",
+    "It's hard to show clients ongoing value, so retainers get cancelled",
+    "Checking every client's chats by hand doesn't scale",
+  ],
+  steps: [
+    { title: "One project per client", text: "Connect each client's chatbot, WhatsApp bot, AI agents and n8n/Make workflows in minutes. Invite the client as a viewer if you like." },
+    { title: "Alerts reach you first", text: "Wrong answers, missed hand-overs, failed or silent workflows and downtime go to your Slack, Teams or email, per client." },
+    { title: "Branded client reports", text: "Send a monthly report with your agency's name: answers checked, problems fixed, uptime and workflow success. Proof your retainer is working." },
+  ],
+  features: ["Up to 20 client projects on the Agency plan", "White-label share links and PDF reports", "Client viewer access, no shared passwords", "Per-client alert channels", "✨ Fix with AI: corrected articles and safer prompts to send clients", "n8n, Make, agents, chatbots and uptime in one dashboard"],
+  faqs: [
+    { q: "Can I put my agency's name on the reports?", a: "Yes. Client reports and share links show your agency's name, and you can save them as PDF to send each month." },
+    { q: "How much does it cost for an agency?", a: "The Agency plan is $199 a month for up to 20 client projects and 15,000 audited conversations, with a 14-day free trial. Many agencies add it to their monthly retainer." },
+    { q: "Can my clients log in?", a: "Yes. Invite a client as a viewer or editor of their own project only. They never see your other clients." },
+  ],
+});
+
 export function jsonLd(data: unknown): { __html: string } {
   return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
 }

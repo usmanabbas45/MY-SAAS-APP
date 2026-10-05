@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function PrivacyPage() {
   return (
-    <PublicPage title="Privacy Policy" updated="28 September 2026">
+    <PublicPage title="Privacy Policy" updated="5 October 2026">
       <p>This policy explains what data ProofMyAI collects, why, and your choices. ProofMyAI is operated by <strong>{OPERATOR}</strong>. Contact us at <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with any privacy question.</p>
       <p>For the conversations and other content you send us about <em>your</em> customers, you are the data controller and we are your processor under our <Link href="/dpa">Data Processing Agreement</Link>. Full details are in the <Link href="/security">Trust Center</Link>.</p>
       <h2>What we collect</h2>
@@ -25,6 +25,8 @@ export default function PrivacyPage() {
       <p>Only to provide the Service: grading answers, running checks, sending alerts and reports you set up, account emails (such as password resets) and security. We do not sell your data and do not use it for advertising.</p>
       <h2>Support requests</h2>
       <p>When you submit a support ticket we store your name (optional), email, the issue you describe and the page it happened on, so we can reply and you can track it. Tickets are deleted with your account, or on request. If you choose to message us on WhatsApp, WhatsApp (Meta) processes that conversation under its own privacy policy.</p>
+      <h2>Free audit requests and free tools</h2>
+      <p>When you request a free chatbot audit we store your name (optional), email, website, the chatbot you use, your message and which link or website brought you to the form, only to do the audit, send it to you and follow up about it. Ask us any time and we delete it. Text you paste into the free chatbot answer checker is checked and then discarded; it is never stored.</p>
       <h2>Feedback and testimonials</h2>
       <p>If you send feedback from your dashboard we store it with the name, role and company you enter. It is only shown on our website if you ticked the permission box and we approved it, exactly as you wrote it. Ask us any time and we remove it; it is also deleted with your account.</p>
       <h2>Service providers</h2>
@@ -36,7 +38,7 @@ export default function PrivacyPage() {
         <li><strong>Password breach check:</strong> when you choose a password, we send only the first 5 characters of its SHA-1 hash to Have I Been Pwned to check it hasn't appeared in a data breach. Your password and email are never sent.</li>
       </ul>
       <h2 id="cookies">Cookies</h2>
-      <p>We use one essential cookie to keep you logged in, one to remember your cookie choice, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful, but only if you click Accept on the cookie banner. It then sets analytics cookies and IP addresses are anonymised. You can change your choice any time with the \"Cookie settings\" link at the bottom of every page; rejecting deletes the analytics cookies. If you accepted analytics cookies and then sign up, send a form, start a trial or pay, our server tells Google Analytics that this happened (with the analytics ID from that cookie, the plan and price, never your name, email or any content) so we can see which marketing works." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
+      <p>We use one essential cookie to keep you logged in, one to remember your cookie choice, and your browser&apos;s local storage to remember your light/dark theme. We do not use advertising cookies.{process.env.GA_MEASUREMENT_ID ? " On our public pages (not inside the dashboard) we use Google Analytics to count visits and see which pages are useful, but only if you click Accept on the cookie banner. It then sets analytics cookies and IP addresses are anonymised. You can change your choice any time with the \"Cookie settings\" link at the bottom of every page; rejecting deletes the analytics cookies. If you accepted analytics cookies and then sign up, send a form, start a trial or pay, our server tells Google Analytics that this happened (with the analytics ID from that cookie, the plan and price, never your name, email or any content) so we can see which marketing works. If you accept, we also remember for 90 days which link or website first brought you here (for example \"linkedin\" or \"google.com\" and the page you landed on) in a first-party cookie, and store it with your account if you sign up. It contains no personal data and rejecting deletes it." : null} Our videos are hosted on YouTube and only load (from youtube-nocookie.com) after you click play.</p>
       <h2>Retention and deletion</h2>
       <p>Your data is kept while your account exists, or for the shorter period you set per project. You can delete individual audits and projects at any time, or delete your whole account in <strong>Account → Delete account</strong>, which permanently removes all your data. Encrypted daily backups are deleted within 30 days.</p>
       <h2>Your rights</h2>

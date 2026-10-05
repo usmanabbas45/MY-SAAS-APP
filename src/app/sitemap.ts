@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { POSTS } from "@/lib/blog";
 import { SITE_URL, SOLUTIONS } from "@/lib/seo";
+import { COMPARISONS } from "@/lib/compare";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -9,6 +10,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     page("/", 1, "weekly"),
     ...SOLUTIONS.map((s) => page(`/solutions/${s.slug}`, 0.9, "monthly")),
+    page("/tools/ai-chatbot-checker", 0.9, "monthly"),
+    page("/free-audit", 0.8, "monthly"),
+    ...COMPARISONS.map((c) => page(`/compare/${c.slug}`, 0.7, "monthly")),
     page("/blog", 0.8, "weekly"),
     ...POSTS.map((p) => ({ url: `${SITE_URL}/blog/${p.slug}`, lastModified: new Date(`${p.updated ?? p.date}T12:00:00Z`), changeFrequency: "monthly" as const, priority: 0.8 })),
     page("/signup", 0.7, "monthly"),

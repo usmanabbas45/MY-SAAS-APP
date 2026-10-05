@@ -1218,3 +1218,44 @@ html.is-scrolling .btn-shimmer::after { animation-play-state: paused !important;
 @keyframes hub-ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
 html.is-scrolling .beam-hub-mark::after { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .beam-hub-mark::after { animation: none; display: none; } }
+
+/* ── Free audit, free checker and compare pages ── */
+.hero-alt { font-size: 14.5px !important; color: var(--muted); margin: 14px 0 0 !important; }
+.audit-hero { align-items: start; }
+.audit-form { position: relative; text-align: left; }
+.audit-form .btn-shimmer, .checker-form .btn-shimmer { width: 100%; }
+.audit-done { text-align: center; padding: 32px 24px; }
+.audit-done-icon { font-size: 44px; }
+.audit-sample { max-width: 760px; margin: 0 auto; display: grid; gap: 10px; }
+.audit-sample-row { padding: 10px 14px; border-radius: 10px; background: var(--surface-2); }
+.audit-sample-row.bad { background: var(--bad-soft); }
+.audit-sample-row.ok { background: var(--ok-soft); }
+.checker { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 20px; align-items: start; max-width: 1100px; margin: 0 auto; }
+.checker-form { position: relative; text-align: left; }
+.checker-h { font-size: 18px !important; margin: 0 !important; text-align: left !important; background: none !important; color: var(--text) !important; -webkit-background-clip: border-box !important; background-clip: border-box !important; }
+.checker-result { position: sticky; top: 96px; min-height: 280px; text-align: left; border-left: 4px solid var(--border) !important; }
+.checker-result.tone-ok { border-left-color: var(--ok) !important; }
+.checker-result.tone-warn { border-left-color: var(--warn) !important; }
+.checker-result.tone-bad { border-left-color: var(--bad) !important; }
+.checker-verdict { font-size: 24px; font-weight: 900; letter-spacing: -0.02em; }
+.tone-ok .checker-verdict { color: var(--ok); } .tone-warn .checker-verdict { color: var(--warn); } .tone-bad .checker-verdict { color: var(--bad); }
+.checker-reason { font-size: 16px; margin: 12px 0; }
+.checker-flags { padding-left: 0; list-style: none; margin: 0 0 12px; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.checker-cta { margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--brand-soft); }
+.checker-cta .sub { margin: 4px 0 12px; }
+.checker-empty { text-align: center; padding: 30px 10px; color: var(--muted); }
+.checker-empty-icon { font-size: 40px; }
+@media (max-width: 900px) { .checker { grid-template-columns: 1fr; } .checker-result { position: static; } }
+.compare-table-wrap { overflow-x: auto; max-width: 1000px; margin: 20px auto 0; padding: 0 !important; }
+.compare-table { width: 100%; border-collapse: collapse; }
+.compare-table th, .compare-table td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 14.5px; }
+.compare-table thead th { background: var(--surface-2); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.compare-table thead th:nth-child(2) { color: var(--brand); }
+.compare-table tbody th { font-weight: 700; width: 26%; }
+.compare-table td:nth-child(2) { background: color-mix(in srgb, var(--brand-soft) 45%, transparent); }
+.compare-table tr:last-child th, .compare-table tr:last-child td { border-bottom: 0; }
+.compare-list { padding-left: 0; list-style: none; display: grid; gap: 8px; margin: 10px 0 0; }
+.compare-list li::before { content: "→ "; color: var(--muted); }
+.compare-list.ok li::before { content: "✓ "; color: var(--ok); font-weight: 800; }
+.lp-hero .audit-form p.faint, .lp-hero .audit-form .field label, .lp-hero .audit-form p { font-size: 13.5px; margin: 10px 0 0; text-align: left; }
+.lp-hero .audit-form .field label { margin: 0 0 6px; font-size: 14px; }

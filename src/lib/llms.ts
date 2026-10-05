@@ -1,6 +1,7 @@
 import { PLAN_FEATURES, PLANS } from "./billing";
 import { POSTS } from "./blog";
 import { FAQS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOLUTIONS, SUPPORT_EMAIL } from "./seo";
+import { COMPARISONS } from "./compare";
 
 /**
  * llms.txt (https://llmstxt.org): a plain Markdown summary of the site for AI assistants and answer engines,
@@ -25,6 +26,9 @@ Key facts:
 ## Product
 - [Home and pricing](${SITE_URL}/): overview, features, pricing and FAQ
 ${SOLUTIONS.map((s) => `- [${s.title}](${SITE_URL}/solutions/${s.slug}): ${s.description}`).join("\n")}
+- [Free AI chatbot answer checker](${SITE_URL}/tools/ai-chatbot-checker): free tool, no sign-up. Paste a customer question, the bot's answer and your policy to see if the answer is correct, made up, not in your docs or should have been escalated.
+- [Free done-for-you chatbot audit](${SITE_URL}/free-audit): request a free audit of your website chatbot, delivered by email within 2 business days.
+${COMPARISONS.map((c) => `- [ProofMyAI vs ${c.name}](${SITE_URL}/compare/${c.slug}): ${c.description}`).join("\n")}
 
 ## Docs
 - [Docs & API reference](${SITE_URL}/docs): setup steps and REST API for chat events, agent runs and workflow runs

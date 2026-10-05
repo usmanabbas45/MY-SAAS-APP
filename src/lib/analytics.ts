@@ -36,6 +36,26 @@ export function funnel(sinceDays: number | null): FunnelStep[] {
   ];
 }
 
+/** Sign-ups, activation, paying customers and leads per marketing channel ("which marketing works"). */
+export interface ChannelRow { channel: string; signups: number; connected: number; paying: number; leads: number }
+
+export function channels(sinceDays: number | null): ChannelRow[] {
+  const since = sinceDays === null ? "0000" : day(daysAgo(sinceDays));
+  const users = all<{ channel: string; signups: number; connected: number; paying: number }>(
+    `SELECT COALESCE(u.signup_channel, 'Direct / unknown') AS channel, COUNT(*) AS signups,
+            SUM(CASE WHEN ${HAS.data} THEN 1 ELSE 0 END) AS connected, SUM(CASE WHEN ${HAS.paying} THEN 1 ELSE 0 END) AS paying
+     FROM users u WHERE u.created_at >= ? GROUP BY 1`, since);
+  const leads = all<{ channel: string; n: number }>("SELECT COALESCE(channel, 'Direct / unknown') AS channel, COUNT(*) AS n FROM leads WHERE created_at >= ? GROUP BY 1", since);
+  const map = new Map<string, ChannelRow>();
+  for (const u of users) map.set(u.channel, { ...u, leads: 0 });
+  for (const l of leads) {
+    const row = map.get(l.channel) ?? { channel: l.channel, signups: 0, connected: 0, paying: 0, leads: 0 };
+    row.leads = l.n;
+    map.set(l.channel, row);
+  }
+  return [...map.values()].sort((a, b) => b.paying - a.paying || b.signups - a.signups || b.leads - a.leads);
+}
+
 export interface Cohort { week: string; size: number; weeks: (number | null)[] }
 
 /** Monday (UTC) of the week containing d. */

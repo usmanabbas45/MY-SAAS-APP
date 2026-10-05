@@ -9,6 +9,7 @@ import { all, get, run } from "@/lib/db";
 import { deleteTestimonial, setTestimonialStatus, submitTestimonial, validateTestimonial } from "@/lib/testimonials";
 import { runBackup } from "@/lib/backup";
 import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
+import { LEAD_STATUS_LABELS, LEAD_STATUSES, setLeadStatus, type LeadStatus } from "@/lib/leads";
 
 async function target(form: FormData) {
   const admin = await requireAdmin();
@@ -211,4 +212,15 @@ export async function backupNowAction() {
   const r = await runBackup(new Date(), { email: true });
   logAdmin(admin.email, "backup_now", null, r.detail);
   redirect(`/app/admin?${new URLSearchParams(r.ok ? { ok: `Backup made (${r.detail}).` } : { error: `Backup failed: ${r.detail}` })}#system`);
+}
+
+export async function leadStatusAction(form: FormData) {
+  const admin = await requireAdmin();
+  const id = Number(form.get("id"));
+  const status = String(form.get("status")) as LeadStatus;
+  if (Number.isInteger(id) && LEAD_STATUSES.includes(status)) {
+    setLeadStatus(id, status);
+    logAdmin(admin.email, "lead_status", null, `#${id} ${status}`);
+  }
+  redirect(`/app/admin/leads?ok=${encodeURIComponent(`Lead marked "${LEAD_STATUS_LABELS[status] ?? status}".`)}`);
 }

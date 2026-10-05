@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ATTR_COOKIE, ATTR_MAX_AGE, attributionFrom, encodeAttribution } from "@/lib/attribution";
 
 // Private areas (dashboard, reset links with tokens, shared reports) are never sent to Google Analytics.
 const PRIVATE = ["/app", "/reset-password", "/r/", "/api/"];
@@ -18,7 +19,13 @@ function readConsent(): Consent {
 
 function saveConsent(value: "granted" | "denied") {
   document.cookie = `${CONSENT_COOKIE}=${value}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+  if (value === "granted" && !document.cookie.includes(`${ATTR_COOKIE}=`)) {
+    // Remember which link or site brought the visitor here (the page they accepted on is usually the landing page).
+    const attr = attributionFrom(new URL(location.href), document.referrer, location.hostname);
+    if (attr) document.cookie = `${ATTR_COOKIE}=${encodeURIComponent(encodeAttribution(attr))}; path=/; max-age=${ATTR_MAX_AGE}; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+  }
   if (value === "denied") {
+    document.cookie = `${ATTR_COOKIE}=; path=/; max-age=0`;
     // Remove any Google Analytics cookies set before consent was withdrawn.
     const host = location.hostname;
     const domains = ["", host, `.${host}`, `.${host.split(".").slice(-2).join(".")}`];

@@ -20,6 +20,7 @@ export async function SiteHeader() {
           <Link href="/#features">Features</Link>
           <Link href="/solutions/ai-chatbot-monitoring">Solutions</Link>
           <Link href="/#pricing">Pricing</Link>
+          <Link href="/tools/ai-chatbot-checker">Free checker</Link>
           <Link href="/blog">Guides</Link>
           <Link href="/docs">Docs</Link>
           <Link href="/#faq">FAQ</Link>
@@ -55,7 +56,10 @@ export function SiteFooter() {
             <li><Link href="/#features">Features</Link></li>
             <li><Link href="/#pricing">Pricing</Link></li>
             <li><Link href="/#faq">FAQ</Link></li>
-            <li><Link href="/signup">Free AI audit</Link></li>
+            <li><Link href="/free-audit">Free AI audit (done for you)</Link></li>
+            <li><Link href="/tools/ai-chatbot-checker">Free chatbot answer checker</Link></li>
+            <li><Link href="/compare/langfuse-alternative">ProofMyAI vs Langfuse</Link></li>
+            <li><Link href="/compare/langsmith-alternative">ProofMyAI vs LangSmith</Link></li>
             <li><Link href="/blog">Guides</Link></li>
             <li><Link href="/docs">Docs &amp; API</Link></li>
             <li><Link href="/changelog">Changelog</Link></li>
