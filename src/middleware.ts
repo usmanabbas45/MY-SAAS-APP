@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ATTR_COOKIE, ATTR_MAX_AGE, attributionFrom, encodeAttribution } from "@/lib/attribution";
 
 const REF_COOKIE = "pm_ref";
 
@@ -24,6 +25,11 @@ export function middleware(req: NextRequest) {
   if (ref && /^[a-z0-9]{8}$/.test(ref) && !req.cookies.get(REF_COOKIE)) {
     // First invite wins: a later link doesn't replace the friend who invited them first.
     res.cookies.set(REF_COOKIE, ref, { maxAge: 60 * 86400, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+  }
+  // Remember where a visitor first came from (UTM link or referring site), only after analytics consent.
+  if (req.cookies.get("pma_consent")?.value === "granted" && !req.cookies.get(ATTR_COOKIE) && req.method === "GET") {
+    const attr = attributionFrom(req.nextUrl, req.headers.get("referer"), host);
+    if (attr) res.cookies.set(ATTR_COOKIE, encodeAttribution(attr), { maxAge: ATTR_MAX_AGE, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
   }
   return res;
 }

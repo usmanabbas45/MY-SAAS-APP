@@ -10,6 +10,7 @@ import { BulkBar } from "./BulkBar";
 import { PLANS, yearlyPrice } from "@/lib/billing";
 import { ticketCounts } from "@/lib/support";
 import { testimonialCounts } from "@/lib/testimonials";
+import { leadCounts } from "@/lib/leads";
 import { costSummary, customerCosts } from "@/lib/aicost";
 import { SignupChart } from "./SignupChart";
 import { AdminShell, ago, PlanBadge } from "./ui";
@@ -43,6 +44,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <p className="row" style={{ flexWrap: "wrap" }}>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/support">🎫 Support tickets ({ticketCounts().open} open)</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/testimonials">⭐ Feedback &amp; testimonials ({testimonialCounts().pending} new)</Link>
+        <Link className="btn btn-ghost btn-sm" href="/app/admin/leads">📥 Leads ({leadCounts().new} new)</Link>
         <Link className="btn btn-sm" href="/app/admin/analytics">📊 Advanced analytics</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/blocklist">🚫 Blocklist</Link>
         <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>

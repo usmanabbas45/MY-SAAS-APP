@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
-import { adoption, atRiskCustomers, funnel, metricsHistory, recordDailyMetrics, retention, revenue, signupsByDay, topCustomers } from "@/lib/analytics";
+import { adoption, atRiskCustomers, channels, funnel, metricsHistory, recordDailyMetrics, retention, revenue, signupsByDay, topCustomers } from "@/lib/analytics";
 import { PLANS, type PlanId } from "@/lib/billing";
 import { AdminShell, ago } from "../ui";
+import { SITE_URL } from "@/lib/seo";
 
 export const metadata = { title: "Admin · Analytics" };
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const range = r && r in RANGES ? (r as keyof typeof RANGES) : "30";
   recordDailyMetrics(); // keep today's snapshot fresh even before the cron runs
   const steps = funnel(range === "all" ? null : Number(range));
+  const byChannel = channels(range === "all" ? null : Number(range));
   const cohorts = retention(8);
   const features = adoption();
   const rev = revenue();
@@ -87,6 +89,30 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           );
         })}
         <p className="faint" style={{ marginTop: 10 }}>The biggest drop between two steps is where to improve first (onboarding emails, setup guide, pricing page).</p>
+      </div>
+
+      <h2>📣 Sign-ups by channel <span className="faint" style={{ fontSize: 14 }}>(which marketing works)</span></h2>
+      <div className="card" style={{ overflowX: "auto" }}>
+        {byChannel.length === 0 ? <p className="sub" style={{ margin: 0 }}>No sign-ups or leads in this period yet.</p> : (
+          <table>
+            <thead><tr><th>Channel</th><th style={{ textAlign: "right" }}>Leads</th><th style={{ textAlign: "right" }}>Sign-ups</th><th style={{ textAlign: "right" }}>Connected data</th><th style={{ textAlign: "right" }}>Paying</th></tr></thead>
+            <tbody>
+              {byChannel.map((c) => (
+                <tr key={c.channel}>
+                  <td><strong>{c.channel}</strong></td>
+                  <td style={{ textAlign: "right" }}>{c.leads}</td>
+                  <td style={{ textAlign: "right" }}>{c.signups}</td>
+                  <td style={{ textAlign: "right" }}>{c.connected} <span className="faint">{c.signups ? pct(c.connected / c.signups) : ""}</span></td>
+                  <td style={{ textAlign: "right" }}><strong>{c.paying}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <p className="faint" style={{ marginTop: 10 }}>
+          Add <code>?utm_source=…</code> to every link you share so it is credited, e.g. <code>{SITE_URL}/free-audit?utm_source=linkedin</code>,
+          <code>{SITE_URL}/?utm_source=reddit&amp;utm_campaign=n8n_post</code>. Visits are remembered only for visitors who accept analytics cookies; UTM links to /free-audit always count.
+        </p>
       </div>
 
       <h2>🔁 Weekly retention</h2>

@@ -6,8 +6,9 @@ import { all, get, run } from "./db";
  * text), so the admin can see what each customer costs against what they pay.
  */
 
-export type AiKind = "audit" | "live" | "test" | "agent" | "fix";
-export interface AiUse { projectId: number; kind: AiKind }
+export type AiKind = "audit" | "live" | "test" | "agent" | "fix" | "tool";
+/** projectId is null for the public free tools (no account). */
+export interface AiUse { projectId: number | null; kind: AiKind }
 export interface TokenUsage { input: number; output: number; cacheRead: number; cacheWrite: number }
 
 /** US$ per million tokens (Anthropic first-party prices). Cache writes cost 1.25× input. */
@@ -34,7 +35,7 @@ export function callCost(provider: string, model: string, u: TokenUsage): number
 /** Stores one AI call's usage. Never throws: cost tracking must not break grading. */
 export function recordAiUsage(use: AiUse | undefined, provider: string, model: string, u: TokenUsage): void {
   try {
-    const userId = use ? get<{ u: number }>("SELECT user_id AS u FROM projects WHERE id = ?", use.projectId)?.u ?? null : null;
+    const userId = use?.projectId ? get<{ u: number }>("SELECT user_id AS u FROM projects WHERE id = ?", use.projectId)?.u ?? null : null;
     run(
       `INSERT INTO ai_usage (project_id, user_id, kind, provider, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -97,7 +98,7 @@ export function costSummary(since = monthStartIso(), until = "9999"): CostSummar
   const kinds = all<{ kind: AiKind; cost: number | null; calls: number }>(
     "SELECT kind, SUM(cost_usd) AS cost, COUNT(*) AS calls FROM ai_usage WHERE created_at >= ? AND created_at < ? GROUP BY kind", since, until,
   );
-  const byKind = { audit: { cost: 0, calls: 0 }, live: { cost: 0, calls: 0 }, test: { cost: 0, calls: 0 }, agent: { cost: 0, calls: 0 } } as CostSummary["byKind"];
+  const byKind = { audit: { cost: 0, calls: 0 }, live: { cost: 0, calls: 0 }, test: { cost: 0, calls: 0 }, agent: { cost: 0, calls: 0 }, fix: { cost: 0, calls: 0 }, tool: { cost: 0, calls: 0 } } as CostSummary["byKind"];
   for (const k of kinds) if (k.kind in byKind) byKind[k.kind] = { cost: k.cost ?? 0, calls: k.calls };
   const cost = Object.values(byKind).reduce((s, k) => s + k.cost, 0);
   const calls = Object.values(byKind).reduce((s, k) => s + k.calls, 0);

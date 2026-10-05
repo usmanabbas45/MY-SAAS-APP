@@ -498,6 +498,27 @@ function migrate(db: DatabaseSync): void {
   db.exec("CREATE INDEX IF NOT EXISTS idx_server_errors_at ON server_errors(at)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_conv ON audit_items(conversation_id, turn_index)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_audits_share ON audits(share_token) WHERE share_token IS NOT NULL");
+  // Marketing attribution: where each account first came from (first visit, set by the middleware cookie).
+  addColumn(db, "users", "signup_channel", "TEXT");
+  addColumn(db, "users", "signup_source", "TEXT");
+  addColumn(db, "users", "signup_campaign", "TEXT");
+  addColumn(db, "users", "signup_landing", "TEXT");
+  // Leads from the free-audit request form and the free chatbot checker.
+  db.exec(`CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT,
+    website TEXT,
+    platform TEXT,
+    message TEXT,
+    channel TEXT,
+    source TEXT,
+    campaign TEXT,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)");
 }
 
 let instance: DatabaseSync | null = null;
