@@ -1,4 +1,4 @@
-import { json } from "@/lib/api";
+import { badKeyResponse, json, readBodyLimited } from "@/lib/api";
 import { processLiveChat } from "@/lib/audit/live";
 import { limitError, projectOwner } from "@/lib/billing";
 import { run } from "@/lib/db";
@@ -18,12 +18,14 @@ export async function POST(req: Request) {
     ? new Request(req.url, { method: "POST", headers: { "x-api-key": key } })
     : req;
   const project = projectFromRequest(authed);
-  if (!project) return json({ error: "Missing or invalid API key. Add header X-Api-Key: ap_live_... or ?key=ap_live_..." }, 401);
+  if (!project) return badKeyResponse(req, "Missing or invalid API key. Add header X-Api-Key: ap_live_... or ?key=ap_live_...");
   if (!rateLimit(`ingest:${project.id}`, 600, 60000)) return json({ error: "Rate limit exceeded (600 requests/minute)" }, 429);
 
   let event: WahaEvent;
   try {
-    event = (await req.json()) as WahaEvent;
+    const text = await readBodyLimited(req);
+    if (text === null) return json({ error: "Payload larger than 2 MB" }, 413);
+    event = JSON.parse(text) as WahaEvent;
   } catch {
     return json({ error: "Body must be valid JSON" }, 400);
   }
