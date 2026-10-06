@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.19"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -21,6 +21,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "undici": "^8.11.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {

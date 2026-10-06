@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireUser, type User } from "./auth";
 import { billingState, PLANS, usage, yearlyPrice, type PlanId } from "./billing";
 import { all, get, run } from "./db";
+import { twoFactorEnabled } from "./twofactor";
 
 /** Admins are listed in ADMIN_EMAILS (comma-separated); falls back to UNLIMITED_EMAILS. */
 export function isAdmin(email: string): boolean {
@@ -15,10 +16,16 @@ export function adminEmails(): string[] {
   return [...new Set(list.split(",").map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
 }
 
-/** Loads the current user and hides the page (404) from anyone who is not an admin. */
+/**
+ * Loads the current user and hides the page (404) from anyone who is not an admin. The admin area controls
+ * every account, so it also requires two-factor login (set ADMIN_REQUIRE_2FA=0 to switch this off).
+ */
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser();
   if (!isAdmin(user.email)) notFound();
+  if (process.env.ADMIN_REQUIRE_2FA !== "0" && !twoFactorEnabled(user.id)) {
+    redirect(`/app/account?error=${encodeURIComponent("Turn on two-factor authentication to open the admin area. It protects every customer account if your password is ever stolen.")}#twofactor`);
+  }
   return user;
 }
 

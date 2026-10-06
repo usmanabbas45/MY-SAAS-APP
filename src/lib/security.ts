@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import dns from "node:dns/promises";
+import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import net from "node:net";
+import { Agent, fetch as undiciFetch } from "undici";
 
 function appSecret(): string {
   const s = process.env.APP_SECRET;
@@ -57,21 +59,40 @@ export function decrypt(payload: string): string {
   return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }
 
+/** Address ranges a customer-supplied URL must never reach (loopback, private, link-local, metadata, reserved). */
+const BLOCKED = (() => {
+  const b = new net.BlockList();
+  for (const [ip, bits] of [
+    ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12],
+    ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.88.99.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24],
+    ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4],
+  ] as const) b.addSubnet(ip, bits, "ipv4");
+  for (const [ip, bits] of [
+    ["::", 128], ["::1", 128], ["64:ff9b::", 96], ["64:ff9b:1::", 48], ["100::", 64], ["2001::", 23], ["2001:db8::", 32],
+    ["fc00::", 7], ["fe80::", 10], ["fec0::", 10], ["ff00::", 8],
+  ] as const) b.addSubnet(ip, bits, "ipv6");
+  return b;
+})();
+
+/** IPv4 address hidden inside an IPv6 one (::ffff:a.b.c.d, ::ffff:7f00:1, ::a.b.c.d, 6to4 2002:AABB:CCDD::). */
+function embeddedIpv4(v6: string): string | null {
+  const dotted = v6.match(/^(?:0*:)*:?(?:ffff:)?(\d+\.\d+\.\d+\.\d+)$/i);
+  if (dotted) return dotted[1];
+  const hex = v6.match(/^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  const sixToFour = v6.match(/^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4}):/i);
+  const m = hex ?? sixToFour;
+  if (!m) return null;
+  const hi = parseInt(m[1], 16), lo = parseInt(m[2], 16);
+  return [hi >> 8, hi & 255, lo >> 8, lo & 255].join(".");
+}
+
 export function isPrivateAddress(ip: string): boolean {
-  if (net.isIPv4(ip)) {
-    const [a, b] = ip.split(".").map(Number);
-    return (
-      a === 0 || a === 10 || a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a >= 224
-    );
-  }
-  const v6 = ip.toLowerCase();
-  if (v6.startsWith("::ffff:")) return isPrivateAddress(v6.slice(7));
-  return v6 === "::1" || v6 === "::" || v6.startsWith("fc") || v6.startsWith("fd") || v6.startsWith("fe80");
+  const host = ip.replace(/^\[|\]$/g, "").split("%")[0];
+  if (net.isIPv4(host)) return BLOCKED.check(host, "ipv4");
+  if (!net.isIPv6(host)) return true; // not an IP at all: refuse rather than guess
+  const v4 = embeddedIpv4(host.toLowerCase());
+  if (v4 && net.isIPv4(v4) && BLOCKED.check(v4, "ipv4")) return true;
+  return BLOCKED.check(host, "ipv6");
 }
 
 /**
@@ -95,10 +116,30 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   return url;
 }
 
-/** fetch() with a timeout, used for every outbound call to customer systems. */
+/**
+ * DNS lookup used for every outbound connection to customer systems: the address is checked at the
+ * moment of connecting, so a hostname can't pass the first check and then switch to an internal
+ * address (DNS rebinding).
+ */
+function guardedLookup(hostname: string, options: object, callback: (err: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void): void {
+  dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) return callback(err, []);
+    const list = addresses as LookupAddress[];
+    if (process.env.ALLOW_PRIVATE_URLS !== "true" && (list.length === 0 || list.some((a) => isPrivateAddress(a.address)))) {
+      return callback(Object.assign(new Error("URL points to a private or local network address"), { code: "EPRIVATE" }), []);
+    }
+    if ((options as { all?: boolean }).all) return callback(null, list);
+    callback(null, list[0].address, list[0].family);
+  });
+}
+
+export const guardedAgent = new Agent({ connect: { lookup: guardedLookup as never }, headersTimeout: 60000, bodyTimeout: 60000 });
+
+/** fetch() with a timeout and SSRF protection, used for every outbound call to customer systems. */
 export async function safeFetch(url: string, init: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
   await assertPublicUrl(url);
-  return fetch(url, { ...init, redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
+  const res = await undiciFetch(url, { ...(init as object), redirect: "error", signal: AbortSignal.timeout(timeoutMs), dispatcher: guardedAgent } as never);
+  return res as unknown as Response;
 }
 
 const buckets = new Map<string, { count: number; reset: number }>();
