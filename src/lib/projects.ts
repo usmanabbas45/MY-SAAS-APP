@@ -33,7 +33,11 @@ export function newApiKey(): string {
 
 export function createProject(userId: number, name: string): number {
   const clean = name.trim().slice(0, 100) || "My project";
-  return run("INSERT INTO projects (user_id, name, api_key) VALUES (?, ?, ?)", userId, clean, newApiKey()).lastInsertRowid;
+  const id = run("INSERT INTO projects (user_id, name, api_key, legacy_email_migrated) VALUES (?, ?, ?, 1)", userId, clean, newApiKey()).lastInsertRowid;
+  // Alerts work from day one: medium and high problems go to the owner's email until they choose other channels.
+  const owner = get<{ email: string }>("SELECT email FROM users WHERE id = ?", userId);
+  if (owner) run("INSERT INTO alert_channels (project_id, type, target, min_severity) VALUES (?, 'email', ?, 'medium')", id, owner.email);
+  return id;
 }
 
 /** Projects the user owns. */

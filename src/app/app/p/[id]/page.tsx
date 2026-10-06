@@ -31,7 +31,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
     { done: count("SELECT COUNT(*) AS n FROM test_cases WHERE project_id = ?") > 0, text: "Add nightly test questions for your bot", href: `${base}/tests` },
     { done: count("SELECT COUNT(*) AS n FROM agent_runs WHERE project_id = ?") > 0, text: "Connect an AI agent", href: `${base}/connect` },
     { done: count("SELECT COUNT(*) AS n FROM workflow_runs WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM workflow_sources WHERE project_id = ?") > 0, text: "Connect n8n, Make or Zapier", href: `${base}/connect` },
-    { done: Boolean(p.alert_webhook || p.alert_email), text: "Turn on Slack/Discord/email alerts", href: `${base}/settings` },
+    { done: Boolean(get("SELECT 1 FROM alert_channels WHERE project_id = ? AND enabled = 1 AND verify_hash IS NULL AND type <> 'email'", p.id)), text: "Get alerts on WhatsApp, Slack or your phone", href: `${base}/alerts` },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
   const daysSinceSignup = (Date.now() - new Date(`${get<{ c: string }>("SELECT created_at AS c FROM users WHERE id = ?", user.id)?.c ?? ""}Z`).getTime()) / 86400000;

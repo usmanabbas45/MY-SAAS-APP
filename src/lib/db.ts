@@ -519,6 +519,24 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)");
+  // Alert channels: pause/resume, a friendly name, and phone verification for ProofMyAI-sent WhatsApp alerts.
+  addColumn(db, "alert_channels", "enabled", "INTEGER NOT NULL DEFAULT 1");
+  addColumn(db, "alert_channels", "label", "TEXT");
+  addColumn(db, "alert_channels", "verify_hash", "TEXT");
+  addColumn(db, "alert_channels", "verify_expires", "TEXT");
+  // The old single "alert webhook" setting becomes a normal channel (same rules: medium+ problems, all modules).
+  for (const p of db.prepare("SELECT id, alert_webhook FROM projects WHERE alert_webhook IS NOT NULL AND alert_webhook <> ''").all() as { id: number; alert_webhook: string }[]) {
+    const type = /hooks\.slack\.com/.test(p.alert_webhook) ? "slack" : /discord(app)?\.com/.test(p.alert_webhook) ? "discord" : /office\.com|logic\.azure/.test(p.alert_webhook) ? "teams" : /chat\.googleapis/.test(p.alert_webhook) ? "google_chat" : "webhook";
+    db.prepare("INSERT INTO alert_channels (project_id, type, target, min_severity) VALUES (?, ?, ?, 'medium')").run(p.id, type, p.alert_webhook);
+    db.prepare("UPDATE projects SET alert_webhook = NULL WHERE id = ?").run(p.id);
+  }
+  // Likewise the old "alert email": it becomes an email channel once, and stays as the weekly-report address.
+  addColumn(db, "projects", "legacy_email_migrated", "INTEGER NOT NULL DEFAULT 0");
+  for (const p of db.prepare("SELECT id, alert_email FROM projects WHERE legacy_email_migrated = 0 AND alert_email IS NOT NULL AND alert_email <> ''").all() as { id: number; alert_email: string }[]) {
+    const exists = db.prepare("SELECT 1 FROM alert_channels WHERE project_id = ? AND type = 'email' AND lower(target) = lower(?)").get(p.id, p.alert_email);
+    if (!exists) db.prepare("INSERT INTO alert_channels (project_id, type, target, min_severity) VALUES (?, 'email', ?, 'medium')").run(p.id, p.alert_email);
+  }
+  db.exec("UPDATE projects SET legacy_email_migrated = 1 WHERE legacy_email_migrated = 0");
 }
 
 let instance: DatabaseSync | null = null;

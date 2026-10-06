@@ -12,11 +12,11 @@ import { pollChatSource, type ChatSource } from "@/lib/connectors/twilio";
 import { pollAnySource } from "@/lib/connectors";
 import { INTERCOM_REGIONS, verifyIntercom, type IntercomRegion } from "@/lib/connectors/intercom";
 import { recordWorkflowRun } from "@/lib/workflows/monitor";
-import { CHANNEL_TYPES, channelsFor, deliver, MODULES, validateChannel } from "@/lib/notify";
+import { CHANNEL_TYPES, channelsFor, confirmVerificationCode, deliver, MODULES, sendVerificationCode, validateChannel } from "@/lib/notify";
 import { requireUser } from "@/lib/auth";
 import { billingState, limitError } from "@/lib/billing";
 import { get, run } from "@/lib/db";
-import { raiseIncident, resolveIncidents } from "@/lib/incidents";
+import { resolveIncidents } from "@/lib/incidents";
 import { checkMonitor, INTERVALS, type Monitor } from "@/lib/uptime";
 import { createInvite, INVITE_DAYS, projectRole, removeMember, revokeInvite, setMemberRole } from "@/lib/team";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
@@ -323,7 +323,7 @@ export async function updateSettingsAction(form: FormData) {
   const email = str(form, "alert_email", 300) || null;
   try {
     if (webhook) await assertPublicUrl(webhook);
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid alert email.");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid weekly report email.");
     if (email && email !== p.alert_email && !(await mayEmailOthers(email))) throw new Error(VERIFY_FIRST);
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Invalid settings." });
@@ -424,10 +424,12 @@ export async function updatePrivacyAction(form: FormData) {
 
 export async function testAlertAction(form: FormData) {
   const p = await ownerProject(form);
-  const path = `/app/p/${p.id}/settings`;
+  const path = `/app/p/${p.id}/alerts`;
   const only = Number(form.get("channelId")) || null;
-  const channels = channelsFor(p.id).filter((c) => !only || c.id === only);
-  if (!channels.length && !p.alert_webhook && !p.alert_email) done(path, { error: "Add a notification channel first." });
+  const channels = channelsFor(p.id).filter((c) => (only ? c.id === only : c.enabled !== 0 && !c.verify_hash));
+  if (!channels.length) done(path, { error: only ? "Channel not found." : "Add an alert channel first (and turn it on)." });
+  if (channels.some((c) => c.verify_hash)) done(path, { error: "Enter the WhatsApp code first to turn this channel on." });
+  if (!rateLimit(`test-alert:${p.id}`, 10, 3600000)) done(path, { error: "Too many test alerts. Try again in an hour." });
   const msg = { projectId: p.id, projectName: p.name, kind: "problem" as const, module: "workflows", code: "TEST_ALERT", severity: "high" as const,
     title: "Test alert from ProofMyAI", detail: "If you can read this, alerts to this channel are working.", link: `${process.env.APP_URL ?? ""}/app/p/${p.id}/incidents` };
   const results = await Promise.allSettled(channels.map((c) => deliver(c, msg)));
@@ -437,15 +439,22 @@ export async function testAlertAction(form: FormData) {
     if (r.status === "rejected") failed.push(`${CHANNEL_TYPES[channels[i].type].label}: ${status}`);
     run("UPDATE alert_channels SET last_status = ?, last_sent_at = ? WHERE id = ?", status, new Date().toISOString(), channels[i].id);
   });
-  if (!only && (p.alert_webhook || p.alert_email)) {
-    await raiseIncident(p.id, { module: "workflows", code: "TEST_ALERT", severity: "medium", title: "Test alert from ProofMyAI", detail: "If you can read this, alerts are working." });
-  }
   done(path, failed.length ? { error: `Some alerts failed. ${failed.join(" · ")}` } : { ok: "Test alert sent. Check your phone, inbox or channel." });
+}
+
+function channelRules(form: FormData): { sev: string; modules: string; resolved: number } {
+  const sev = str(form, "min_severity");
+  const modules = form.getAll("modules").map(String).filter((m) => (MODULES as readonly string[]).includes(m));
+  return {
+    sev: ["low", "medium", "high"].includes(sev) ? sev : "medium",
+    modules: modules.length === 0 || modules.length === MODULES.length ? "" : modules.join(","),
+    resolved: form.get("notify_resolved") ? 1 : 0,
+  };
 }
 
 export async function addChannelAction(form: FormData) {
   const p = await ownerProject(form);
-  const path = `/app/p/${p.id}/settings`;
+  const path = `/app/p/${p.id}/alerts`;
   let ch;
   try {
     ch = await validateChannel(str(form, "type"), str(form, "target", 2000), { token: str(form, "token", 300), sid: str(form, "sid", 64), from: str(form, "from", 40) });
@@ -453,21 +462,68 @@ export async function addChannelAction(form: FormData) {
   } catch (err) {
     done(path, { error: err instanceof Error ? err.message : "Invalid channel." });
   }
-  if (channelsFor(p.id).length >= 20) done(path, { error: "A project can have up to 20 notification channels." });
-  const sev = str(form, "min_severity");
-  const modules = form.getAll("modules").map(String).filter((m) => (MODULES as readonly string[]).includes(m));
-  run(
-    "INSERT INTO alert_channels (project_id, type, target, secret_enc, min_severity, modules, notify_resolved) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    p.id, ch.type, ch.target, ch.secret ? encrypt(ch.secret) : null, ["low", "medium", "high"].includes(sev) ? sev : "medium",
-    modules.length === MODULES.length ? "" : modules.join(","), form.get("notify_resolved") ? 1 : 0,
+  if (channelsFor(p.id).length >= 20) done(path, { error: "A project can have up to 20 alert channels." });
+  if (ch.type === "wa" && !rateLimit(`wa-code:${p.user_id}`, 5, 3600000)) done(path, { error: "Too many WhatsApp numbers added this hour. Try again later." });
+  const r = channelRules(form);
+  const label = str(form, "label", 60) || null;
+  const { lastInsertRowid } = run(
+    "INSERT INTO alert_channels (project_id, type, target, secret_enc, min_severity, modules, notify_resolved, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    p.id, ch.type, ch.target, ch.secret ? encrypt(ch.secret) : null, r.sev, r.modules, r.resolved, label,
   );
-  done(path, { ok: `${CHANNEL_TYPES[ch.type].label} added. Click "Test" next to it to check it works.` });
+  if (ch.type === "wa") {
+    try {
+      await sendVerificationCode(lastInsertRowid);
+    } catch (err) {
+      run("DELETE FROM alert_channels WHERE id = ?", lastInsertRowid);
+      console.error("[alerts] WhatsApp verification send failed:", err instanceof Error ? err.message : err);
+      done(path, { error: `We couldn't send a WhatsApp message to ${ch.target} right now. Check the number, or try again in a few minutes (or pick another channel).` });
+    }
+    done(`${path}?verify=${lastInsertRowid}#ch-${lastInsertRowid}`, { ok: `We sent a 6-digit code to ${ch.target} on WhatsApp. Enter it below to turn on WhatsApp alerts.` });
+  }
+  done(`${path}#ch-${lastInsertRowid}`, { ok: `${CHANNEL_TYPES[ch.type].label} added. Click "Send test" to check it works.` });
+}
+
+export async function updateChannelAction(form: FormData) {
+  const p = await ownerProject(form);
+  const id = Number(form.get("channelId"));
+  const r = channelRules(form);
+  run("UPDATE alert_channels SET min_severity = ?, modules = ?, notify_resolved = ?, label = ? WHERE id = ? AND project_id = ?",
+    r.sev, r.modules, r.resolved, str(form, "label", 60) || null, id, p.id);
+  done(`/app/p/${p.id}/alerts#ch-${id}`, { ok: "Alert rules saved." });
+}
+
+export async function toggleChannelAction(form: FormData) {
+  const p = await ownerProject(form);
+  const id = Number(form.get("channelId"));
+  const on = form.get("enabled") === "1";
+  run("UPDATE alert_channels SET enabled = ? WHERE id = ? AND project_id = ?", on ? 1 : 0, id, p.id);
+  done(`/app/p/${p.id}/alerts#ch-${id}`, { ok: on ? "Alerts resumed for this channel." : "Channel paused. It won't receive alerts until you resume it." });
+}
+
+export async function verifyChannelAction(form: FormData) {
+  const p = await ownerProject(form);
+  const id = Number(form.get("channelId"));
+  const path = `/app/p/${p.id}/alerts`;
+  if (!get("SELECT 1 FROM alert_channels WHERE id = ? AND project_id = ? AND type = 'wa'", id, p.id)) done(path, { error: "Channel not found." });
+  if (!rateLimit(`wa-verify:${id}`, 8, 3600000)) done(`${path}?verify=${id}#ch-${id}`, { error: "Too many wrong codes. Ask for a new code in an hour." });
+  if (form.get("resend")) {
+    if (!rateLimit(`wa-code:${p.user_id}`, 5, 3600000)) done(`${path}?verify=${id}#ch-${id}`, { error: "Too many codes sent this hour. Try again later." });
+    try {
+      await sendVerificationCode(id);
+    } catch (err) {
+      console.error("[alerts] WhatsApp code resend failed:", err instanceof Error ? err.message : err);
+      done(`${path}?verify=${id}#ch-${id}`, { error: "We couldn't send the code right now. Please try again in a few minutes." });
+    }
+    done(`${path}?verify=${id}#ch-${id}`, { ok: "New code sent on WhatsApp." });
+  }
+  if (!confirmVerificationCode(id, str(form, "code", 12))) done(`${path}?verify=${id}#ch-${id}`, { error: "That code is wrong or expired. Check WhatsApp or ask for a new code." });
+  done(`${path}#ch-${id}`, { ok: "✅ WhatsApp alerts are on. Click \"Send test\" to try one." });
 }
 
 export async function deleteChannelAction(form: FormData) {
   const p = await ownerProject(form);
   run("DELETE FROM alert_channels WHERE id = ? AND project_id = ?", Number(form.get("channelId")), p.id);
-  done(`/app/p/${p.id}/settings`, { ok: "Notification channel removed." });
+  done(`/app/p/${p.id}/alerts`, { ok: "Alert channel removed." });
 }
 
 export async function regenerateKeyAction(form: FormData) {
