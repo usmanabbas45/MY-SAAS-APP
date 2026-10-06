@@ -29,7 +29,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/incidents`, label: "Incidents", icon: "🚨", badge: open },
   ];
   const manage: NavItem[] = [
-    ...(role === "owner" ? [{ href: `${base}/settings`, label: "Settings & AI model", icon: "🛠️" }] : []),
+    ...(role === "owner" ? [{ href: `${base}/alerts`, label: "Alerts", icon: "🔔" }, { href: `${base}/settings`, label: "Settings & AI model", icon: "🛠️" }] : []),
     { href: `${base}/team`, label: "Team", icon: "👥" },
     { href: `${base}/guide`, label: "Setup guide", icon: "📘" },
     { href: "/app/billing", label: "Plan & billing", icon: "💳" },
