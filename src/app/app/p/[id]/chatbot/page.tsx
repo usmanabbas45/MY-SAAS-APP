@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 import { judgeProvider, llmAvailable } from "@/lib/judge/llm";
 import { projectAccess } from "@/lib/projects";
-import { addKbDocAction, addRuleAction, deleteAuditAction, deleteKbDocAction, deleteRuleAction, startAuditAction } from "../actions";
+import { addKbDocAction, addRuleAction, deleteAuditAction, deleteKbDocAction, deleteRuleAction, importKbUrlAction, startAuditAction } from "../actions";
 import { Sparkline } from "@/components/charts";
 import { projectRules, RULE_KINDS } from "@/lib/rules";
 
@@ -51,10 +51,20 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
             </div>
             <Badge tone={docs.length ? "ok" : "warn"}>{docs.length} article{docs.length === 1 ? "" : "s"}</Badge>
           </div>
+          <form action={importKbUrlAction} className="kb-import">
+            <input type="hidden" name="projectId" value={p.id} />
+            <label htmlFor="kb-url"><strong>🌐 Import from your website</strong> <span className="hint">(fastest: your FAQ, help center, shipping or returns page)</span></label>
+            <div className="row" style={{ flexWrap: "nowrap", gap: 8, marginTop: 6 }}>
+              <input id="kb-url" name="url" type="text" inputMode="url" required placeholder="yourshop.com/faq" style={{ flex: 1, minWidth: 0 }} />
+              <SubmitButton pendingText="Importing… (up to a minute)">Import</SubmitButton>
+            </div>
+            <label className="check" style={{ marginTop: 6 }}><input type="checkbox" name="crawl" defaultChecked /> Also import the help and policy pages it links to (up to 25)</label>
+          </form>
+          <div className="kb-or"><span>or</span></div>
           <form action={addKbDocAction}>
             <input type="hidden" name="projectId" value={p.id} />
             <div className="field">
-              <label htmlFor="files">Upload files <span className="hint">(.txt or .md, several at once)</span></label>
+              <label htmlFor="files">Upload files <span className="hint">(.txt, .md or .html, several at once)</span></label>
               <input id="files" name="files" type="file" multiple accept=".txt,.md,.markdown,.csv,.html,text/plain,text/markdown" />
             </div>
             <details>
@@ -110,7 +120,20 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
             <div className="field">
               <label htmlFor="file">Transcript file <span className="hint">(.csv or .json, up to 500 conversations)</span></label>
               <input id="file" name="file" type="file" accept=".csv,.json,text/csv,application/json" />
+              <p className="hint" style={{ marginTop: 6 }}>
+                Needs 3 columns: <code>conversation_id</code>, <code>role</code> (customer / bot) and <code>message</code>. <a href="/samples/proofmyai-sample-chats.csv" download>⬇ Download a sample file</a>
+              </p>
             </div>
+            <details>
+              <summary>📥 How do I export my chats?</summary>
+              <ul className="export-help">
+                <li><strong>Intercom:</strong> no export needed. Use <a href={`/app/p/${p.id}/live`}>Live tracking → Connect Intercom</a> and every Fin reply is checked automatically.</li>
+                <li><strong>Tidio, Zendesk, Crisp, Chatbase and most others:</strong> open the conversations / inbox / chat logs area and look for <em>Export</em> or <em>Download</em> (CSV). Some plans only offer it to admins.</li>
+                <li><strong>No export button?</strong> Connect the bot live instead (one HTTP step in n8n or Make, see <a href={`/app/p/${p.id}/connect`}>Connect</a>), or copy a few chats into &ldquo;paste transcripts&rdquo; below.</li>
+                <li><strong>WhatsApp bot:</strong> connect it once in <a href={`/app/p/${p.id}/live`}>Live tracking</a> (WAHA or Twilio) instead of exporting.</li>
+                <li><strong>Different columns?</strong> Rename the headers in Excel or Google Sheets to <code>conversation_id, role, message</code>, or <a href="/support">send us the file</a> and we&apos;ll convert it for you.</li>
+              </ul>
+            </details>
             <details>
               <summary>…or paste transcripts</summary>
               <textarea name="pasted" placeholder={SAMPLE_CSV} style={{ minHeight: 140 }} className="mono" />
