@@ -1287,3 +1287,9 @@ html.is-scrolling .beam-hub-mark::after { animation-play-state: paused; }
 .alert-verify { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--warn-soft); }
 .alert-verify label { display: block; font-weight: 600; margin-bottom: 8px; }
 @media (max-width: 640px) { .alert-ch-head { flex-wrap: wrap; } .alert-ch-status { flex-basis: 100%; } }
+
+/* Knowledge base: website import first, then files */
+.kb-import { padding: 14px; border-radius: 12px; background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent); }
+.kb-or { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.kb-or::before, .kb-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.export-help { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 14px; }

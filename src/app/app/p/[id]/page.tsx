@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActivityChart } from "@/components/charts";
 import { PageHeader, ScoreBadge, ScoreRing, SeverityBadge, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { all, get } from "@/lib/db";
 import { projectHealth } from "@/lib/health";
 import { llmAvailable } from "@/lib/judge/llm";
@@ -65,7 +66,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
         </div>
       ) : welcome ? <div className="alert alert-info">Welcome to ProofMyAI! Follow the checklist below. The <Link href={`${base}/guide`}>setup guide</Link> has click-by-click help.</div> : null}
       {!llmAvailable() ? (
-        <div className="alert alert-warn">Running in <strong>basic mode</strong> (rule-based checks and the neural model). Add a <code>GEMINI_API_KEY</code> (free tier available) or <code>ANTHROPIC_API_KEY</code> to the server to turn on the AI judge.</div>
+        isAdmin(user.email) ? <div className="alert alert-warn"><strong>Admin only:</strong> running in <strong>basic mode</strong> (rule-based checks and the neural model). Add a <code>GEMINI_API_KEY</code> (free tier available) or <code>ANTHROPIC_API_KEY</code> to the server to turn on the AI judge.</div> : null
       ) : null}
       {askFeedback ? (
         <div className="alert alert-info row between" style={{ flexWrap: "wrap", gap: 10 }}>

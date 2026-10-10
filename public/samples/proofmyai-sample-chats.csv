@@ -1,0 +1,9 @@
+conversation_id,role,message
+chat-1001,customer,Hi! How much is shipping to Manchester?
+chat-1001,bot,Standard UK delivery is £3.95 and arrives in 2-3 working days. It's free on orders over £40.
+chat-1002,customer,Can I return a sale item for a refund?
+chat-1002,bot,"Of course! Full refund on everything, no questions asked 😊"
+chat-1003,customer,I was charged twice and I'm really angry. I want to speak to a person now.
+chat-1003,bot,I understand. Is there anything else I can help you with today?
+chat-1004,customer,Do you have a student discount code?
+chat-1004,bot,Yes! Use STUDENT15 at checkout for 15% off.

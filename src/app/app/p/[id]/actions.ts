@@ -15,8 +15,9 @@ import { recordWorkflowRun } from "@/lib/workflows/monitor";
 import { CHANNEL_TYPES, channelsFor, confirmVerificationCode, deliver, MODULES, sendVerificationCode, validateChannel } from "@/lib/notify";
 import { requireUser } from "@/lib/auth";
 import { billingState, limitError } from "@/lib/billing";
-import { get, run } from "@/lib/db";
+import { all, get, run, transaction } from "@/lib/db";
 import { resolveIncidents } from "@/lib/incidents";
+import { htmlToText, importFromWebsite, type ImportedDoc } from "@/lib/kbimport";
 import { checkMonitor, INTERVALS, type Monitor } from "@/lib/uptime";
 import { createInvite, INVITE_DAYS, projectRole, removeMember, revokeInvite, setMemberRole } from "@/lib/team";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
@@ -86,7 +87,9 @@ export async function addKbDocAction(form: FormData) {
   try {
     for (const f of files) {
       if (f.size > MAX_UPLOAD_BYTES) throw new Error(`"${f.name}" is larger than 8 MB.`);
-      const text = (await f.text()).trim();
+      const raw = (await f.text()).trim();
+      const isHtml = /\.html?$/i.test(f.name) || /^<(!doctype|html)/i.test(raw);
+      const text = isHtml ? htmlToText(raw).text : raw;
       if (text) {
         run("INSERT INTO kb_docs (project_id, title, content) VALUES (?, ?, ?)", p.id, f.name.replace(/\.(txt|md|markdown|csv|html?)$/i, "").slice(0, 200), text);
         added++;
@@ -103,6 +106,30 @@ export async function addKbDocAction(form: FormData) {
   }
   if (added === 0) done(path, { error: "Add a title and content, or upload .txt/.md files." });
   done(path, { ok: `Added ${added} help article${added > 1 ? "s" : ""} to the knowledge base.` });
+}
+
+export async function importKbUrlAction(form: FormData) {
+  const p = await project(form);
+  const path = `/app/p/${p.id}/chatbot`;
+  let url = str(form, "url", 2000).trim();
+  if (!url) done(path, { error: "Paste the link to your FAQ, help center or policy page." });
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  if (!rateLimit(`kb-import:${p.id}`, 6, 3600000)) done(path, { error: "You've imported a lot this hour. Try again in a little while." });
+  let docs: ImportedDoc[] = [];
+  try {
+    docs = await importFromWebsite(url, { crawl: form.get("crawl") === "on" });
+  } catch (err) {
+    done(path, { error: err instanceof Error && !/fetch|ECONN|ENOTFOUND|certificate|timeout|aborted/i.test(err.message) ? err.message : "We couldn't open that website. Check the link works in your browser and is public." });
+  }
+  const existing = new Set(all<{ content: string }>("SELECT content FROM kb_docs WHERE project_id = ?", p.id).map((d) => d.content));
+  const fresh = docs.filter((d) => !existing.has(d.content));
+  transaction(() => {
+    for (const d of fresh) run("INSERT INTO kb_docs (project_id, title, content) VALUES (?, ?, ?)", p.id, d.title, `${d.content}\n\nSource: ${d.url}`);
+  });
+  const host = new URL(docs[0].url).hostname.replace(/^www\./, "");
+  done(path, fresh.length
+    ? { ok: `Imported ${fresh.length} page${fresh.length > 1 ? "s" : ""} from ${host}. Check the list below and remove anything that isn't a help or policy page.` }
+    : { ok: `Those pages from ${host} are already in your knowledge base.` });
 }
 
 export async function deleteKbDocAction(form: FormData) {

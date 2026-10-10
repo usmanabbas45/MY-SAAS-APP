@@ -138,7 +138,9 @@ export const guardedAgent = new Agent({ connect: { lookup: guardedLookup as neve
 /** fetch() with a timeout and SSRF protection, used for every outbound call to customer systems. */
 export async function safeFetch(url: string, init: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
   await assertPublicUrl(url);
-  const res = await undiciFetch(url, { ...(init as object), redirect: "error", signal: AbortSignal.timeout(timeoutMs), dispatcher: guardedAgent } as never);
+  // Redirects are refused by default; callers that pass redirect: "manual" check each Location themselves.
+  const redirect = init.redirect === "manual" ? "manual" : "error";
+  const res = await undiciFetch(url, { ...(init as object), redirect, signal: AbortSignal.timeout(timeoutMs), dispatcher: guardedAgent } as never);
   return res as unknown as Response;
 }
 

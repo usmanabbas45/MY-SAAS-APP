@@ -1,6 +1,7 @@
 import { CopyButton, SubmitButton } from "@/components/client";
 import { Badge, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { get } from "@/lib/db";
 import { FEATURE_NAMES } from "@/lib/judge/features";
 import { judgeLabel } from "@/lib/judge/llm";
@@ -44,7 +45,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
           <h3>Project & alerts</h3>
           <div className="field"><label htmlFor="name">Project name</label><input id="name" name="name" type="text" defaultValue={p.name} maxLength={100} /></div>
           <div className="field">
-            <label htmlFor="em">Weekly report email {process.env.RESEND_API_KEY ? null : <span className="hint">(needs RESEND_API_KEY on the server)</span>}</label>
+            <label htmlFor="em">Weekly report email {process.env.RESEND_API_KEY || !isAdmin(user.email) ? null : <span className="hint">(admin: needs RESEND_API_KEY on the server)</span>}</label>
             <input id="em" name="alert_email" type="email" defaultValue={p.alert_email ?? ""} placeholder="you@company.com" />
           </div>
           <p className="sub" style={{ marginTop: -4 }}>Where problems are sent (email, WhatsApp, Slack…) is chosen on the <a href={`/app/p/${p.id}/alerts`}>🔔 Alerts</a> page.</p>
