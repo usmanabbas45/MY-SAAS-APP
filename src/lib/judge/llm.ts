@@ -1,8 +1,9 @@
+import { createHash } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { recordAiUsage, type AiUse } from "../aicost";
-import { get } from "../db";
+import { get, run } from "../db";
 import { clamp } from "../text";
 import { JudgeError } from "./errors";
 import { geminiJudge, geminiKey, geminiModel } from "./gemini";
@@ -78,6 +79,34 @@ function kbBlock(docs: KbDoc[]): string {
   return `<knowledge_base>\n${body}\n</knowledge_base>`;
 }
 
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+
+/** Prompt-cache entries live ~5 minutes and refresh on every hit; stay a little under that. */
+const WARM_MS = 4 * 60_000;
+/** Below roughly this size the knowledge base is too small to be cached, so there is nothing to wait for. */
+const MIN_CACHEABLE_CHARS = 16_000;
+const warmPrefixes = new Map<string, { at: number; ready: Promise<void> }>();
+
+/**
+ * Parallel calls that share a knowledge base would each pay to write it to the prompt cache. The first
+ * call for a prefix goes alone; the others wait for it and then read the cache at a tenth of the price.
+ * Grading is unchanged: every call still sends the full knowledge base.
+ */
+async function withWarmCache<T>(key: string | null, send: () => Promise<T>): Promise<T> {
+  if (!key) return send();
+  const now = Date.now();
+  for (const [k, v] of warmPrefixes) if (now - v.at > WARM_MS) warmPrefixes.delete(k);
+  const entry = warmPrefixes.get(key);
+  if (entry) {
+    await entry.ready;
+    entry.at = Date.now();
+    return send();
+  }
+  const pending = send();
+  warmPrefixes.set(key, { at: now, ready: pending.then(() => undefined, () => void warmPrefixes.delete(key)) });
+  return pending;
+}
+
 async function callJudge<S extends z.ZodType>(
   instructions: string,
   docs: KbDoc[] | null,
@@ -91,11 +120,13 @@ async function callJudge<S extends z.ZodType>(
   // Stable content (instructions, knowledge base) goes first and is cached across every
   // conversation in an audit; the per-item task is last so it never breaks the cache prefix.
   const system: Anthropic.Beta.BetaTextBlockParam[] = [{ type: "text", text: instructions }];
-  if (docs) system.push({ type: "text", text: kbBlock(docs), cache_control: { type: "ephemeral" } });
+  const kb = docs ? kbBlock(docs) : null;
+  if (kb) system.push({ type: "text", text: kb, cache_control: { type: "ephemeral" } });
+  const warmKey = kb && kb.length >= MIN_CACHEABLE_CHARS ? sha256(`${model()}\n${instructions}\n${kb}`) : null;
 
   let response;
   try {
-    response = await anthropic().beta.messages.parse({
+    response = await withWarmCache(warmKey, () => anthropic().beta.messages.parse({
       model: model(),
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
@@ -103,7 +134,7 @@ async function callJudge<S extends z.ZodType>(
       system,
       messages: [{ role: "user", content: task }],
       output_config: { effort: "medium", format: betaZodOutputFormat(schema) },
-    });
+    }));
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) throw new JudgeError("The Anthropic API key is invalid.");
     if (err instanceof Anthropic.RateLimitError) throw new JudgeError("The AI judge is rate limited. Try again in a minute.");
@@ -168,9 +199,24 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
   const earlier = (exchanges[0]?.context ?? []).slice(-20)
     .map((t) => `<${t.role === "user" ? "customer" : "assistant"}>${clampText(t.content, 1500)}</${t.role === "user" ? "customer" : "assistant"}>`).join("\n");
   const task = `${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
-  const result = await callJudge(CHAT_INSTRUCTIONS, docs, task, ChatGrades, use);
+  // An exact repeat (same project, docs, judge and conversation text) gets the same grades without
+  // paying the AI again. The conversation id is left out of the key because it does not affect grading.
+  const projectId = use?.projectId ?? null;
+  const judgeId = judgeProvider() === "gemini" ? `gemini:${geminiModel()}` : `anthropic:${model()}`;
+  const keyTask = task.replace(`<conversation id="${exchanges[0]?.conversationId ?? ""}">`, "<conversation>");
+  const cacheKey = sha256(JSON.stringify([projectId, judgeId, CHAT_INSTRUCTIONS, docs, keyTask]));
+  let result = cachedGrades(cacheKey);
+  if (!result) {
+    // Identical conversations graded in parallel share one AI call.
+    let pending = gradesInFlight.get(cacheKey);
+    if (!pending) {
+      pending = callJudge(CHAT_INSTRUCTIONS, docs, task, ChatGrades, use).finally(() => gradesInFlight.delete(cacheKey));
+      gradesInFlight.set(cacheKey, pending);
+    }
+    result = await pending;
+  }
   const titles = new Set(docs.map((d) => d.title));
-  return exchanges.map((e) => {
+  const grades = exchanges.map((e) => {
     const g = result.grades.find((x) => x.turn_index === e.turnIndex);
     if (!g) throw new JudgeError(`The AI judge skipped reply #${e.turnIndex} in conversation ${e.conversationId}.`);
     return {
@@ -183,6 +229,33 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
       topic: g.topic?.trim().slice(0, 40) || null,
     };
   });
+  storeGrades(cacheKey, projectId, result);
+  return grades;
+}
+
+const CACHE_DAYS = 30;
+const gradesInFlight = new Map<string, Promise<z.infer<typeof ChatGrades>>>();
+
+function cachedGrades(key: string): z.infer<typeof ChatGrades> | null {
+  try {
+    const row = get<{ result: string }>(
+      `SELECT result FROM judge_cache WHERE key = ? AND created_at > datetime('now', '-${CACHE_DAYS} days')`, key);
+    if (!row) return null;
+    const parsed = ChatGrades.safeParse(JSON.parse(row.result));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Never throws: the cache is only a saving and must not break grading. */
+function storeGrades(key: string, projectId: number | null, result: z.infer<typeof ChatGrades>): void {
+  try {
+    run("INSERT OR REPLACE INTO judge_cache (key, project_id, result) VALUES (?, ?, ?)", key, projectId, JSON.stringify(result));
+    if (Math.random() < 0.02) run(`DELETE FROM judge_cache WHERE created_at <= datetime('now', '-${CACHE_DAYS} days')`);
+  } catch (err) {
+    console.error("[judge-cache] could not store grades:", err instanceof Error ? err.message : err);
+  }
 }
 
 const TEST_INSTRUCTIONS = `You are ProofMyAI's regression tester for AI chatbots.

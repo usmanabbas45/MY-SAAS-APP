@@ -89,3 +89,51 @@ describe("recording and reports", () => {
     expect(() => recordAiUsage({ projectId: -1, kind: "audit" }, "anthropic", "x", { input: Number.NaN, output: 0, cacheRead: 0, cacheWrite: 0 })).not.toThrow();
   });
 });
+
+describe("saving AI tokens without changing results", () => {
+  const ok = (turns: number[]) => ({
+    model: "claude-opus-5-5", stop_reason: "end_turn",
+    usage: { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+    parsed_output: { grades: turns.map((t) => ({ turn_index: t, verdict: "correct", severity: "none", reason: "ok", source_doc: null, confidence: 0.9 })) },
+  });
+
+  it("grades an exact repeat conversation once and reuses the result", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    parse.mockResolvedValue(ok([1]));
+    const same = [{ role: "user" as const, content: "Opening hours?" }, { role: "assistant" as const, content: "9 to 5, Monday to Friday." }];
+    const { id } = createAudit(projectId, "Repeats");
+    await executeAudit(id, projectId, [{ id: "a", turns: same }, { id: "b", turns: same }, { id: "c", turns: same }]);
+    expect(parse).toHaveBeenCalledTimes(1);
+    const second = createAudit(projectId, "Repeats again");
+    await executeAudit(second.id, projectId, [{ id: "d", turns: same }]);
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(get<{ n: number }>("SELECT COUNT(*) AS n FROM audit_items WHERE audit_id = ?", second.id)?.n).toBe(1);
+
+    // A change to the help docs means a fresh grading.
+    run("INSERT INTO kb_docs (project_id, title, content) VALUES (?, 'Hours', 'Open 9 to 5 on weekdays.')", projectId);
+    const third = createAudit(projectId, "After docs change");
+    await executeAudit(third.id, projectId, [{ id: "e", turns: same }]);
+    expect(parse).toHaveBeenCalledTimes(2);
+  });
+
+  it("writes a large knowledge base to the prompt cache once before grading in parallel", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    run("INSERT INTO kb_docs (project_id, title, content) VALUES (?, 'Policies', ?)", projectId, "Refunds within 30 days. ".repeat(2000));
+    let active = 0;
+    const startedWhileFirstRunning: number[] = [];
+    parse.mockImplementation(async () => {
+      startedWhileFirstRunning.push(active);
+      active++;
+      await new Promise((r) => setTimeout(r, 20));
+      active--;
+      return ok([1]);
+    });
+    const { id } = createAudit(projectId, "Warm cache");
+    await executeAudit(id, projectId, ["a", "b", "c", "d"].map((c) => ({
+      id: c, turns: [{ role: "user" as const, content: `Question ${c}?` }, { role: "assistant" as const, content: `Answer ${c}.` }],
+    })));
+    expect(parse).toHaveBeenCalledTimes(4);
+    expect(startedWhileFirstRunning[0]).toBe(0);
+    expect(startedWhileFirstRunning[1]).toBe(0); // the second call waited for the first one to finish
+  });
+});
