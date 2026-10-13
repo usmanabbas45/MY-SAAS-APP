@@ -252,6 +252,15 @@ function migrate(db: DatabaseSync): void {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS ai_usage_created ON ai_usage (created_at)");
+  // Graded results for exact repeat conversations (same project, help docs, judge and text), keyed by a
+  // hash so no customer text is stored here. Saves paying the AI judge twice for the same answer.
+  db.exec(`CREATE TABLE IF NOT EXISTS judge_cache (
+    key TEXT PRIMARY KEY,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    result TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS judge_cache_created ON judge_cache (created_at)");
   // One row per user per day they used the app: powers retention cohorts.
   db.exec(`CREATE TABLE IF NOT EXISTS user_activity (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
