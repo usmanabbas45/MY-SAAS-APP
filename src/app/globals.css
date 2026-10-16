@@ -513,6 +513,11 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .answer-box { margin: 16px 0 22px; padding: 16px 18px; border-left: 4px solid var(--brand); background: var(--brand-soft); border-radius: 8px; line-height: 1.6; }
 .callout { margin: 16px 0; padding: 14px 16px; border-radius: 10px; background: var(--ok-soft); line-height: 1.6; }
 .takeaways { margin-top: 28px; }
+.table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--border); border-radius: 10px; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 560px; }
+.table-wrap th, .table-wrap td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table-wrap th { background: var(--surface-2); font-weight: 650; }
+.table-wrap tr:last-child td { border-bottom: 0; }
 .blog details { border-bottom: 1px solid var(--border); padding: 10px 0; }
 .blog details summary { font-weight: 650; cursor: pointer; }
 
