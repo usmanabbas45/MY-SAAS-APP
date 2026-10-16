@@ -3,7 +3,7 @@ import { Fragment } from "react";
 
 /**
  * Tiny, safe renderer for the blog's Markdown subset: ## / ### headings, paragraphs, "- " and "1. " lists,
- * "> " callouts, **bold** and [links](/path). Text is rendered by React, so nothing is injected as HTML.
+ * "> " callouts, | tables |, **bold** and [links](/path). Text is rendered by React, so nothing is injected as HTML.
  */
 function inline(text: string, keyBase: string) {
   const out: React.ReactNode[] = [];
@@ -36,6 +36,18 @@ export function Prose({ source }: { source: string }) {
         const lines = block.split("\n").map((l) => l.trim());
         if (lines.every((l) => l.startsWith("- "))) return <ul key={k}>{lines.map((l, i) => <li key={i}>{inline(l.slice(2), `${k}-${i}`)}</li>)}</ul>;
         if (lines.every((l) => /^\d+\.\s/.test(l))) return <ol key={k}>{lines.map((l, i) => <li key={i}>{inline(l.replace(/^\d+\.\s/, ""), `${k}-${i}`)}</li>)}</ol>;
+        if (lines.length > 1 && lines.every((l) => l.startsWith("|"))) {
+          const cells = (l: string) => l.replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+          const [head, ...rest] = lines.filter((l) => !/^\|[\s:|-]+\|$/.test(l));
+          return (
+            <div key={k} className="table-wrap">
+              <table>
+                <thead><tr>{cells(head).map((c, i) => <th key={i}>{inline(c, `${k}-h${i}`)}</th>)}</tr></thead>
+                <tbody>{rest.map((r, ri) => <tr key={ri}>{cells(r).map((c, i) => <td key={i}>{inline(c, `${k}-${ri}-${i}`)}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+          );
+        }
         if (lines.every((l) => l.startsWith("> "))) return <div key={k} className="callout">{lines.map((l, i) => <Fragment key={i}>{inline(l.slice(2), `${k}-${i}`)}{i < lines.length - 1 ? <br /> : null}</Fragment>)}</div>;
         return <p key={k}>{inline(lines.join(" "), k)}</p>;
       })}

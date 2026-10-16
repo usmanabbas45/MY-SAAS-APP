@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { headings, Prose } from "@/components/prose";
 import { POSTS } from "@/lib/blog";
+import { COMPARISONS } from "@/lib/compare";
 import { indexNowKey, submitToIndexNow } from "@/lib/indexnow";
 import { llmsFullTxt, llmsTxt } from "@/lib/llms";
 import robots from "@/app/robots";
@@ -17,7 +18,12 @@ describe("blog content", () => {
       expect(headings(p.body).length).toBeGreaterThanOrEqual(3);
       // Internal links must point at pages that exist.
       for (const [, href] of p.body.matchAll(/\]\((\/[^)#]*)/g)) {
-        expect(["/signup", "/docs", "/solutions/ai-chatbot-monitoring", "/solutions/n8n-workflow-monitoring", "/solutions/ai-agent-monitoring", "/solutions/ai-chatbot-compliance-monitoring"]).toContain(href);
+        expect([
+          "/signup", "/docs", "/free-audit", "/tools/ai-chatbot-checker",
+          "/solutions/ai-chatbot-monitoring", "/solutions/n8n-workflow-monitoring", "/solutions/ai-agent-monitoring",
+          "/solutions/ai-chatbot-compliance-monitoring", "/solutions/ai-chatbot-monitoring-for-agencies",
+          ...POSTS.map((x) => `/blog/${x.slug}`), ...COMPARISONS.map((c) => `/compare/${c.slug}`),
+        ]).toContain(href);
       }
     }
   });
@@ -31,6 +37,9 @@ describe("blog content", () => {
     expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
     expect(html).toContain("<ol><li>a</li><li>b</li></ol>");
     expect(html).toContain('class="callout"');
+    const table = renderToStaticMarkup(Prose({ source: "| Tool | Code? |\n|---|---|\n| **ProofMyAI** | No |" }));
+    expect(table).toContain('<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Code?</th></tr></thead>');
+    expect(table).toContain("<td><strong>ProofMyAI</strong></td><td>No</td>");
   });
 });
 

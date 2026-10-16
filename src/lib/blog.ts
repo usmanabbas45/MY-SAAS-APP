@@ -23,6 +23,154 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "intercom-fin-accuracy-monitoring",
+    title: "How to Check Intercom Fin's Answers for Accuracy (Without Reading Every Chat)",
+    seoTitle: "How to Check Intercom Fin Answer Accuracy (2026)",
+    description: "Intercom Fin answers from your help center, but outdated articles and gaps still produce wrong answers. How to check every Fin reply against your own policies, find the article to fix, and get alerts.",
+    date: "2026-10-16",
+    readMins: 7,
+    tags: ["Intercom", "AI chatbots", "Accuracy"],
+    answer: "To check Intercom Fin's answers for accuracy, compare every Fin reply with the help center articles and policies it should follow, label each one (correct, not in the docs, made up, should have gone to a human) and fix the article behind each wrong answer. You can do it by sampling conversations by hand, or connect Intercom read-only to a monitoring tool such as ProofMyAI, which grades every Fin reply automatically and alerts you when one is wrong.",
+    body: `
+## Why Fin still gets answers wrong
+
+Fin builds its answers from your help center and other content you give it. That makes it far more reliable than a bot with no sources, but it does not make it right every time. The common causes of wrong answers are:
+
+- **Outdated articles.** You changed the returns window from 30 to 14 days, but one article still says 30. Fin quotes it.
+- **Conflicting articles.** Two articles say different things about the same policy, and Fin picks one.
+- **Gaps.** The customer asks something your docs never cover, and Fin answers from the closest article it can find.
+- **Missed hand-offs.** An angry customer or a refund dispute should go to a person, and the conversation stays with the bot.
+
+Intercom's own reports focus on resolutions and customer satisfaction. They tell you **how many** conversations Fin handled, not whether a specific answer matched your policy. A conversation can count as resolved even though the customer left with the wrong refund rule.
+
+## Option 1: Check Fin by hand (free, slow)
+
+1. In Intercom, open the Inbox and filter to conversations Fin handled in the last week.
+2. Pick 30 to 50 conversations at random, plus every conversation with a bad rating.
+3. For each Fin reply, find the help article it should be based on and compare. Label it: **correct**, **not in the docs**, **made up** (contradicts the docs), **should have gone to a human**, or **off policy** (promises you never make).
+4. Group the wrong answers by help article. The articles with the most wrong answers are the ones to fix first.
+5. Repeat every week, and after every change to your help center.
+
+This works, but it covers only a sample, and it takes a few hours each week.
+
+## Option 2: Check every Fin reply automatically
+
+[ProofMyAI](/solutions/ai-chatbot-monitoring) connects to Intercom **read-only**. Every 15 minutes it reads new conversations, grades each Fin reply against your own help articles, and ignores replies written by your human team. Nothing is ever written back to Intercom.
+
+1. **Create an Intercom access token.** In Intercom, go to Settings, open the Developer Hub, create an app for your workspace and copy its access token from the Authentication page.
+2. **Add your help center to ProofMyAI.** Paste your help center address and ProofMyAI imports the articles, so it knows what the right answers are.
+3. **Connect Intercom.** In ProofMyAI, open **Connect**, choose **Intercom (Fin)**, choose your data region (US, EU or Australia) and paste the token.
+4. **Turn on alerts.** Choose WhatsApp, Slack, Microsoft Teams or email for high-risk answers, such as a made-up refund or price.
+
+From then on, each Fin reply gets a verdict and a plain-English reason. The fix list groups wrong answers by the help article that caused them, and **Fix with AI** drafts the corrected article for you to paste into Intercom.
+
+## What to fix first
+
+- **Money topics:** refunds, prices, discounts, cancellation fees.
+- **Legal and safety topics:** warranties, data requests, medical or safety questions.
+- **High-volume topics:** delivery times, opening hours, account access.
+
+One corrected article usually fixes many wrong answers at once.
+
+## Keep it accurate over time
+
+- Re-check after every help center change.
+- Add a test question each time a customer finds a wrong answer, and run the test set every night.
+- Review the "not in the docs" list monthly. Those are the articles you still need to write.
+`,
+    takeaways: [
+      "Fin answers from your help center, so outdated, conflicting or missing articles cause most wrong answers.",
+      "Resolution rate does not tell you whether an answer matched your policy; you need to grade the answers themselves.",
+      "Group wrong answers by help article and fix the article, not the single conversation.",
+      "A read-only connection can grade every Fin reply automatically and alert you to high-risk mistakes.",
+    ],
+    faqs: [
+      { q: "Does connecting ProofMyAI change anything in Intercom?", a: "No. The connection is read-only. ProofMyAI reads conversations to grade Fin's replies and never sends messages, edits articles or changes settings in Intercom." },
+      { q: "Are my human agents' replies graded too?", a: "No. Only bot replies are graded. Replies written by your team are skipped." },
+      { q: "Can I try it without connecting Intercom?", a: "Yes. Export a set of conversations as CSV and upload them in Chatbot audits, or paste one question and answer into the free AI chatbot checker." },
+    ],
+    cta: { text: "Check your Intercom Fin answers for free", href: "/free-audit" },
+  },
+  {
+    slug: "ai-chatbot-testing-tools",
+    title: "AI Chatbot Testing Tools: 6 Options Compared for 2026",
+    seoTitle: "AI Chatbot Testing Tools: 6 Options Compared (2026)",
+    description: "The main ways to test an AI chatbot in 2026, from scripted test frameworks to LLM evaluation and observability platforms to no-code accuracy monitoring, and how to choose the right one.",
+    date: "2026-10-16",
+    readMins: 8,
+    tags: ["AI chatbots", "Testing", "Tools"],
+    answer: "AI chatbot testing tools fall into three groups: scripted conversation testing frameworks (such as Botium, now part of Cyara), developer tools for LLM evaluation and observability (such as Promptfoo, Langfuse and LangSmith), and no-code accuracy monitoring that grades live answers against your own help docs (such as ProofMyAI). Developers building their own LLM app usually pick the second group; support and operations teams running a bot like Intercom Fin, Zendesk AI or Tidio usually need the third.",
+    body: `
+## What you actually need to test
+
+Before picking a tool, decide what "working" means for your bot. For a customer-facing AI chatbot it usually means:
+
+- **Accuracy:** answers match your own help articles and policies.
+- **Safety:** no made-up promises, no leaked data, no unsafe advice.
+- **Hand-off:** the bot passes angry customers and disputes to a person.
+- **Regression:** an answer that was right last week is still right after a change.
+- **Live quality:** real customers ask questions your test set never covered.
+
+Most tools are strong at one or two of these. The table below shows where each fits.
+
+## The 6 options
+
+| Tool | Type | Best for | Needs code? |
+|---|---|---|---|
+| Spreadsheet + manual review | Manual | First audit, very small bots | No |
+| Botium / Cyara | Scripted conversation testing | Enterprise teams with test scripts and voice/IVR | Some setup |
+| Promptfoo | Open-source LLM evaluation | Developers testing prompts and models before release | Yes |
+| Langfuse | Open-source LLM observability | Developers tracing their own LLM app | Yes |
+| LangSmith | LLM tracing and evaluation | Teams building with LangChain or LangGraph | Yes |
+| ProofMyAI | No-code accuracy monitoring | Support teams running Fin, Zendesk AI, Tidio, WhatsApp or custom bots | No |
+
+### 1. Spreadsheet and manual review
+
+List 30 to 50 real customer questions with the facts a correct answer must contain, ask the bot each one, and mark the answers. It costs nothing and teaches you a lot, but it covers a small sample and needs repeating by hand after every change. Use our [QA checklist](/blog/chatbot-qa-checklist) to structure it.
+
+### 2. Botium (Cyara)
+
+Botium started as an open-source framework for scripted chatbot conversations and is now part of Cyara's customer-experience testing platform. You write expected conversation flows and run them automatically. It suits larger teams with many flows and channels. Scripted tests check the paths you wrote down, so they catch regressions well but say little about the free-form answers an LLM gives to new questions.
+
+### 3. Promptfoo
+
+An open-source command-line tool for evaluating prompts and models. Developers define test cases and assertions in config files and run them in CI, including red-teaming for unsafe output. Excellent when you control the prompt and model; not designed for support teams using a hosted bot.
+
+### 4. Langfuse
+
+Open-source LLM observability: traces of every model call, cost and latency tracking, prompt management and evaluations. It is built for engineers instrumenting their own application with an SDK. See our [Langfuse alternative](/compare/langfuse-alternative) comparison if you need something your support team can run.
+
+### 5. LangSmith
+
+LangChain's platform for tracing, debugging and evaluating LLM applications, with datasets and evaluators. A natural fit if your bot is built with LangChain or LangGraph. Compare it in our [LangSmith alternative](/compare/langsmith-alternative) page.
+
+### 6. ProofMyAI
+
+[ProofMyAI](/solutions/ai-chatbot-monitoring) checks every chatbot answer against your own help center and business rules, with no code. Connect Intercom Fin read-only, upload a chat export, or send conversations from any bot, WhatsApp bot, n8n or Make. Each answer gets a verdict (correct, not in the docs, made up, should have gone to a human, off policy) and a plain-English reason. Wrong answers are grouped by the help article that caused them, **Fix with AI** drafts the corrected article, nightly tests catch regressions, and alerts go to WhatsApp, Slack, Teams or email.
+
+## How to choose
+
+- **You build the bot yourself and write code:** start with Promptfoo for pre-release tests, and add Langfuse or LangSmith for tracing in production.
+- **You run a hosted bot (Fin, Zendesk AI, Tidio, Chatbase) and own the help center:** use no-code accuracy monitoring such as ProofMyAI, plus a short manual test set.
+- **You are an agency running bots for clients:** you need per-client projects and client-ready reports; see [ProofMyAI for agencies](/solutions/ai-chatbot-monitoring-for-agencies).
+- **You are an enterprise with scripted flows and voice channels:** look at Cyara/Botium.
+
+Many teams combine two: developer evaluations before release, and live accuracy monitoring after.
+`,
+    takeaways: [
+      "Decide what 'working' means first: accuracy, safety, hand-off, regression and live quality.",
+      "Scripted frameworks catch regressions on known paths; LLM eval tools suit developers; live accuracy monitoring suits support teams.",
+      "Grade answers against your own help docs, because that is what customers hold you to.",
+      "Most teams combine pre-release tests with live monitoring after launch.",
+    ],
+    faqs: [
+      { q: "What is the best free AI chatbot testing tool?", a: "For a first check, a spreadsheet of real questions is free and effective. Promptfoo and Langfuse are open source for developers. ProofMyAI has a free plan for 50 conversations a month and a free single-answer checker that needs no account." },
+      { q: "Can I test a chatbot I didn't build, like Intercom Fin?", a: "Yes. You can't change its code, but you can grade its answers. Export conversations or connect Intercom read-only, then compare each answer with your help articles." },
+      { q: "How often should I test my chatbot?", a: "Run a small test set every night and after every help center or prompt change, and monitor live conversations continuously, because customers ask questions no test set covers." },
+    ],
+    cta: { text: "Test your chatbot's answers for free", href: "/tools/ai-chatbot-checker" },
+  },
+  {
     slug: "chatbot-analytics-metrics",
     title: "Chatbot Analytics: The 9 Metrics That Matter and How to Track Them",
     seoTitle: "Chatbot Analytics: 9 Metrics That Matter (2026)",
