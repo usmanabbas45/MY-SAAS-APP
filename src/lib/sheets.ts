@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { scheduledIds } from "./billing";
-import { all, run } from "./db";
-import { raiseIncident, resolveIncidents } from "./incidents";
+import { all, get, run } from "./db";
+import { raiseIncident, resolveIncidents, type NewIncident } from "./incidents";
 import { safeFetch } from "./security";
 
 /**
@@ -117,12 +117,27 @@ const ageHours = (iso: string, now: Date) => (now.getTime() - Date.parse(iso.end
 const plural = (n: number, w: string) => `${n.toLocaleString("en-GB")} ${w}${n === 1 ? "" : "s"}`;
 const hoursText = (h: number) => (h >= 48 && h % 24 === 0 ? plural(h / 24, "day") : plural(h, "hour"));
 
+/** One line in the Live tracking feed: sheet changes, new problems and fixes (not every quiet check). */
+export function logSheetEvent(w: Pick<SheetWatch, "id" | "project_id">, at: string, level: "ok" | "warn" | "bad", title: string, detail: string): void {
+  run("INSERT INTO sheet_events (watch_id, project_id, at, level, title, detail) VALUES (?, ?, ?, ?, ?, ?)", w.id, w.project_id, at, level, title, detail);
+}
+
 export interface SheetCheck { ok: boolean; problems: string[]; error: string | null; rows: number | null }
 
 /** Runs one check, updates the watch and raises or resolves incidents. */
 export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Date()): Promise<SheetCheck> {
   const at = now.toISOString();
   const key = `sheet:${w.id}`;
+  /** Raises an incident and, when it is new, adds it to the live feed. */
+  const problem = async (inc: NewIncident) => {
+    if (await raiseIncident(w.project_id, inc)) logSheetEvent(w, at, inc.severity === "high" ? "bad" : "warn", inc.title, inc.detail);
+  };
+  /** Resolves an incident and, when one was open, adds "fixed" to the live feed. */
+  const fixed = (suffix: string, what: string) => {
+    if (!get("SELECT 1 FROM incidents WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", w.project_id, `${key}:${suffix}`)) return;
+    resolveIncidents(w.project_id, `${key}:${suffix}`);
+    logSheetEvent(w, at, "ok", `"${w.name}": ${what}`, "Fixed. ProofMyAI will keep watching.");
+  };
   let text: string;
   try {
     text = await fetchSheetCsv(w.csv_url, fetcher);
@@ -131,10 +146,10 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
     const fails = w.fails + 1;
     const failing = fails >= FAILS_TO_ALERT;
     run("UPDATE sheet_watches SET status = ?, fails = ?, last_checked_at = ?, last_error = ? WHERE id = ?", failing ? "error" : w.status, fails, at, msg, w.id);
-    if (failing) await raiseIncident(w.project_id, { module: "workflows", code: "SHEET_UNREADABLE", severity: "high", title: `Can't read the sheet "${w.name}"`, detail: msg, dedupeKey: `${key}:read` });
+    if (failing) await problem({ module: "workflows", code: "SHEET_UNREADABLE", severity: "high", title: `Can't read the sheet "${w.name}"`, detail: msg, dedupeKey: `${key}:read` });
     return { ok: false, problems: [], error: msg, rows: null };
   }
-  resolveIncidents(w.project_id, `${key}:read`);
+  fixed("read", "readable again");
 
   const s = analyseCsv(text, w.required_col);
   const changed = s.hash !== w.last_hash;
@@ -144,49 +159,53 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
   // 1. Stopped updating.
   if (w.stale_hours > 0 && !changed && w.last_hash && ageHours(lastChanged, now) >= w.stale_hours) {
     problems.push("not updating");
-    await raiseIncident(w.project_id, {
+    await problem({
       module: "workflows", code: "SHEET_STALE", severity: "high", title: `"${w.name}" stopped updating`,
       detail: `No changes for ${hoursText(Math.floor(ageHours(lastChanged, now)))} (your limit is ${hoursText(w.stale_hours)}). The automation that writes to this sheet may have stopped. It has ${plural(s.rows, "row")}.`,
       dedupeKey: `${key}:stale`,
     });
-  } else resolveIncidents(w.project_id, `${key}:stale`);
+  } else fixed("stale", "updating again");
 
   // 2. Formula errors.
   if (s.errorCells.length) {
     problems.push("error cells");
-    await raiseIncident(w.project_id, {
+    await problem({
       module: "workflows", code: "SHEET_ERRORS", severity: "medium", title: `${plural(s.errorCells.length, "error cell")} in "${w.name}"`,
       detail: `For example ${s.errorCells.slice(0, 5).join(", ")}. Formulas or imported data are broken, so totals and reports built on this sheet are wrong.`,
       dedupeKey: `${key}:errors`,
     });
-  } else resolveIncidents(w.project_id, `${key}:errors`);
+  } else fixed("errors", "no more error cells");
 
   // 3. Required column empty in recent rows.
   if (w.required_col && !s.requiredFound && s.rows > 0) {
     problems.push("required column missing");
-    await raiseIncident(w.project_id, {
+    await problem({
       module: "workflows", code: "SHEET_COLUMN_MISSING", severity: "medium", title: `Column "${w.required_col}" is missing from "${w.name}"`,
       detail: `The first row no longer has a "${w.required_col}" heading. Someone may have renamed or deleted the column, or the automation now writes different fields.`,
       dedupeKey: `${key}:blank`,
     });
   } else if (s.blankRequired > 0) {
     problems.push("empty required cells");
-    await raiseIncident(w.project_id, {
+    await problem({
       module: "workflows", code: "SHEET_BLANKS", severity: "medium", title: `"${w.required_col}" is empty in ${plural(s.blankRequired, "new row")} of "${w.name}"`,
       detail: `${s.blankRequired} of the last ${Math.min(RECENT_ROWS, s.rows)} rows have no ${w.required_col}. The automation filling this sheet may be missing a field.`,
       dedupeKey: `${key}:blank`,
     });
-  } else resolveIncidents(w.project_id, `${key}:blank`);
+  } else fixed("blank", "required column is filled again");
 
   // 4. Most rows disappeared (sheet cleared or overwritten).
   if (w.row_count != null && w.row_count >= 20 && s.rows < w.row_count * 0.5) {
     problems.push("rows disappeared");
-    await raiseIncident(w.project_id, {
+    await problem({
       module: "workflows", code: "SHEET_ROWS_DROPPED", severity: "high", title: `Rows disappeared from "${w.name}"`,
       detail: `It went from ${plural(w.row_count, "row")} to ${plural(s.rows, "row")} since the last check. Someone may have cleared the sheet, or an automation overwrote it. Check the version history in Google Sheets (File → Version history).`,
       dedupeKey: `${key}:rows`,
     });
   } // A one-off event: it stays open until someone resolves it on the Incidents page.
+
+  if (!w.last_hash) logSheetEvent(w, at, "ok", `Started watching "${w.name}"`, `${plural(s.rows, "row")} found. Checked every ${CHECK_EVERY_MIN} minutes.`);
+  else if (changed && w.row_count != null && s.rows > w.row_count) logSheetEvent(w, at, "ok", `"${w.name}" updated: +${plural(s.rows - w.row_count, "new row")}`, `${plural(s.rows, "row")} in total.`);
+  else if (changed && !problems.includes("rows disappeared")) logSheetEvent(w, at, "ok", `"${w.name}" was edited`, `${plural(s.rows, "row")} in total.`);
 
   run(
     `UPDATE sheet_watches SET status = ?, fails = 0, last_checked_at = ?, last_changed_at = ?, last_hash = ?, row_count = ?, error_cells = ?, blank_required = ?, last_error = NULL WHERE id = ?`,
@@ -208,5 +227,6 @@ export async function runDueSheets(now = new Date(), fetcher?: Fetcher): Promise
   for (let i = 0; i < allowedDue.length; i += 5) {
     await Promise.all(allowedDue.slice(i, i + 5).map((w) => checkSheet(w, fetcher, now).then(() => n++).catch((err) => console.error("[sheets]", err))));
   }
+  run("DELETE FROM sheet_events WHERE at < ?", new Date(now.getTime() - 30 * 86400000).toISOString());
   return n;
 }
