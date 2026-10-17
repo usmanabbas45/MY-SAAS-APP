@@ -19,6 +19,7 @@ import { all, get, run, transaction } from "@/lib/db";
 import { resolveIncidents } from "@/lib/incidents";
 import { htmlToText, importFromWebsite, type ImportedDoc } from "@/lib/kbimport";
 import { checkMonitor, INTERVALS, type Monitor } from "@/lib/uptime";
+import { checkSheet, sheetCsvUrl, STALE_OPTIONS, type SheetWatch } from "@/lib/sheets";
 import { createInvite, INVITE_DAYS, projectRole, removeMember, revokeInvite, setMemberRole } from "@/lib/team";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
@@ -614,6 +615,56 @@ export async function deleteMonitorAction(form: FormData) {
   run("DELETE FROM uptime_monitors WHERE id = ? AND project_id = ?", id, p.id);
   resolveIncidents(p.id, `uptime:${id}`);
   done(`/app/p/${p.id}/uptime`, { ok: "Monitor removed." });
+}
+
+// ---------- Google Sheets watches ----------
+const sheetsPath = (id: number) => `/app/p/${id}/sheets`;
+const staleHours = (form: FormData) => {
+  const h = Number(str(form, "stale_hours"));
+  return (STALE_OPTIONS as readonly number[]).includes(h) ? h : 24;
+};
+
+export async function addSheetAction(form: FormData) {
+  const p = await project(form);
+  const over = limitError(p.user_id, "monitors");
+  if (over) done(sheetsPath(p.id), { error: over });
+  const url = str(form, "url", 2000);
+  const csvUrl = sheetCsvUrl(url);
+  if (!csvUrl) done(sheetsPath(p.id), { error: "Paste the link of a Google Sheet (it starts with https://docs.google.com/spreadsheets/…)." });
+  const name = str(form, "name", 100) || "Google Sheet";
+  const requiredCol = str(form, "required_col", 100) || null;
+  const { lastInsertRowid } = run(
+    "INSERT INTO sheet_watches (project_id, name, url, csv_url, stale_hours, required_col) VALUES (?, ?, ?, ?, ?, ?)",
+    p.id, name, url, csvUrl!, staleHours(form), requiredCol,
+  );
+  const w = get<SheetWatch>("SELECT * FROM sheet_watches WHERE id = ?", lastInsertRowid)!;
+  const r = await checkSheet(w);
+  done(sheetsPath(p.id), r.error
+    ? { error: `"${name}" was saved, but ProofMyAI couldn't read it yet: ${r.error}` }
+    : { ok: `"${name}" is connected (${r.rows} row${r.rows === 1 ? "" : "s"}). It will be checked every 15 minutes.${r.problems.length ? ` Found right away: ${r.problems.join(", ")}.` : ""}` });
+}
+
+export async function updateSheetAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("sheetId"));
+  run("UPDATE sheet_watches SET stale_hours = ?, required_col = ? WHERE id = ? AND project_id = ?", staleHours(form), str(form, "required_col", 100) || null, id, p.id);
+  done(sheetsPath(p.id), { ok: "Settings saved. They apply from the next check." });
+}
+
+export async function checkSheetNowAction(form: FormData) {
+  const p = await project(form);
+  const w = get<SheetWatch>("SELECT * FROM sheet_watches WHERE id = ? AND project_id = ?", Number(form.get("sheetId")), p.id);
+  if (!w) done(sheetsPath(p.id), { error: "Sheet not found." });
+  const r = await checkSheet(w!);
+  done(sheetsPath(p.id), r.error ? { error: `${w!.name}: ${r.error}` } : r.problems.length ? { error: `${w!.name}: ${r.problems.join(", ")}.` } : { ok: `${w!.name} looks healthy (${r.rows} rows).` });
+}
+
+export async function deleteSheetAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("sheetId"));
+  run("DELETE FROM sheet_watches WHERE id = ? AND project_id = ?", id, p.id);
+  for (const k of ["read", "stale", "errors", "blank", "rows"]) resolveIncidents(p.id, `sheet:${id}:${k}`);
+  done(sheetsPath(p.id), { ok: "Sheet removed." });
 }
 
 // ---------- Team ----------

@@ -301,6 +301,26 @@ function migrate(db: DatabaseSync): void {
     code INTEGER
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_uptime_checks ON uptime_checks (monitor_id, at)");
+  // Google Sheets watches: a link-shared sheet read as CSV every 15 minutes (see lib/sheets.ts).
+  db.exec(`CREATE TABLE IF NOT EXISTS sheet_watches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    csv_url TEXT NOT NULL,
+    stale_hours INTEGER NOT NULL DEFAULT 24,
+    required_col TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    fails INTEGER NOT NULL DEFAULT 0,
+    last_checked_at TEXT,
+    last_changed_at TEXT,
+    last_hash TEXT,
+    row_count INTEGER,
+    error_cells INTEGER NOT NULL DEFAULT 0,
+    blank_required INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   // Team members: other users with access to a project, and pending email invites.
   db.exec(`CREATE TABLE IF NOT EXISTS project_members (
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

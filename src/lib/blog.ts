@@ -23,6 +23,76 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "google-sheets-not-updating-alerts",
+    title: "Google Sheet Not Updating From n8n, Make or Zapier? How to Get an Alert Automatically",
+    seoTitle: "Google Sheet Not Updating? Get an Automatic Alert",
+    description: "Why Google Sheets that n8n, Make or Zapier write to stop updating, how to spot #REF! and empty columns early, and how to get a WhatsApp, Slack or email alert the moment it happens.",
+    date: "2026-10-17",
+    readMins: 6,
+    tags: ["Google Sheets", "n8n", "Monitoring"],
+    answer: "A Google Sheet fed by n8n, Make or Zapier usually stops updating because the automation failed quietly: an expired Google connection, a renamed column or tab, an API rate limit, or a workflow that was switched off. To catch it, watch the sheet itself: alert when it has had no changes for longer than normal, when cells show #REF! or #N/A, or when a key column comes in empty. ProofMyAI does this every 15 minutes with a read-only link and alerts you on WhatsApp, Slack or email.",
+    body: `
+## Why your automated Google Sheet stopped updating
+
+Most "silent" sheet failures come from a handful of causes:
+
+- **The Google connection expired.** n8n, Make and Zapier use a Google login that can expire or be revoked. The workflow then fails on the Sheets step, or never runs.
+- **Someone renamed a column or a tab.** The automation writes to "Email", the sheet now says "E-mail", and the data goes nowhere or into the wrong place.
+- **Rate limits.** Google Sheets limits how many requests an app can make per minute. Big batches get rejected.
+- **The workflow was switched off or its trigger broke.** A webhook URL changed, a form was replaced, or a scenario ran out of operations.
+- **Formulas broke.** A deleted column turns lookups into **#REF!**, and a missing value turns them into **#N/A**. The sheet updates, but the numbers are wrong.
+
+Your workflow tool often shows an error only if you open it. The sheet just stays quiet, and you find out when a report looks wrong or a lead was never called.
+
+## How to check it by hand
+
+1. Open the sheet and look at the newest row. Is the time recent?
+2. Press Ctrl+F and search for **#REF!**, **#N/A** and **#VALUE!**.
+3. Filter your key column (for example Email) for empty cells in the latest rows.
+4. Open **File → Version history** to see when the sheet last changed.
+5. In n8n or Make, open the execution history and look for failed runs on the Google Sheets step.
+
+This works, but nobody does it every hour.
+
+## How to get an alert automatically
+
+[ProofMyAI](/solutions/n8n-workflow-monitoring) watches the sheet itself, so it catches problems no matter which tool writes to it.
+
+1. In Google Sheets, click **Share** and set **General access** to **Anyone with the link** (Viewer). For private data, use **File → Share → Publish to web** for just the tab you want watched.
+2. In ProofMyAI, open **Google Sheets**, paste the link and choose how long the sheet may go without changes (for example 6 hours for a lead sheet, 24 hours for a daily report).
+3. Optionally name a column that must never be empty, such as Email or Order ID.
+4. Choose where alerts go: WhatsApp, Slack, Microsoft Teams, Discord, Telegram or email.
+
+Every 15 minutes ProofMyAI reads the sheet and alerts you when:
+
+- it has had **no changes** for longer than your limit,
+- cells show **#REF!, #N/A, #VALUE!, #DIV/0!** or other errors (with the cell address),
+- your required column is **empty** in recent rows, or the column disappeared,
+- **most rows vanish** at once (the sheet was cleared or overwritten).
+
+It also tells you when the problem is fixed. ProofMyAI only reads the sheet and never changes it.
+
+## Prevent it from happening again
+
+- Lock the header row (**Data → Protect sheets and ranges**) so columns can't be renamed by accident.
+- Add an error branch in n8n or Make that notifies you when the Sheets step fails.
+- Reconnect Google accounts in your automation tool before they expire, and use a shared account rather than a personal one.
+- Watch the workflow too: ProofMyAI's [n8n and Make monitoring](/solutions/n8n-workflow-monitoring) alerts on failed and silently skipped runs.
+`,
+    takeaways: [
+      "Automated sheets usually stop updating because of an expired Google connection, a renamed column or tab, rate limits or a switched-off workflow.",
+      "Watch the sheet itself: time since the last change, error cells, and empty required columns.",
+      "A read-only link is enough to check a sheet every 15 minutes and alert on WhatsApp, Slack or email.",
+      "Protect the header row and add an error branch in your workflow to prevent repeats.",
+    ],
+    faqs: [
+      { q: "Does ProofMyAI need edit access to my Google Sheet?", a: "No. A view-only link or a published tab is enough, and ProofMyAI never writes to the sheet." },
+      { q: "My sheet is private. Can I still watch it?", a: "Yes. Use File → Share → Publish to web for just the tab you want watched, as CSV, and paste that link. Only that tab is shared, not the whole file." },
+      { q: "How quickly will I be alerted?", a: "Sheets are checked every 15 minutes. Error cells and empty required columns are reported on the next check; a stopped sheet is reported once it has gone longer than the limit you set without changes." },
+    ],
+    cta: { text: "Watch your first Google Sheet for free", href: "/signup" },
+  },
+  {
     slug: "intercom-fin-accuracy-monitoring",
     title: "How to Check Intercom Fin's Answers for Accuracy (Without Reading Every Chat)",
     seoTitle: "How to Check Intercom Fin Answer Accuracy (2026)",
