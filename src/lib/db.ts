@@ -321,6 +321,16 @@ function migrate(db: DatabaseSync): void {
     last_error TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS sheet_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    watch_id INTEGER NOT NULL REFERENCES sheet_watches(id) ON DELETE CASCADE,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    at TEXT NOT NULL,
+    level TEXT NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT NOT NULL
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
   // Team members: other users with access to a project, and pending email invites.
   db.exec(`CREATE TABLE IF NOT EXISTS project_members (
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

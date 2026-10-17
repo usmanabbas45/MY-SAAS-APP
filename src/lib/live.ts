@@ -1,7 +1,7 @@
 import { all, get } from "./db";
 import { VERDICT_LABELS, type Verdict } from "./judge/types";
 
-export type Source = "chatbot" | "agents" | "workflows";
+export type Source = "chatbot" | "agents" | "workflows" | "sheets";
 
 export interface FeedEvent {
   source: Source;
@@ -60,7 +60,10 @@ export function liveFeed(projectId: number, limit = 60): FeedEvent[] {
         : [r.output_items != null ? `${r.output_items} items` : null, r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : null].filter(Boolean).join(" · ") || "Completed",
     };
   });
-  return [...chats, ...agents, ...flows].sort((a, b) => b.at - a.at).slice(0, limit);
+  const sheets = all<{ at: string; level: string; title: string; detail: string }>(
+    "SELECT at, level, title, detail FROM sheet_events WHERE project_id = ? ORDER BY id DESC LIMIT ?", projectId, limit,
+  ).map<FeedEvent>((r) => ({ source: "sheets", at: toMs(r.at), ok: r.level === "ok", warn: r.level === "warn", title: r.title, detail: r.detail }));
+  return [...chats, ...agents, ...flows, ...sheets].sort((a, b) => b.at - a.at).slice(0, limit);
 }
 
 export function sourceStatuses(projectId: number, now = Date.now()): SourceStatus[] {
@@ -90,5 +93,15 @@ export function sourceStatuses(projectId: number, now = Date.now()): SourceStatu
     const recent = lastAt != null && now - lastAt < 24 * 3600e3;
     return { source, lastAt, lastHour: r?.n ?? 0, problemsLastHour: problems, state: problems > 0 ? "problem" : recent ? "ok" : "idle" };
   };
-  return [make("chatbot", chat), make("agents", agents), make("workflows", flows)];
+  // Sheets are checked on a schedule rather than sending events, so their status is the watches' current state.
+  const sheetRows = get<{ n: number; bad: number | null; last: string | null }>(
+    "SELECT COUNT(*) AS n, SUM(CASE WHEN status IN ('problem', 'error') THEN 1 ELSE 0 END) AS bad, MAX(last_checked_at) AS last FROM sheet_watches WHERE project_id = ?", projectId,
+  );
+  const sheetEvents = get<{ n: number }>("SELECT COUNT(*) AS n FROM sheet_events WHERE project_id = ? AND at >= ?", projectId, hourAgoIso)?.n ?? 0;
+  const sheetsLast = sheetRows?.last ? toMs(sheetRows.last) : null;
+  const sheets: SourceStatus = {
+    source: "sheets", lastAt: sheetsLast, lastHour: sheetEvents, problemsLastHour: sheetRows?.bad ?? 0,
+    state: (sheetRows?.bad ?? 0) > 0 ? "problem" : sheetsLast != null && now - sheetsLast < 24 * 3600e3 ? "ok" : "idle",
+  };
+  return [make("chatbot", chat), make("agents", agents), make("workflows", flows), sheets];
 }

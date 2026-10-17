@@ -10,7 +10,7 @@ import { addChatSourceAction, addIntercomSourceAction, addTargetAction, addWorkf
 
 export const metadata = { title: "Connect" };
 
-type Group = Source;
+type Group = Exclude<Source, "sheets">; // Sheets are set up on their own page and counted under workflows.
 interface Method { id: string; group: Group; icon: string; title: string; text: string; time: string; code?: boolean; page?: string }
 
 const METHODS: Method[] = [

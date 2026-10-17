@@ -104,6 +104,15 @@ export async function createDemoProject(userId: number): Promise<number> {
               (?, 'Daily revenue report (demo)', 'https://docs.google.com/spreadsheets/d/demo-revenue/edit', 'https://docs.google.com/spreadsheets/d/demo-revenue/export?format=csv', 24, NULL, 'problem', ?, ?, 'demo', 92, 3, 0)`,
       id, now, isoDaysAgo(0), id, now, isoDaysAgo(1),
     );
+    for (const [name, mins, level, title, detail] of [
+      ["New leads from n8n (demo)", 40, "ok", '"New leads from n8n (demo)" updated: +12 new rows', "1,284 rows in total."],
+      ["Daily revenue report (demo)", 300, "warn", '3 error cells in "Daily revenue report (demo)"', "For example D14 (#REF!), D15 (#REF!), F2 (#N/A)."],
+    ] as const) {
+      run(
+        "INSERT INTO sheet_events (watch_id, project_id, at, level, title, detail) SELECT id, project_id, ?, ?, ?, ? FROM sheet_watches WHERE project_id = ? AND name = ?",
+        new Date(Date.now() - mins * 60000).toISOString(), level, title, detail, id, name,
+      );
+    }
     // Two weeks of live tracking (mostly good answers, getting better), with some 👍/👎 ratings, for Analytics.
     const live = run("INSERT INTO audits (project_id, name, mode, status, judge, created_at) VALUES (?, 'Live tracking', 'ai', 'live', 'Demo data', ?)", id, isoDaysAgo(14).replace("T", " ").slice(0, 19)).lastInsertRowid;
     const good = ITEMS.filter((it) => it.v === "correct");

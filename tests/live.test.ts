@@ -77,7 +77,7 @@ describe("live feed and status", () => {
     expect(feed.find((e) => e.source === "agents")?.ok).toBe(true);
     expect(feed.find((e) => e.source === "workflows")?.ok).toBe(false);
     const status = Object.fromEntries(sourceStatuses(projectId).map((s) => [s.source, s.state]));
-    expect(status).toEqual({ chatbot: "problem", agents: "ok", workflows: "problem" });
+    expect(status).toEqual({ chatbot: "problem", agents: "ok", workflows: "problem", sheets: "idle" });
   });
 
   it("reports idle sources and parses both timestamp formats", () => {

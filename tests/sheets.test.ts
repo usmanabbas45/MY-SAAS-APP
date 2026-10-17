@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { usage, billingState } from "@/lib/billing";
 import { all, get, run } from "@/lib/db";
+import { liveFeed, sourceStatuses } from "@/lib/live";
 import { analyseCsv, checkSheet, fetchSheetCsv, parseCsv, runDueSheets, sheetCsvUrl, type SheetWatch } from "@/lib/sheets";
 import { freshDb } from "./helpers";
 
@@ -120,5 +121,32 @@ describe("sheet checks", () => {
     expect(await runDueSheets(new Date(t0.getTime() + 15 * 60000), csv(rows(2)))).toBe(1);
     run("UPDATE projects SET is_demo = 1 WHERE id = ?", projectId);
     expect(await runDueSheets(new Date(t0.getTime() + 60 * 60000), csv(rows(2)))).toBe(0);
+  });
+
+  it("shows changes, problems and fixes in the live feed and status card", async () => {
+    add(24, "Email");
+    const t0 = new Date("2026-10-17T08:00:00Z");
+    await checkSheet(watch(), csv(rows(10)), t0);
+    await checkSheet(watch(), csv(rows(10)), new Date(t0.getTime() + 900000)); // quiet check: no event
+    await checkSheet(watch(), csv(rows(13)), new Date(t0.getTime() + 1800000));
+    await checkSheet(watch(), csv(rows(13, "\nLead Z,,#REF!")), new Date(t0.getTime() + 2700000));
+    await checkSheet(watch(), csv(rows(15)), new Date(t0.getTime() + 3600000));
+    const titles = all<{ title: string; level: string }>("SELECT title, level FROM sheet_events ORDER BY id").map((e) => `${e.level}: ${e.title}`);
+    expect(titles).toEqual([
+      'ok: Started watching "Leads"',
+      'ok: "Leads" updated: +3 new rows',
+      'warn: 1 error cell in "Leads"',
+      'warn: "Email" is empty in 1 new row of "Leads"',
+      'ok: "Leads" updated: +1 new row',
+      'ok: "Leads": no more error cells',
+      'ok: "Leads": required column is filled again',
+      'ok: "Leads" updated: +1 new row',
+    ]);
+    const feed = liveFeed(projectId).filter((e) => e.source === "sheets");
+    expect(feed).toHaveLength(8);
+    const card = sourceStatuses(projectId, t0.getTime() + 3600000).find((s) => s.source === "sheets")!;
+    expect(card).toMatchObject({ state: "ok", problemsLastHour: 0 });
+    run("UPDATE sheet_watches SET status = 'problem'");
+    expect(sourceStatuses(projectId, t0.getTime() + 3600000).find((s) => s.source === "sheets")).toMatchObject({ state: "problem", problemsLastHour: 1 });
   });
 });
