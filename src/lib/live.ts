@@ -48,15 +48,16 @@ export function liveFeed(projectId: number, limit = 60): FeedEvent[] {
       detail: issues.length ? issues[0].message : `Score ${Math.round(r.score)} · $${r.total_cost_usd.toFixed(4)}`,
     };
   });
-  const flows = all<{ started_at: string; platform: string; workflow_name: string; status: string; output_items: number | null; error_message: string | null; duration_ms: number | null }>(
-    "SELECT started_at, platform, workflow_name, status, output_items, error_message, duration_ms FROM workflow_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT ?", projectId, limit,
+  const flows = all<{ started_at: string; platform: string; workflow_name: string; status: string; output_items: number | null; quiet: number; error_message: string | null; duration_ms: number | null }>(
+    "SELECT started_at, platform, workflow_name, status, output_items, quiet, error_message, duration_ms FROM workflow_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT ?", projectId, limit,
   ).map<FeedEvent>((r) => {
-    const silent = r.status === "success" && r.output_items === 0;
+    const silent = r.status === "success" && r.output_items === 0 && !r.quiet;
     const failed = r.status === "error";
     return {
       source: "workflows", at: toMs(r.started_at), ok: !failed && !silent, warn: silent || r.status === "warning",
       title: failed ? `${r.platform} “${r.workflow_name}” failed` : silent ? `${r.platform} “${r.workflow_name}” produced nothing` : `${r.platform} “${r.workflow_name}” ran OK`,
       detail: failed ? (r.error_message ?? "Execution error") : silent ? "Reported success with 0 output items"
+        : r.quiet ? "Nothing to process (normal quiet run)"
         : [r.output_items != null ? `${r.output_items} items` : null, r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : null].filter(Boolean).join(" · ") || "Completed",
     };
   });
@@ -83,7 +84,7 @@ export function sourceStatuses(projectId: number, now = Date.now()): SourceStatu
   );
   const flows = get<{ last: string | null; n: number; bad: number | null }>(
     `SELECT MAX(started_at) AS last, SUM(CASE WHEN started_at >= ? THEN 1 ELSE 0 END) AS n,
-            SUM(CASE WHEN started_at >= ? AND (status = 'error' OR (status = 'success' AND output_items = 0)) THEN 1 ELSE 0 END) AS bad
+            SUM(CASE WHEN started_at >= ? AND (status = 'error' OR (status = 'success' AND output_items = 0 AND quiet = 0)) THEN 1 ELSE 0 END) AS bad
        FROM workflow_runs WHERE project_id = ?`,
     hourAgoIso, hourAgoIso, projectId,
   );

@@ -392,7 +392,7 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
           </Step>
           <Step n={2} title="Body (JSON)">
             <Code blocks={[["JSON body", `{\n  "platform": "other",\n  "workflow_id": "daily-sync",\n  "workflow_name": "Daily order sync",\n  "execution_id": "<unique run id>",\n  "status": "success",\n  "output_items": 42\n}`], ["cURL (try it now)", flow.curl]]} />
-            <p className="hint">Use <code>&quot;status&quot;: &quot;error&quot;</code> with <code>error_message</code> when it fails. <code>output_items: 0</code> on success is flagged as a silent failure.</p>
+            <p className="hint">Use <code>&quot;status&quot;: &quot;error&quot;</code> with <code>error_message</code> when it fails. Add <code>input_items</code> (how many items the run received) so ProofMyAI can tell a quiet run (0 in, 0 out) from a broken one (items in, 0 out).</p>
           </Step>
           <Step n={3} title="Run the workflow once" />
         </ol>
