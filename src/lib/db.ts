@@ -331,6 +331,9 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Zero-output context: items the run received, and whether an empty run was judged a normal quiet run.
+  addColumn(db, "workflow_runs", "input_items", "INTEGER");
+  addColumn(db, "workflow_runs", "quiet", "INTEGER NOT NULL DEFAULT 0");
   // Freshness ("watermark") check: the newest date in a chosen column must be recent.
   addColumn(db, "sheet_watches", "fresh_col", "TEXT");
   addColumn(db, "sheet_watches", "fresh_hours", "INTEGER NOT NULL DEFAULT 0");

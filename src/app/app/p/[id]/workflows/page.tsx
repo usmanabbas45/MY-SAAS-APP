@@ -25,10 +25,10 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
   );
   const totals = get<{ n: number; errors: number | null; silent: number | null }>(
     `SELECT COUNT(*) AS n, SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS errors,
-            SUM(CASE WHEN status = 'success' AND output_items = 0 THEN 1 ELSE 0 END) AS silent
+            SUM(CASE WHEN status = 'success' AND output_items = 0 AND quiet = 0 THEN 1 ELSE 0 END) AS silent
        FROM workflow_runs WHERE project_id = ? AND started_at >= ?`, p.id, since,
   );
-  const recent = all<{ id: number; platform: string; workflow_name: string; execution_id: string; status: string; started_at: string; duration_ms: number | null; output_items: number | null; error_message: string | null }>(
+  const recent = all<{ id: number; platform: string; workflow_name: string; execution_id: string; status: string; started_at: string; duration_ms: number | null; output_items: number | null; quiet: number; error_message: string | null }>(
     "SELECT * FROM workflow_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT 40", p.id,
   );
   const sn = workflowSnippets(process.env.APP_URL || "http://localhost:3000", p.api_key);
@@ -149,10 +149,10 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
               <tbody>
                 {recent.map((r) => (
                   <tr key={r.id}>
-                    <td><StatusBadge status={r.status === "success" && r.output_items === 0 ? "warning" : r.status} /></td>
+                    <td><StatusBadge status={r.status === "success" && r.output_items === 0 && !r.quiet ? "warning" : r.status} /></td>
                     <td>{r.workflow_name}</td>
                     <td className="faint mono">{truncate(r.execution_id, 18)}</td>
-                    <td className="sub">{r.output_items == null ? "–" : `${r.output_items} items`}</td>
+                    <td className="sub">{r.output_items == null ? "–" : r.quiet ? "0 items (quiet)" : `${r.output_items} items`}</td>
                     <td className="sub">{r.duration_ms == null ? "–" : `${(r.duration_ms / 1000).toFixed(1)}s`}</td>
                     <td className="cell-text" style={{ color: "var(--bad)" }}>{r.error_message ? truncate(r.error_message, 140) : ""}</td>
                     <td className="sub">{timeAgo(r.started_at)}</td>

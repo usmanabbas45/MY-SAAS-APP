@@ -72,3 +72,51 @@ describe("database constraints", () => {
     expect(get<{ n: number }>("SELECT COUNT(*) AS n FROM workflow_runs")?.n).toBe(1);
   });
 });
+
+describe("empty runs: quiet spell or broken?", () => {
+  const openSilent = () => all<{ severity: string; title: string; detail: string }>("SELECT severity, title, detail FROM incidents WHERE project_id = ? AND code = 'SILENT_FAILURE' AND resolved = 0", projectId);
+  let n = 0;
+  const send = (output: number, input?: number) => recordWorkflowRun(projectId, {
+    platform: "n8n", workflow_id: "orders", workflow_name: "Orders", execution_id: `ex-${++n}`, status: "success",
+    started_at: new Date(Date.parse("2026-10-17T00:00:00Z") + n * 3600000).toISOString(), output_items: output, input_items: input,
+  });
+  beforeEach(() => { n = 0; });
+
+  it("0 in and 0 out is a quiet run; items in but 0 out is a high alert", async () => {
+    await send(0, 0);
+    expect(openSilent()).toEqual([]);
+    expect(get<{ quiet: number }>("SELECT quiet FROM workflow_runs WHERE execution_id = 'ex-1'")!.quiet).toBe(1);
+    await send(0, 12);
+    expect(openSilent()).toMatchObject([{ severity: "high", title: 'n8n "Orders" received 12 items but produced nothing' }]);
+    await send(5, 5);
+    expect(openSilent()).toEqual([]);
+  });
+
+  it("alerts on the first empty run of a workflow that is almost never empty", async () => {
+    for (let i = 0; i < 20; i++) await send(40);
+    await send(0);
+    const [inc] = openSilent();
+    expect(inc.detail).toContain("almost never empty");
+    expect(inc.detail).toContain("usually produces about 40 items");
+    expect(inc.detail).toContain("Last run with output: 60 min earlier (40 items)");
+  });
+
+  it("learns normal quiet spells and only alerts when the current one is longer", async () => {
+    // Busy by day, two empty runs overnight, repeated.
+    for (let d = 0; d < 4; d++) { for (let i = 0; i < 6; i++) await send(10); await send(0); await send(0); }
+    expect(openSilent()).toEqual([]);
+    await send(10);
+    await send(0); await send(0); await send(0);
+    expect(openSilent()).toEqual([]); // 3 in a row: within max(3, 2)
+    await send(0);
+    expect(openSilent()[0].detail).toContain("4 empty runs in a row");
+    expect(openSilent()[0].detail).toContain("longest one before was 2 runs");
+    await send(10);
+    expect(openSilent()).toEqual([]);
+  });
+
+  it("still alerts while it has too little history to judge, with a hint", async () => {
+    await send(0);
+    expect(openSilent()[0].detail).toContain("send input_items: 0");
+  });
+});

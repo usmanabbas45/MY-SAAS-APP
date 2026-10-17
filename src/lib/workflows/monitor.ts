@@ -15,6 +15,8 @@ export const WorkflowRunSchema = z.object({
   started_at: z.string().datetime({ offset: true }).optional(),
   duration_ms: z.number().nonnegative().nullish(),
   output_items: z.number().int().nonnegative().nullish(),
+  /** Items the run received (e.g. new rows or orders fetched). Tells "nothing to process" apart from "broken". */
+  input_items: z.number().int().nonnegative().nullish(),
   error_message: z.string().max(5000).nullish(),
 });
 export type WorkflowRunInput = z.infer<typeof WorkflowRunSchema>;
@@ -32,14 +34,54 @@ export async function recordWorkflowRun(projectId: number, input: WorkflowRunInp
   const startedAt = input.started_at ? new Date(input.started_at).toISOString() : new Date().toISOString();
   const status = input.status === "crashed" ? "error" : input.status;
   const res = run(
-    `INSERT OR IGNORE INTO workflow_runs (project_id, platform, workflow_id, workflow_name, execution_id, status, started_at, duration_ms, output_items, error_message)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO workflow_runs (project_id, platform, workflow_id, workflow_name, execution_id, status, started_at, duration_ms, output_items, input_items, error_message)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     projectId, input.platform, input.workflow_id, name, input.execution_id, status, startedAt,
-    input.duration_ms ?? null, input.output_items ?? null, input.error_message ?? null,
+    input.duration_ms ?? null, input.output_items ?? null, input.input_items ?? null, input.error_message ?? null,
   );
   if (res.changes === 0) return false;
-  await evaluateRun(projectId, { ...input, status, workflow_name: name });
+  await evaluateRun(projectId, { ...input, status, workflow_name: name, started_at: startedAt });
   return true;
+}
+
+const ago = (ms: number) => {
+  const m = Math.max(1, Math.round(ms / 60000));
+  return m < 120 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} hours` : `${Math.round(m / 1440)} days`;
+};
+
+/**
+ * Is an empty "success" a broken workflow or just a quiet spell? Without input counts we learn the workflow's own
+ * pattern from its last 50 runs: one that is rarely empty alerts on the first empty run; one that often has
+ * nothing to do alerts only when the current run of empties is longer than any quiet spell it had before.
+ */
+export function judgeEmptyRun(projectId: number, r: { platform: string; workflow_id: string; execution_id: string; started_at: string }):
+  { alert: boolean; reason: string } {
+  const history = all<{ output_items: number; started_at: string }>(
+    `SELECT output_items, started_at FROM workflow_runs WHERE project_id = ? AND platform = ? AND workflow_id = ? AND status = 'success'
+       AND output_items IS NOT NULL AND execution_id <> ? AND started_at <= ? ORDER BY started_at DESC LIMIT 50`,
+    projectId, r.platform, r.workflow_id, r.execution_id, r.started_at,
+  );
+  const lastGood = history.find((h) => h.output_items > 0);
+  const lastGoodText = lastGood ? ` Last run with output: ${ago(Date.parse(r.started_at) - Date.parse(lastGood.started_at))} earlier (${lastGood.output_items} items).` : "";
+  const hint = " If there was simply nothing to process, send input_items: 0 with the run and ProofMyAI will treat it as a quiet run.";
+  if (history.length < 5) return { alert: true, reason: `Reported success with 0 output items.${lastGoodText}${hint}` };
+
+  let streak = 1;
+  while (streak - 1 < history.length && history[streak - 1].output_items === 0) streak++;
+  let longest = 0;
+  for (let i = streak - 1, cur = 0; i < history.length; i++) {
+    cur = history[i].output_items === 0 ? cur + 1 : 0;
+    longest = Math.max(longest, cur);
+  }
+  const zeros = history.filter((h) => h.output_items === 0).length;
+  const typical = median(history.filter((h) => h.output_items > 0).map((h) => h.output_items));
+  if (zeros / history.length < 0.1) {
+    return { alert: true, reason: `This workflow is almost never empty (${zeros} of its last ${history.length} runs) and usually produces about ${typical} items.${lastGoodText}` };
+  }
+  if (streak > Math.max(3, longest)) {
+    return { alert: true, reason: `${streak} empty runs in a row. Quiet spells are normal for this workflow, but the longest one before was ${longest} run${longest === 1 ? "" : "s"}.${lastGoodText}` };
+  }
+  return { alert: false, reason: "" };
 }
 
 async function evaluateRun(projectId: number, r: WorkflowRunInput & { workflow_name: string }) {
@@ -58,13 +100,26 @@ async function evaluateRun(projectId: number, r: WorkflowRunInput & { workflow_n
   if (r.status === "success") {
     resolveIncidents(projectId, key("failed"));
     resolveIncidents(projectId, key("stale"));
-    if (r.output_items === 0) {
+    if (r.output_items === 0 && r.input_items != null && r.input_items > 0) {
+      // It received work and produced nothing: broken, whatever the history says.
       await raiseIncident(projectId, {
-        module: "workflows", code: "SILENT_FAILURE", severity: "medium",
-        title: `${label} succeeded but produced nothing`,
-        detail: `Execution ${r.execution_id} reported success with 0 output items. An upstream API may be returning empty data.`,
+        module: "workflows", code: "SILENT_FAILURE", severity: "high",
+        title: `${label} received ${r.input_items} items but produced nothing`,
+        detail: `Execution ${r.execution_id} reported success, but none of the ${r.input_items} input items made it to the output. A step is filtering or dropping everything.`,
         dedupeKey: key("silent"),
       });
+    } else if (r.output_items === 0) {
+      const verdict = r.input_items === 0 ? { alert: false, reason: "" } : judgeEmptyRun(projectId, { ...r, started_at: r.started_at! });
+      if (verdict.alert) {
+        await raiseIncident(projectId, {
+          module: "workflows", code: "SILENT_FAILURE", severity: "medium",
+          title: `${label} succeeded but produced nothing`,
+          detail: `Execution ${r.execution_id}: ${verdict.reason}`,
+          dedupeKey: key("silent"),
+        });
+      } else {
+        run("UPDATE workflow_runs SET quiet = 1 WHERE project_id = ? AND platform = ? AND execution_id = ?", projectId, r.platform, r.execution_id);
+      }
     } else if (r.output_items && r.output_items > 0) {
       resolveIncidents(projectId, key("silent"));
     }

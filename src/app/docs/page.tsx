@@ -146,7 +146,8 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
         ["workflow_name", "string", "Readable name shown in alerts."],
         ["started_at", "ISO 8601", "When the run started, with a time zone, e.g. 2026-09-29T10:15:00Z."],
         ["duration_ms", "number", "How long it took."],
-        ["output_items", "integer", "How many items it produced. 0 on a \"success\" is flagged as a silent failure."],
+        ["output_items", "integer", "How many items it produced. An empty \"success\" is flagged when it's unusual for this workflow (ProofMyAI learns its normal quiet spells)."],
+        ["input_items", "integer", "How many items it received, e.g. new orders fetched. 0 in and 0 out is a quiet run (no alert); items in but 0 out is a high alert."],
         ["error_message", "string", "The error, if any."],
       ]} />
       <Code>{`curl -X POST ${API}/workflow-runs \\
