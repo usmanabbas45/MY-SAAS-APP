@@ -7,12 +7,16 @@ import { safeFetch } from "./security";
 /**
  * Google Sheets watch: reads a link-shared or published Google Sheet as CSV every 15 minutes and alerts when
  * it stops changing (an automation stopped writing to it), when cells show formula errors (#REF!, #N/A…),
- * when a required column is empty in recent rows, or when most of its rows suddenly disappear. Read-only:
+ * when a required column is empty in recent rows, when the newest date in a chosen column is too old (the
+ * source stopped delivering records, even if the sheet is still being edited), or when most of its rows
+ * suddenly disappear. Read-only:
  * we never write to the sheet. Incidents use the "workflows" module, since sheets are usually automation output.
  */
 export interface SheetWatch {
   id: number; project_id: number; name: string; url: string; csv_url: string;
   stale_hours: number; required_col: string | null;
+  /** Freshness check: column holding each record's date/time, how recent the newest must be, and its time zone. */
+  fresh_col: string | null; fresh_hours: number; fresh_tz: string | null; newest_at: string | null;
   status: "pending" | "ok" | "problem" | "error"; fails: number;
   last_checked_at: string | null; last_changed_at: string | null; last_hash: string | null;
   row_count: number | null; error_cells: number; blank_required: number; last_error: string | null; created_at: string;
@@ -20,6 +24,8 @@ export interface SheetWatch {
 
 export const CHECK_EVERY_MIN = 15;
 export const STALE_OPTIONS = [0, 1, 3, 6, 12, 24, 48, 168] as const;
+export const FRESH_OPTIONS = [1, 2, 3, 6, 12, 24, 48, 168] as const;
+export const TIME_ZONES = ["UTC", "Europe/London", "Europe/Berlin", "Asia/Dubai", "Asia/Karachi", "Asia/Kolkata", "Asia/Singapore", "Australia/Sydney", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"] as const;
 const FAILS_TO_ALERT = 2;
 const RECENT_ROWS = 20;
 const MAX_BYTES = 5_000_000;
@@ -69,10 +75,70 @@ export function parseCsv(text: string): string[][] {
 
 const colName = (i: number): string => (i < 26 ? String.fromCharCode(65 + i) : colName(Math.floor(i / 26) - 1) + String.fromCharCode(65 + (i % 26)));
 
-export interface SheetSnapshot { hash: string; rows: number; errorCells: string[]; blankRequired: number; requiredFound: boolean }
+export function validTimeZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Epoch ms of a wall-clock time read in an IANA time zone (sheet dates carry no zone of their own). */
+export function zonedToUtc(y: number, mo: number, d: number, h: number, mi: number, sec: number, tz: string): number {
+  const wall = Date.UTC(y, mo - 1, d, h, mi, sec);
+  if (tz === "UTC" || !validTimeZone(tz)) return wall;
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const offset = (t: number) => {
+    const p = Object.fromEntries(fmt.formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+    return Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute), Number(p.second)) - t;
+  };
+  const first = wall - offset(wall);
+  return wall - offset(first); // second pass gets daylight-saving changes right
+}
+
+const ISO_DATE = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})?$/i;
+const SLASH_DATE = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?)?$/i;
+
+/**
+ * Newest date in a column. Understands ISO dates, Google Sheets' d/m/yyyy or m/d/yyyy (with optional time and AM/PM)
+ * and Unix timestamps. Day/month order is taken from the column itself (a day above 12 settles it), otherwise from the
+ * time zone (m/d in the Americas, d/m elsewhere). Values more than a day in the future are ignored.
+ */
+export function newestDate(values: string[], tz: string, now = Date.now()): { newest: number | null; parsed: number } {
+  const slash = values.map((v) => v.trim().match(SLASH_DATE)).filter((m): m is RegExpMatchArray => Boolean(m));
+  const dayFirst = slash.some((m) => Number(m[1]) > 12) ? true : slash.some((m) => Number(m[2]) > 12) ? false : !tz.startsWith("America/");
+  let newest: number | null = null;
+  let parsed = 0;
+  for (const raw of values) {
+    const v = raw.trim();
+    if (!v) continue;
+    let t: number | null = null;
+    let m: RegExpMatchArray | null;
+    if (/^\d{10}$/.test(v)) t = Number(v) * 1000;
+    else if (/^\d{13}$/.test(v)) t = Number(v);
+    else if ((m = v.match(ISO_DATE))) {
+      t = m[7] ? Date.parse(v.replace(" ", "T")) : zonedToUtc(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0), tz);
+    } else if ((m = v.match(SLASH_DATE))) {
+      const [d, mo] = dayFirst ? [+m[1], +m[2]] : [+m[2], +m[1]];
+      let h = +(m[4] ?? 0);
+      if (m[7]) h = (h % 12) + (/p/i.test(m[7]) ? 12 : 0);
+      if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) t = zonedToUtc(+m[3], mo, d, h, +(m[5] ?? 0), +(m[6] ?? 0), tz);
+    }
+    if (t == null || !Number.isFinite(t) || t > now + 86400000) continue;
+    parsed++;
+    if (newest == null || t > newest) newest = t;
+  }
+  return { newest, parsed };
+}
+
+export interface SheetSnapshot {
+  hash: string; rows: number; errorCells: string[]; blankRequired: number; requiredFound: boolean;
+  freshFound: boolean; newestAt: number | null; freshParsed: number;
+}
 
 /** What a CSV says: data rows (after the header, ignoring blank rows), error cells and blanks in the required column. */
-export function analyseCsv(text: string, requiredCol: string | null): SheetSnapshot {
+export function analyseCsv(text: string, requiredCol: string | null, fresh: { col: string | null; tz?: string | null; now?: number } = { col: null }): SheetSnapshot {
   const all = parseCsv(text);
   const isBlank = (r: string[]) => r.every((c) => c.trim() === "");
   const header = all.find((r) => !isBlank(r)) ?? [];
@@ -83,7 +149,12 @@ export function analyseCsv(text: string, requiredCol: string | null): SheetSnaps
   header.forEach((c, ci) => { if (ERROR_CELL.test(c.trim())) errorCells.push(`${colName(ci)}${headerAt + 1} (${c.trim()})`); });
   const col = requiredCol ? header.findIndex((h) => h.trim().toLowerCase() === requiredCol.trim().toLowerCase()) : -1;
   const blankRequired = col >= 0 ? data.slice(-RECENT_ROWS).filter(({ r }) => !(r[col] ?? "").trim()).length : 0;
-  return { hash: createHash("sha256").update(text).digest("hex"), rows: data.length, errorCells, blankRequired, requiredFound: col >= 0 };
+  const fcol = fresh.col ? header.findIndex((h) => h.trim().toLowerCase() === fresh.col!.trim().toLowerCase()) : -1;
+  const { newest, parsed } = fcol >= 0 ? newestDate(data.map(({ r }) => r[fcol] ?? ""), fresh.tz || "UTC", fresh.now) : { newest: null, parsed: 0 };
+  return {
+    hash: createHash("sha256").update(text).digest("hex"), rows: data.length, errorCells, blankRequired, requiredFound: col >= 0,
+    freshFound: fcol >= 0, newestAt: newest, freshParsed: parsed,
+  };
 }
 
 /** Downloads the CSV, following Google's redirects only within Google's own hosts (safeFetch blocks private addresses). */
@@ -151,7 +222,7 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
   }
   fixed("read", "readable again");
 
-  const s = analyseCsv(text, w.required_col);
+  const s = analyseCsv(text, w.required_col, { col: w.fresh_col, tz: w.fresh_tz, now: now.getTime() });
   const changed = s.hash !== w.last_hash;
   const lastChanged = changed ? at : w.last_changed_at ?? at;
   const problems: string[] = [];
@@ -193,7 +264,30 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
     });
   } else fixed("blank", "required column is filled again");
 
-  // 4. Most rows disappeared (sheet cleared or overwritten).
+  // 4. Freshness ("watermark"): the newest record from the source must be recent, even if the sheet is still edited.
+  if (w.fresh_col && s.rows > 0) {
+    const fkey = { module: "workflows" as const, dedupeKey: `${key}:fresh` };
+    if (!s.freshFound) {
+      problems.push("date column missing");
+      await problem({ ...fkey, code: "SHEET_COLUMN_MISSING", severity: "medium", title: `Column "${w.fresh_col}" is missing from "${w.name}"`,
+        detail: `The freshness check needs a "${w.fresh_col}" heading in the first row. Someone may have renamed or deleted the column.` });
+    } else if (s.newestAt == null) {
+      problems.push("dates unreadable");
+      await problem({ ...fkey, code: "SHEET_DATES_UNREADABLE", severity: "medium", title: `No readable dates in "${w.fresh_col}" of "${w.name}"`,
+        detail: `ProofMyAI could not read any date in this column. Use a format like 2026-10-17 09:30 or 17/10/2026 09:30.` });
+    } else if (w.fresh_hours > 0 && now.getTime() - s.newestAt >= w.fresh_hours * 3600000) {
+      problems.push("no new source records");
+      const ago = hoursText(Math.max(1, Math.floor((now.getTime() - s.newestAt) / 3600000)));
+      const when = new Intl.DateTimeFormat("en-GB", { timeZone: validTimeZone(w.fresh_tz ?? "") ? w.fresh_tz! : "UTC", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(s.newestAt));
+      const sheetMoving = changed || (w.last_changed_at != null && ageHours(lastChanged, now) < w.fresh_hours);
+      await problem({ ...fkey, code: "SHEET_SOURCE_STALE", severity: "high", title: `No new records in "${w.name}" for ${ago}`,
+        detail: `The newest "${w.fresh_col}" is ${when} (${ago} ago); you expect a new record at least every ${hoursText(w.fresh_hours)}. ${sheetMoving
+          ? "The sheet itself is still being edited, so the automation is running but the source has delivered nothing new. Check the source system or the step that fetches new records."
+          : "The sheet hasn't changed either, so the automation that writes to it has probably stopped."} When it's fixed, backfill the records from the missing period before trusting the sheet again.` });
+    } else fixed("fresh", "new records are arriving again");
+  }
+
+  // 5. Most rows disappeared (sheet cleared or overwritten).
   if (w.row_count != null && w.row_count >= 20 && s.rows < w.row_count * 0.5) {
     problems.push("rows disappeared");
     await problem({
@@ -208,8 +302,8 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
   else if (changed && !problems.includes("rows disappeared")) logSheetEvent(w, at, "ok", `"${w.name}" was edited`, `${plural(s.rows, "row")} in total.`);
 
   run(
-    `UPDATE sheet_watches SET status = ?, fails = 0, last_checked_at = ?, last_changed_at = ?, last_hash = ?, row_count = ?, error_cells = ?, blank_required = ?, last_error = NULL WHERE id = ?`,
-    problems.length ? "problem" : "ok", at, lastChanged, s.hash, s.rows, s.errorCells.length, s.blankRequired, w.id,
+    `UPDATE sheet_watches SET status = ?, fails = 0, last_checked_at = ?, last_changed_at = ?, last_hash = ?, row_count = ?, error_cells = ?, blank_required = ?, newest_at = ?, last_error = NULL WHERE id = ?`,
+    problems.length ? "problem" : "ok", at, lastChanged, s.hash, s.rows, s.errorCells.length, s.blankRequired, s.newestAt == null ? null : new Date(s.newestAt).toISOString(), w.id,
   );
   return { ok: problems.length === 0, problems, error: null, rows: s.rows };
 }

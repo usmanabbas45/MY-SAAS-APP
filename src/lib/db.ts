@@ -331,6 +331,11 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Freshness ("watermark") check: the newest date in a chosen column must be recent.
+  addColumn(db, "sheet_watches", "fresh_col", "TEXT");
+  addColumn(db, "sheet_watches", "fresh_hours", "INTEGER NOT NULL DEFAULT 0");
+  addColumn(db, "sheet_watches", "fresh_tz", "TEXT");
+  addColumn(db, "sheet_watches", "newest_at", "TEXT");
   // Team members: other users with access to a project, and pending email invites.
   db.exec(`CREATE TABLE IF NOT EXISTS project_members (
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

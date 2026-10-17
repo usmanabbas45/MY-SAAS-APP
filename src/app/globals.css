@@ -733,6 +733,8 @@ table.cohort td:first-child, table.cohort th:first-child { text-align: left; }
 .up-stats > div { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
 .up-stats span { display: block; font-size: 12px; color: var(--faint); }
 .up-stats strong { font-size: 20px; letter-spacing: -0.02em; }
+.up-stats.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .up-stats.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .up-bars { display: flex; gap: 3px; height: 28px; align-items: stretch; }
 .up-bars span { flex: 1; max-width: 12px; border-radius: 3px; background: var(--ok); opacity: .85; }
 .up-bars span.bad { background: var(--bad); opacity: 1; }

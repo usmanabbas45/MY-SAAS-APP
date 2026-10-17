@@ -19,7 +19,7 @@ import { all, get, run, transaction } from "@/lib/db";
 import { resolveIncidents } from "@/lib/incidents";
 import { htmlToText, importFromWebsite, type ImportedDoc } from "@/lib/kbimport";
 import { checkMonitor, INTERVALS, type Monitor } from "@/lib/uptime";
-import { checkSheet, sheetCsvUrl, STALE_OPTIONS, type SheetWatch } from "@/lib/sheets";
+import { checkSheet, FRESH_OPTIONS, sheetCsvUrl, STALE_OPTIONS, validTimeZone, type SheetWatch } from "@/lib/sheets";
 import { createInvite, INVITE_DAYS, projectRole, removeMember, revokeInvite, setMemberRole } from "@/lib/team";
 import { VERDICTS, type Verdict } from "@/lib/judge/types";
 import { retrainRiskModel } from "@/lib/ml/risk";
@@ -623,6 +623,13 @@ const staleHours = (form: FormData) => {
   const h = Number(str(form, "stale_hours"));
   return (STALE_OPTIONS as readonly number[]).includes(h) ? h : 24;
 };
+/** Freshness check settings: [column, hours, time zone]. No column means the check is off. */
+const freshness = (form: FormData): [string | null, number, string] => {
+  const col = str(form, "fresh_col", 100) || null;
+  const h = Number(str(form, "fresh_hours"));
+  const tz = str(form, "fresh_tz", 64);
+  return [col, col && (FRESH_OPTIONS as readonly number[]).includes(h) ? h : col ? 24 : 0, validTimeZone(tz) ? tz : "UTC"];
+};
 
 export async function addSheetAction(form: FormData) {
   const p = await project(form);
@@ -634,8 +641,8 @@ export async function addSheetAction(form: FormData) {
   const name = str(form, "name", 100) || "Google Sheet";
   const requiredCol = str(form, "required_col", 100) || null;
   const { lastInsertRowid } = run(
-    "INSERT INTO sheet_watches (project_id, name, url, csv_url, stale_hours, required_col) VALUES (?, ?, ?, ?, ?, ?)",
-    p.id, name, url, csvUrl!, staleHours(form), requiredCol,
+    "INSERT INTO sheet_watches (project_id, name, url, csv_url, stale_hours, required_col, fresh_col, fresh_hours, fresh_tz) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    p.id, name, url, csvUrl!, staleHours(form), requiredCol, ...freshness(form),
   );
   const w = get<SheetWatch>("SELECT * FROM sheet_watches WHERE id = ?", lastInsertRowid)!;
   const r = await checkSheet(w);
@@ -647,7 +654,12 @@ export async function addSheetAction(form: FormData) {
 export async function updateSheetAction(form: FormData) {
   const p = await project(form);
   const id = Number(form.get("sheetId"));
-  run("UPDATE sheet_watches SET stale_hours = ?, required_col = ? WHERE id = ? AND project_id = ?", staleHours(form), str(form, "required_col", 100) || null, id, p.id);
+  const [freshCol, freshHours, freshTz] = freshness(form);
+  run(
+    "UPDATE sheet_watches SET stale_hours = ?, required_col = ?, fresh_col = ?, fresh_hours = ?, fresh_tz = ?, newest_at = CASE WHEN ? IS NULL THEN NULL ELSE newest_at END WHERE id = ? AND project_id = ?",
+    staleHours(form), str(form, "required_col", 100) || null, freshCol, freshHours, freshTz, freshCol, id, p.id,
+  );
+  if (!freshCol) resolveIncidents(p.id, `sheet:${id}:fresh`);
   done(sheetsPath(p.id), { ok: "Settings saved. They apply from the next check." });
 }
 
@@ -663,7 +675,7 @@ export async function deleteSheetAction(form: FormData) {
   const p = await project(form);
   const id = Number(form.get("sheetId"));
   run("DELETE FROM sheet_watches WHERE id = ? AND project_id = ?", id, p.id);
-  for (const k of ["read", "stale", "errors", "blank", "rows"]) resolveIncidents(p.id, `sheet:${id}:${k}`);
+  for (const k of ["read", "stale", "errors", "blank", "fresh", "rows"]) resolveIncidents(p.id, `sheet:${id}:${k}`);
   done(sheetsPath(p.id), { ok: "Sheet removed." });
 }
 

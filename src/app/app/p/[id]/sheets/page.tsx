@@ -3,7 +3,7 @@ import { Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { all } from "@/lib/db";
 import { projectAccess } from "@/lib/projects";
-import { CHECK_EVERY_MIN, STALE_OPTIONS, type SheetWatch } from "@/lib/sheets";
+import { CHECK_EVERY_MIN, FRESH_OPTIONS, STALE_OPTIONS, TIME_ZONES, type SheetWatch } from "@/lib/sheets";
 import { addSheetAction, checkSheetNowAction, deleteSheetAction, updateSheetAction } from "../actions";
 
 export const metadata = { title: "Google Sheets" };
@@ -23,6 +23,34 @@ function StaleSelect({ id, value }: { id: string; value: number }) {
     </select>
   );
 }
+
+function FreshFields({ id, w }: { id: string; w?: SheetWatch }) {
+  const tz = w?.fresh_tz || "UTC";
+  return (
+    <>
+      <div className="field"><label htmlFor={`fc-${id}`}>Date column of each new record <span className="hint">(optional, e.g. Created at)</span></label><input id={`fc-${id}`} name="fresh_col" type="text" maxLength={100} defaultValue={w?.fresh_col ?? ""} placeholder="Created at" /></div>
+      <div className="field"><label htmlFor={`fh-${id}`}>Newest record must be within</label>
+        <select id={`fh-${id}`} name="fresh_hours" defaultValue={String(w?.fresh_hours || 24)}>
+          {FRESH_OPTIONS.map((h) => <option key={h} value={h}>{staleLabel(h)}</option>)}
+        </select>
+      </div>
+      <div className="field"><label htmlFor={`tz-${id}`}>Time zone of those dates</label>
+        <select id={`tz-${id}`} name="fresh_tz" defaultValue={tz}>
+          {(TIME_ZONES as readonly string[]).includes(tz) ? null : <option value={tz}>{tz}</option>}
+          {TIME_ZONES.map((z) => <option key={z} value={z}>{z.replace("_", " ")}</option>)}
+        </select>
+      </div>
+    </>
+  );
+}
+
+const newestLabel = (iso: string, tz: string | null) => {
+  try {
+    return new Intl.DateTimeFormat("en-GB", { timeZone: tz || "UTC", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  } catch {
+    return iso.slice(0, 16).replace("T", " ");
+  }
+};
 
 export default async function SheetsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
@@ -68,6 +96,7 @@ export default async function SheetsPage({ params, searchParams }: { params: Pro
                   <div className="faint" style={{ fontSize: 13 }}>
                     Checked {timeAgo(s.last_checked_at)} · alert if no changes for {staleLabel(s.stale_hours).toLowerCase()}
                     {s.required_col ? ` · "${s.required_col}" must be filled` : ""}
+                    {s.fresh_col ? ` · newest "${s.fresh_col}" within ${staleLabel(s.fresh_hours).toLowerCase()}` : ""}
                   </div>
                   {s.last_error ? <div style={{ color: "var(--bad)", fontSize: 13 }}>⚠ {s.last_error}</div> : null}
                 </div>
@@ -78,11 +107,12 @@ export default async function SheetsPage({ params, searchParams }: { params: Pro
                   </div>
                 ) : null}
               </div>
-              <div className="up-stats">
+              <div className={`up-stats${s.fresh_col ? " five" : ""}`}>
                 <div><span>Rows</span><strong>{s.row_count == null ? "–" : s.row_count.toLocaleString("en-GB")}</strong></div>
                 <div><span>Last change</span><strong>{s.last_changed_at ? timeAgo(s.last_changed_at) : "–"}</strong></div>
                 <div><span>Error cells</span><strong style={s.error_cells ? { color: "var(--bad)" } : undefined}>{s.error_cells}</strong></div>
                 <div><span>{s.required_col ? `Empty “${s.required_col}”` : "Required column"}</span><strong style={s.blank_required ? { color: "var(--bad)" } : undefined}>{s.required_col ? s.blank_required : "–"}</strong></div>
+                {s.fresh_col ? <div><span>Newest record</span><strong title={s.newest_at ?? undefined}>{s.newest_at ? newestLabel(s.newest_at, s.fresh_tz) : "–"}</strong>{s.newest_at ? <span>{timeAgo(s.newest_at)}</span> : null}</div> : null}
               </div>
               {canEdit ? (
                 <details style={{ marginTop: 10 }}>
@@ -92,6 +122,7 @@ export default async function SheetsPage({ params, searchParams }: { params: Pro
                     <div className="grid grid-2">
                       <div className="field"><label htmlFor={`st-${s.id}`}>Alert if no changes for</label><StaleSelect id={`st-${s.id}`} value={s.stale_hours} /></div>
                       <div className="field"><label htmlFor={`rc-${s.id}`}>Column that must never be empty <span className="hint">(optional)</span></label><input id={`rc-${s.id}`} name="required_col" type="text" maxLength={100} defaultValue={s.required_col ?? ""} placeholder="Email" /></div>
+                      <FreshFields id={String(s.id)} w={s} />
                     </div>
                     <SubmitButton className="btn btn-sm" pendingText="Saving…">Save</SubmitButton>
                   </form>
@@ -117,7 +148,11 @@ export default async function SheetsPage({ params, searchParams }: { params: Pro
               <div className="field"><label htmlFor="sh-name">Name <span className="hint">(optional)</span></label><input id="sh-name" name="name" type="text" maxLength={100} placeholder="New leads from n8n" /></div>
               <div className="field"><label htmlFor="sh-stale">Alert if no changes for</label><StaleSelect id="sh-stale" value={24} /></div>
               <div className="field"><label htmlFor="sh-col">Column that must never be empty <span className="hint">(optional, the heading in row 1)</span></label><input id="sh-col" name="required_col" type="text" maxLength={100} placeholder="Email" /></div>
+              <FreshFields id="new" />
             </div>
+            <p className="faint" style={{ fontSize: 13, margin: "0 0 12px" }}>
+              The date column catches the quiet failure: the automation still runs and touches the sheet, but no new records arrive from the source. ProofMyAI reads the newest date in that column and alerts when it&apos;s too old.
+            </p>
             <SubmitButton pendingText="Reading the sheet…">Start watching</SubmitButton>
           </form>
           <p className="faint" style={{ fontSize: 13, marginTop: 10 }}>

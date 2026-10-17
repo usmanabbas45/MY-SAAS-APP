@@ -104,6 +104,7 @@ export async function createDemoProject(userId: number): Promise<number> {
               (?, 'Daily revenue report (demo)', 'https://docs.google.com/spreadsheets/d/demo-revenue/edit', 'https://docs.google.com/spreadsheets/d/demo-revenue/export?format=csv', 24, NULL, 'problem', ?, ?, 'demo', 92, 3, 0)`,
       id, now, isoDaysAgo(0), id, now, isoDaysAgo(1),
     );
+    run("UPDATE sheet_watches SET fresh_col = 'Created at', fresh_hours = 3, fresh_tz = 'UTC', newest_at = ? WHERE project_id = ? AND name = 'New leads from n8n (demo)'", new Date(Date.now() - 52 * 60000).toISOString(), id);
     for (const [name, mins, level, title, detail] of [
       ["New leads from n8n (demo)", 40, "ok", '"New leads from n8n (demo)" updated: +12 new rows', "1,284 rows in total."],
       ["Daily revenue report (demo)", 300, "warn", '3 error cells in "Daily revenue report (demo)"', "For example D14 (#REF!), D15 (#REF!), F2 (#N/A)."],
