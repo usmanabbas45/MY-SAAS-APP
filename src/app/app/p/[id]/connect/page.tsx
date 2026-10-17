@@ -26,6 +26,7 @@ const METHODS: Method[] = [
   { id: "n8n", group: "workflows", icon: "🟠", title: "n8n", text: "Paste your n8n URL and API key. We check every workflow every 15 minutes.", time: "2 min · no code" },
   { id: "make", group: "workflows", icon: "🟣", title: "Make", text: "Paste a Make API token and your scenario IDs.", time: "2 min · no code" },
   { id: "webhook", group: "workflows", icon: "⚡", title: "Zapier or anything else", text: "Send a webhook when a workflow runs or fails.", time: "3 min" },
+  { id: "sheets", group: "workflows", icon: "📗", title: "Google Sheets", text: "Paste a sheet link. Alerts when it stops updating, shows #REF! errors or a key column comes in empty.", time: "1 min · no code", page: "sheets" },
   { id: "uptime", group: "workflows", icon: "🟢", title: "Uptime & speed", text: "Paste any URL (chatbot, website, API). Alerts when it goes down or gets slow.", time: "1 min · no code", page: "uptime" },
 ];
 
@@ -91,7 +92,7 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
   const counts = {
     chatbot: n("SELECT COUNT(*) AS n FROM chat_sources WHERE project_id = ?") + n("SELECT COUNT(*) AS n FROM bot_targets WHERE project_id = ?") + n("SELECT COUNT(*) AS n FROM audits WHERE project_id = ? AND status <> 'live'"),
     agents: 0,
-    workflows: n("SELECT COUNT(*) AS n FROM workflow_sources WHERE project_id = ?"),
+    workflows: n("SELECT COUNT(*) AS n FROM workflow_sources WHERE project_id = ?") + n("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ?"),
   };
   const connected = (g: Group) => statuses[g].lastAt != null || counts[g] > 0;
   const lastSeen = (g: Group) => statuses[g].lastAt;

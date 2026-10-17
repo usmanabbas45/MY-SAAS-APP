@@ -156,7 +156,7 @@ describe("limits", () => {
 
   it("counts workflows and agents together and keeps only the oldest allowed items running", () => {
     for (let i = 0; i < 3; i++) run("INSERT INTO workflow_sources (project_id, platform, name, base_url, api_key_enc) VALUES (?, 'n8n', 'w', 'https://x', 'k')", projectId);
-    expect(limitError(userId, "monitors")).toMatch(/2 workflows and AI agents/);
+    expect(limitError(userId, "monitors")).toMatch(/2 workflows, sheets and AI agents/);
     const kept = scheduledIds("sources")!;
     expect(kept.size).toBe(2);
     applySubscription(sub());

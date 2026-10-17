@@ -11,6 +11,7 @@ import { runDueSuites } from "@/lib/tests/runner";
 import { periodicWorkflowChecks } from "@/lib/workflows/monitor";
 import { pollAllSources } from "@/lib/workflows/pollers";
 import { runDueMonitors } from "@/lib/uptime";
+import { runDueSheets } from "@/lib/sheets";
 import { purgeOldErrors } from "@/lib/monitoring";
 import { sendDueOnboarding } from "@/lib/onboarding";
 import { sendRenewalReminders } from "@/lib/renewals";
@@ -54,10 +55,11 @@ async function runAll(started: number) {
   const chatSources = await pollAllChatSources();
   const noReply = await alertMissingReplies();
   const uptimeChecks = await runDueMonitors();
+  const sheetChecks = await runDueSheets();
   const purged = purgeExpired();
   purgeOldErrors();
   const founding = await processFoundingPeriods();
   recordDailyMetrics();
   recordCronRun(true);
-  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, welcomeEmails, renewalReminders, referralRewards, testsGenerated, chatSources, unansweredAlerted: noReply, uptimeChecks, purged, founding, ms: Date.now() - started });
+  return Response.json({ ok: true, projects: projects.length, testSuitesRun: suites, digestsSent: digests, welcomeEmails, renewalReminders, referralRewards, testsGenerated, chatSources, unansweredAlerted: noReply, uptimeChecks, sheetChecks, purged, founding, ms: Date.now() - started });
 }

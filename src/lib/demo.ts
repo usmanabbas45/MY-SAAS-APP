@@ -96,6 +96,14 @@ export async function createDemoProject(userId: number): Promise<number> {
       const down = h === 50 || h === 49;
       run("INSERT INTO uptime_checks (monitor_id, at, ok, ms, code) VALUES (?, ?, ?, ?, ?)", mon, new Date(Date.now() - h * 3600000).toISOString(), down ? 0 : 1, down ? null : 350 + ((h * 37) % 300), down ? 503 : 200);
     }
+    // Two watched Google Sheets (never read: runDueSheets skips demo projects), one healthy and one with broken formulas.
+    const now = new Date().toISOString();
+    run(
+      `INSERT INTO sheet_watches (project_id, name, url, csv_url, stale_hours, required_col, status, last_checked_at, last_changed_at, last_hash, row_count, error_cells, blank_required)
+       VALUES (?, 'New leads from n8n (demo)', 'https://docs.google.com/spreadsheets/d/demo-leads/edit', 'https://docs.google.com/spreadsheets/d/demo-leads/export?format=csv', 12, 'Email', 'ok', ?, ?, 'demo', 1284, 0, 0),
+              (?, 'Daily revenue report (demo)', 'https://docs.google.com/spreadsheets/d/demo-revenue/edit', 'https://docs.google.com/spreadsheets/d/demo-revenue/export?format=csv', 24, NULL, 'problem', ?, ?, 'demo', 92, 3, 0)`,
+      id, now, isoDaysAgo(0), id, now, isoDaysAgo(1),
+    );
     // Two weeks of live tracking (mostly good answers, getting better), with some 👍/👎 ratings, for Analytics.
     const live = run("INSERT INTO audits (project_id, name, mode, status, judge, created_at) VALUES (?, 'Live tracking', 'ai', 'live', 'Demo data', ?)", id, isoDaysAgo(14).replace("T", " ").slice(0, 19)).lastInsertRowid;
     const good = ITEMS.filter((it) => it.v === "correct");
@@ -115,6 +123,7 @@ export async function createDemoProject(userId: number): Promise<number> {
         if (conv % 3 === 0) run("INSERT INTO chat_feedback (project_id, conversation_id, value, created_at) VALUES (?, ?, ?, ?)", id, `live-${conv}`, bad ? 0 : 1, isoDaysAgo(d, (c * 3) % 11));
       }
     }
+    run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'SHEET_ERRORS', 'medium', '3 error cells in \"Daily revenue report (demo)\"', 'For example D14 (#REF!), D15 (#REF!), F2 (#N/A). Formulas or imported data are broken, so totals and reports built on this sheet are wrong.', 'demo:sheet')", id);
     run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'chatbot', 'HALLUCINATION', 'high', 'Chatbot promised a refund on sale items', 'The bot told 3 customers that sale items get a full refund. Your policy says store credit only.', 'demo:refund')", id);
     return id;
   });
