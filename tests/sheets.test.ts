@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { usage, billingState } from "@/lib/billing";
 import { all, get, run } from "@/lib/db";
 import { liveFeed, sourceStatuses } from "@/lib/live";
-import { analyseCsv, checkSheet, fetchSheetCsv, parseCsv, runDueSheets, sheetCsvUrl, type SheetWatch } from "@/lib/sheets";
+import { analyseCsv, checkSheet, fetchSheetCsv, newestDate, parseCsv, runDueSheets, sheetCsvUrl, zonedToUtc, type SheetWatch } from "@/lib/sheets";
 import { freshDb } from "./helpers";
 
 let projectId: number;
@@ -148,5 +148,61 @@ describe("sheet checks", () => {
     expect(card).toMatchObject({ state: "ok", problemsLastHour: 0 });
     run("UPDATE sheet_watches SET status = 'problem'");
     expect(sourceStatuses(projectId, t0.getTime() + 3600000).find((s) => s.source === "sheets")).toMatchObject({ state: "problem", problemsLastHour: 1 });
+  });
+});
+
+describe("freshness column", () => {
+  const now = Date.parse("2026-10-17T12:00:00Z");
+  it("reads ISO, d/m/y, m/d/y, AM/PM and Unix dates", () => {
+    expect(newestDate(["2026-10-17 09:30", "2026-10-16T23:00:00Z"], "UTC", now).newest).toBe(Date.parse("2026-10-17T09:30:00Z"));
+    expect(newestDate(["17/10/2026 09:30:00", "3/10/2026 10:00:00"], "UTC", now).newest).toBe(Date.parse("2026-10-17T09:30:00Z"));
+    expect(newestDate(["10/3/2026 9:00 PM", "10/16/2026 9:00 AM"], "UTC", now).newest).toBe(Date.parse("2026-10-16T09:00:00Z"));
+    // Ambiguous: d/m outside the Americas, m/d inside.
+    expect(newestDate(["1/2/2026"], "Europe/London", now).newest).toBe(Date.parse("2026-02-01T00:00:00Z"));
+    expect(newestDate(["1/2/2026"], "America/New_York", now).newest).toBe(Date.parse("2026-01-02T05:00:00Z"));
+    expect(newestDate([String(Math.floor(now / 1000) - 60), "hello", ""], "UTC", now)).toEqual({ newest: now - 60000, parsed: 1 });
+    expect(newestDate(["2027-01-01"], "UTC", now).newest).toBeNull(); // far future ignored
+  });
+
+  it("applies the time zone, including daylight saving", () => {
+    expect(zonedToUtc(2026, 10, 17, 17, 0, 0, "Asia/Karachi")).toBe(Date.parse("2026-10-17T12:00:00Z"));
+    expect(zonedToUtc(2026, 7, 1, 12, 0, 0, "Europe/London")).toBe(Date.parse("2026-07-01T11:00:00Z"));
+    expect(zonedToUtc(2026, 12, 1, 12, 0, 0, "Europe/London")).toBe(Date.parse("2026-12-01T12:00:00Z"));
+    const s = analyseCsv("Name,Created at\nA,2026-10-17 16:00", null, { col: "created AT", tz: "Asia/Karachi", now });
+    expect(s).toMatchObject({ freshFound: true, newestAt: Date.parse("2026-10-17T11:00:00Z") });
+  });
+
+  const leads = (...dates: string[]) => csv(["Name,Created at", ...dates.map((d, i) => `Lead ${i},${d}`)].join("\n"));
+  const setFresh = (col: string, hours: number) => run("UPDATE sheet_watches SET fresh_col = ?, fresh_hours = ?, fresh_tz = 'UTC' WHERE project_id = ?", col, hours, projectId);
+
+  it("alerts when no new source records arrive even though the sheet keeps changing, then resolves", async () => {
+    add(6);
+    setFresh("Created at", 2);
+    const t = (h: number) => new Date(Date.parse("2026-10-17T08:00:00Z") + h * 3600000);
+    await checkSheet(watch(), leads("2026-10-17 07:30"), t(0));
+    expect(open()).toEqual([]);
+    expect(watch().newest_at).toBe("2026-10-17T07:30:00.000Z");
+    // The automation rewrites the sheet (a status column changes) but the newest record is still 07:30.
+    const r = await checkSheet(watch(), csv("Name,Created at,Synced\nLead 0,2026-10-17 07:30,yes"), t(3));
+    expect(r.problems).toContain("no new source records");
+    expect(open()).toEqual(["SHEET_SOURCE_STALE"]);
+    const inc = get<{ detail: string; severity: string }>("SELECT detail, severity FROM incidents WHERE code = 'SHEET_SOURCE_STALE'")!;
+    expect(inc.severity).toBe("high");
+    expect(inc.detail).toContain("automation is running but the source has delivered nothing new");
+    expect(inc.detail).toContain("backfill");
+    await checkSheet(watch(), leads("2026-10-17 07:30", "2026-10-17 10:45"), t(3.5));
+    expect(open()).toEqual([]);
+    expect(watch().status).toBe("ok");
+  });
+
+  it("flags a missing or unreadable date column", async () => {
+    add(0);
+    setFresh("Created at", 24);
+    await checkSheet(watch(), csv(rows(3)), new Date(now));
+    expect(open()).toEqual(["SHEET_COLUMN_MISSING"]);
+    run("UPDATE incidents SET resolved = 1");
+    const r = await checkSheet(watch(), leads("soon", "n/a"), new Date(now));
+    expect(r.problems).toEqual(["dates unreadable"]);
+    expect(open()).toEqual(["SHEET_DATES_UNREADABLE"]);
   });
 });
