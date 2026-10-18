@@ -675,7 +675,7 @@ export async function deleteSheetAction(form: FormData) {
   const p = await project(form);
   const id = Number(form.get("sheetId"));
   run("DELETE FROM sheet_watches WHERE id = ? AND project_id = ?", id, p.id);
-  for (const k of ["read", "stale", "errors", "blank", "fresh", "rows"]) resolveIncidents(p.id, `sheet:${id}:${k}`);
+  for (const k of ["read", "stale", "errors", "blank", "fresh", "rows", "cols", "dupes"]) resolveIncidents(p.id, `sheet:${id}:${k}`);
   done(sheetsPath(p.id), { ok: "Sheet removed." });
 }
 

@@ -331,6 +331,18 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Catch-every-failure: source connection failures, n8n/Make workflow on/off state and Make's incomplete executions.
+  addColumn(db, "workflow_sources", "fails", "INTEGER NOT NULL DEFAULT 0");
+  db.exec(`CREATE TABLE IF NOT EXISTS workflow_state (
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    workflow_id TEXT NOT NULL,
+    active INTEGER,
+    incomplete INTEGER,
+    PRIMARY KEY (project_id, platform, workflow_id)
+  )`);
+  addColumn(db, "sheet_watches", "columns", "TEXT");
+  addColumn(db, "sheet_watches", "dup_rows", "INTEGER");
   // Zero-output context: items the run received, and whether an empty run was judged a normal quiet run.
   addColumn(db, "workflow_runs", "input_items", "INTEGER");
   addColumn(db, "workflow_runs", "quiet", "INTEGER NOT NULL DEFAULT 0");

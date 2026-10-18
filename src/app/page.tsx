@@ -16,7 +16,7 @@ const FEATURES = [
   { icon: "💬", title: "Chatbot audits", text: "Upload transcripts from Intercom, Tidio, Crisp, Zendesk or any bot. Every answer is graded against your help docs: correct, made up, not in docs, should have escalated, off-policy." },
   { icon: "🧪", title: "Nightly bot tests", text: "AI writes test questions from your help docs and past mistakes, or add your own. ProofMyAI asks your bot every night and alerts you the moment an answer gets worse." },
   { icon: "🤖", title: "AI agent monitoring", text: "Send each agent run with one HTTP call. Catch loops, tool errors, runaway costs, empty outputs and answers the tools never supported." },
-  { icon: "⚙️", title: "n8n & Make monitoring", text: "Connect n8n or Make in two minutes. Get alerted on failures, silent failures (success with zero output), error-rate spikes and workflows that stopped running." },
+  { icon: "⚙️", title: "n8n & Make monitoring", text: "Connect n8n or Make in two minutes. Get alerted on failures, silent failures (success with zero output), stuck runs, workflows switched off or stopped, error spikes, sudden drops in output, and an expired API key." },
   { icon: "✨", title: "Fix with AI, not just a score", text: "Problems are grouped by the help article that caused them. One click writes the corrected article and a safe system prompt for your bot." },
   { icon: "📈", title: "Chatbot analytics", text: "See what customers ask about, accuracy per topic, resolution and escalation rates, response times, 👍/👎 satisfaction and the questions your help docs don't answer yet." },
   { icon: "📡", title: "Live tracking", text: "Connect your bot, agents and workflows once and watch every answer and run checked in real time, with a clear ✓ working / ✕ problem feed." },
