@@ -331,6 +331,41 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Human-in-the-loop approvals for agent actions, the rules people create from them, and a per-project amount limit.
+  db.exec(`CREATE TABLE IF NOT EXISTS approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    external_id TEXT,
+    fingerprint TEXT NOT NULL,
+    agent_name TEXT,
+    action TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    details TEXT,
+    category TEXT,
+    amount REAL,
+    currency TEXT,
+    reversible INTEGER,
+    status TEXT NOT NULL,
+    auto INTEGER NOT NULL DEFAULT 0,
+    reason TEXT NOT NULL,
+    commitments TEXT,
+    decided_by TEXT,
+    decided_at TEXT,
+    note TEXT,
+    callback_url TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_approvals_project ON approvals (project_id, status, id)");
+  db.exec(`CREATE TABLE IF NOT EXISTS approval_rules (
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    category TEXT NOT NULL,
+    action TEXT NOT NULL,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (project_id, category, action)
+  )`);
+  addColumn(db, "projects", "approve_over", "REAL");
   // Catch-every-failure: source connection failures, n8n/Make workflow on/off state and Make's incomplete executions.
   addColumn(db, "workflow_sources", "fails", "INTEGER NOT NULL DEFAULT 0");
   db.exec(`CREATE TABLE IF NOT EXISTS workflow_state (
