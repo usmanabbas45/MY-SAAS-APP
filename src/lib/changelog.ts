@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-18", title: "AI trust report and pre-send check", tag: "New",
+    items: [
+      "🛡️ New Trust report: topic by topic, see where your AI can decide alone, where to spot-check and where a person must approve, backed by proven accuracy (95% confidence), not guesses.",
+      "✋ Who checks the checker: see how often your team agrees with ProofMyAI's verdicts.",
+      "🛑 POST /api/v1/check: get allow, review or block before your chatbot sends a reply or your agent acts, so customers never see a made-up answer.",
+    ],
+  },
+  {
     date: "2026-10-18", title: "Catch every automation failure", tag: "New",
     items: [
       "🔌 Alert when ProofMyAI can't reach your n8n or Make (expired API key, server down), so monitoring never silently stops.",
