@@ -2,6 +2,7 @@ import { get, run } from "../db";
 import { customMatcher, redactDeep, redactPII } from "../pii";
 import { raiseIncident } from "../incidents";
 import { aiForProject, JudgeError, llmJudgeAgentRun } from "../judge/llm";
+import { verifyClaim } from "../outcome";
 import { agentScore, AgentRunSchema, checkAgentRun, stepsLog, totals, type Issue } from "./checks";
 
 interface ProjectLimits {
@@ -48,6 +49,12 @@ export async function ingestAgentRun(projectId: number, body: unknown): Promise<
   );
 
   await alertOnIssues(projectId, data.agent_name, data.run_id, issues);
+
+  // Don't take the agent's word for it: confirm the result in the real system, after the response.
+  if (parsed.data.verify && data.status === "success") {
+    void verifyClaim(projectId, { who: `Agent "${data.agent_name}"`, what: data.goal.slice(0, 200), ref: `run ${data.run_id}`, agentRunId: id }, parsed.data.verify)
+      .catch((err) => console.error("[outcome] check failed:", err));
+  }
 
   // The AI review is slower; it runs after the response so the customer's agent is never blocked.
   if (p.agent_ai_review && aiForProject(projectId) && data.goal.trim() && data.status === "success") {

@@ -11,7 +11,7 @@ import type { Exchange, Severity } from "./types";
 export type ConvFlag = "re_ask" | "restart" | "fallback" | "contradiction" | SafetyFlag;
 
 /** Safety and security flags (shown with a shield, grouped in their own filter). */
-export const SAFETY_FLAGS: ConvFlag[] = ["injection", "attack_blocked", "prompt_leak", "data_leak", "toxic", "wrong_language"];
+export const SAFETY_FLAGS: ConvFlag[] = ["injection", "attack_blocked", "prompt_leak", "data_leak", "toxic", "wrong_language", "no_ai_disclosure"];
 /** Flags that are recorded for the owner but are not a mistake by the bot. */
 export const INFO_FLAGS: ConvFlag[] = ["attack_blocked"];
 
@@ -26,11 +26,12 @@ export const FLAG_LABELS: Record<ConvFlag, string> = {
   data_leak: "Data leak",
   toxic: "Rude reply",
   wrong_language: "Wrong language",
+  no_ai_disclosure: "Hid being an AI",
 };
 
 export const FLAG_SEVERITY: Record<ConvFlag, Severity> = {
   re_ask: "medium", restart: "medium", fallback: "low", contradiction: "high",
-  injection: "high", attack_blocked: "none", prompt_leak: "high", data_leak: "high", toxic: "high", wrong_language: "medium",
+  injection: "high", attack_blocked: "none", prompt_leak: "high", data_leak: "high", toxic: "high", wrong_language: "medium", no_ai_disclosure: "high",
 };
 
 interface Detail { key: string; label: string; ask: RegExp; given: RegExp }

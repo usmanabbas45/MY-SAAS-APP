@@ -13,7 +13,7 @@ export const metadata = { title: "AI agents" };
 export default async function AgentsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const p = projectAccess(user.id, Number((await params).id)).project;
-  const runs = all<{ id: number; external_id: string; agent_name: string; goal: string; status: string; final_output: string; steps_json: string; total_cost_usd: number; total_ms: number; issues_json: string; score: number; created_at: string }>(
+  const runs = all<{ id: number; external_id: string; agent_name: string; goal: string; status: string; final_output: string; steps_json: string; total_cost_usd: number; total_ms: number; issues_json: string; score: number; created_at: string; verified: number | null; verify_detail: string | null }>(
     "SELECT * FROM agent_runs WHERE project_id = ? ORDER BY id DESC LIMIT 50", p.id,
   );
   const week = get<{ n: number; avg: number | null; cost: number | null; failed: number | null }>(
@@ -69,6 +69,7 @@ export default async function AgentsPage({ params }: { params: Promise<{ id: str
               <summary>
                 <span className="row" style={{ display: "inline-flex" }}>
                   <ScoreBadge score={r.score} /><StatusBadge status={r.status} />
+                  {r.verified === 1 ? <span title={r.verify_detail ?? ""}><Badge tone="ok">✓ result confirmed</Badge></span> : r.verified === 0 ? <span title={r.verify_detail ?? ""}><Badge tone="bad">✗ result not found</Badge></span> : null}
                   <strong>{r.agent_name}</strong>
                   <span className="faint">{r.external_id} · {steps.length} steps · ${r.total_cost_usd.toFixed(4)} · {(r.total_ms / 1000).toFixed(1)}s · {timeAgo(r.created_at)}</span>
                   {shown.slice(0, 3).map((i) => <Badge key={i.code} tone={i.severity === "high" ? "bad" : i.severity === "medium" ? "warn" : "info"}>{i.code.replace(/_/g, " ").toLowerCase()}</Badge>)}

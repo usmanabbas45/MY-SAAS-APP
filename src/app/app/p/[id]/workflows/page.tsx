@@ -5,7 +5,8 @@ import { all, get } from "@/lib/db";
 import { projectAccess } from "@/lib/projects";
 import { workflowSnippets } from "@/lib/snippets";
 import { truncate } from "@/lib/text";
-import { addWorkflowSourceAction, deleteSourceAction, pollNowAction } from "../actions";
+import { everyLabel, HEARTBEAT_EVERY, type Heartbeat } from "@/lib/heartbeats";
+import { addHeartbeatAction, addWorkflowSourceAction, deleteHeartbeatAction, deleteSourceAction, pollNowAction } from "../actions";
 
 export const metadata = { title: "n8n & Make" };
 
@@ -33,6 +34,9 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
   );
   const sn = workflowSnippets(process.env.APP_URL || "http://localhost:3000", p.api_key);
   const pid = <input type="hidden" name="projectId" value={p.id} />;
+  const beats = all<Heartbeat>("SELECT * FROM job_heartbeats WHERE project_id = ? ORDER BY id", p.id);
+  const hbBase = `${(process.env.APP_URL || "https://proofmyai.com").replace(/\/+$/, "")}/api/hb`;
+  const HB = { new: ["muted", "waiting for first check-in"], up: ["ok", "on time"], late: ["bad", "late"], failed: ["bad", "reported a failure"] } as const;
   const rate = totals?.n ? Math.round(((totals.n - (totals.errors ?? 0)) / totals.n) * 100) : null;
 
   return (
@@ -116,6 +120,32 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
             <pre>{sn.curl}</pre><CopyButton text={sn.curl} />
           </details>
         </div>
+      </div>
+
+      <div className="card" id="heartbeats">
+        <div className="card-head"><div><h3>💓 Heartbeats</h3><span className="sub">For any scheduled job (cron, script, Zapier, a webhook-triggered n8n flow): it calls its URL when it finishes, and you get an alert if the call doesn&apos;t come. This catches the job that never started, which no error handler can.</span></div></div>
+        {beats.map((h) => (
+          <div key={h.id} className="row between" style={{ padding: "10px 0", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <strong>{h.name}</strong> <Badge tone={HB[h.status][0]}>{HB[h.status][1]}</Badge>
+              <div className="faint">Every {everyLabel(h.every_min)} (+{h.grace_min} min grace) · last check-in {timeAgo(h.last_ping_at)}{h.last_message ? ` · “${truncate(h.last_message, 80)}”` : ""}</div>
+              <div className="faint mono" style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis" }}>{hbBase}/{h.token}</div>
+            </div>
+            <div className="row">
+              <CopyButton text={`${hbBase}/${h.token}`} label="Copy URL" />
+              <form action={deleteHeartbeatAction}>{pid}<input type="hidden" name="hbId" value={h.id} /><SubmitButton className="btn btn-ghost btn-sm" pendingText="…" confirm={`Delete heartbeat "${h.name}"?`}>Delete</SubmitButton></form>
+            </div>
+          </div>
+        ))}
+        <form action={addHeartbeatAction} className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12, alignItems: "flex-end" }}>
+          {pid}
+          <div className="field" style={{ margin: 0 }}><label htmlFor="hb-name">Job name</label><input id="hb-name" name="name" type="text" required maxLength={100} placeholder="Nightly invoice sync" /></div>
+          <div className="field" style={{ margin: 0 }}><label htmlFor="hb-every">Runs every</label>
+            <select id="hb-every" name="every_min" defaultValue="60">{HEARTBEAT_EVERY.map((m) => <option key={m} value={m}>{everyLabel(m)}</option>)}</select>
+          </div>
+          <SubmitButton className="btn btn-sm" pendingText="Adding…">Add heartbeat</SubmitButton>
+        </form>
+        <p className="faint" style={{ fontSize: 13, marginTop: 8 }}>At the end of the job, call the URL (GET or POST), e.g. an HTTP Request node in n8n or <code>curl -fsS URL</code> in a script. To report a failure straight away, call <code>URL/fail</code> (add <code>?msg=…</code> to say why).</p>
       </div>
 
       <div className="card">

@@ -17,6 +17,8 @@ const TOC = [
   ["chat-events", "💬 POST /chat-events (live chatbot)"],
   ["check", "🛑 POST /check (stop bad answers)"],
   ["approvals", "✋ POST /approvals (human approval)"],
+  ["verify", "🔎 Verify results (POST /verify)"],
+  ["heartbeats", "💓 Heartbeats (scheduled jobs)"],
   ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
@@ -136,6 +138,24 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
  "reason": "This can't be undone, so a person approves it first.", "commitments": ["a refund", "a deadline"],
  "poll_url": "${API}/approvals/812"}`}</Code>
       <p>Then wait for the decision: ProofMyAI POSTs <code>{`{"id", "action_id", "status", "decided_by", "note"}`}</code> to your <code>callback_url</code>, or poll <code>GET /approvals/812</code>. Only act when <code>status</code> is <code>approved</code>. Requests expire after 24 hours (<code>expires_in_hours</code>). If the agent submits an action again after a person rejected it, it stays <code>rejected</code> and you get an alert. Every decision is logged with who decided, when and their note. In n8n: HTTP Request node → Wait node (resume on webhook) → IF <code>status = approved</code>.</p>
+
+      <h2 id="verify">🔎 Verify results: don&apos;t take the agent&apos;s word for it</h2>
+      <p>Agents and workflows can report &quot;done&quot; when the CRM record never saved or the email never went out. Tell ProofMyAI where the result should be, and it checks the real system. If the result isn&apos;t there, it checks again 30 seconds later, then raises a high alert.</p>
+      <p><b>On an agent run</b>, add <code>verify</code> to your <code>/agent-runs</code> body (checked about 10 seconds after the run):</p>
+      <Code>{`"verify": {"url": "https://api.yourcrm.com/v1/leads/8812", "headers": {"Authorization": "Bearer crm_key"},
+           "expect_text": "sara@shop.co", "delay_seconds": 10}`}</Code>
+      <p><b>From any workflow</b> (for example an n8n HTTP Request node after &quot;Create record&quot;):</p>
+      <Code>{`curl -X POST ${API}/verify \
+  -H "Authorization: Bearer ap_live_your_key" -H "Content-Type: application/json" \
+  -d '{"name": "Lead sync", "reference": "lead 8812", "url": "https://api.yourcrm.com/v1/leads/8812",
+       "headers": {"Authorization": "Bearer crm_key"}, "expect_text": "sara@shop.co"}'`}</Code>
+      <p>Response: <code>{`{"passed": false, "detail": "api.yourcrm.com answered 404. The record may not exist."}`}</code>. Passes when the URL answers 2xx (or <code>expect_status</code>) and, if set, contains <code>expect_text</code>. Headers are used for the check only and are never stored. Only public URLs can be checked.</p>
+
+      <h2 id="heartbeats">💓 Heartbeats: catch the job that never ran</h2>
+      <p>Error handlers only fire when a job runs and fails. A cron that stopped, a dead server or a disabled trigger fails in silence. Add a heartbeat on the <em>n8n &amp; Make</em> page, then call its URL at the end of the job:</p>
+      <Code>{`curl -fsS https://proofmyai.com/api/hb/hb_your_token          # finished OK
+curl -fsS "https://proofmyai.com/api/hb/hb_your_token/fail?msg=disk%20full"   # report a failure now`}</Code>
+      <p>If the check-in doesn&apos;t arrive within the schedule plus a grace period (20%, at least 5 minutes), you get an alert. It clears on the next check-in. No API key is needed: the URL is the secret, so keep it private.</p>
 
       <h2 id="feedback">👍 POST /feedback: customer ratings</h2>
       <p>Send each thumbs up/down or star rating your customers give the bot. ProofMyAI shows customer satisfaction overall and per topic on the <em>Analytics</em> page. Use the same <code>conversation_id</code> you send to <code>/chat-events</code>.</p>

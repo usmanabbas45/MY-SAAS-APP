@@ -331,6 +331,22 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Heartbeats (dead man's switch) for scheduled jobs.
+  db.exec(`CREATE TABLE IF NOT EXISTS job_heartbeats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    every_min INTEGER NOT NULL,
+    grace_min INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new',
+    last_ping_at TEXT,
+    last_message TEXT,
+    created_at TEXT NOT NULL
+  )`);
+  // Outcome checks: whether the result an agent reported was found in the real system.
+  addColumn(db, "agent_runs", "verified", "INTEGER");
+  addColumn(db, "agent_runs", "verify_detail", "TEXT");
   // Human-in-the-loop approvals for agent actions, the rules people create from them, and a per-project amount limit.
   db.exec(`CREATE TABLE IF NOT EXISTS approvals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
