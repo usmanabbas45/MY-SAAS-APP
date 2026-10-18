@@ -32,6 +32,7 @@ import { renderBody, runSuite } from "@/lib/tests/runner";
 import { pollSource } from "@/lib/workflows/pollers";
 import { isVerified, VERIFY_FIRST } from "@/lib/verify";
 import { acceptSuggestions, dismissSuggestions, generateTestSuggestions } from "@/lib/testgen";
+import { decideApproval } from "@/lib/approvals";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -825,4 +826,40 @@ export async function dismissSuggestionsAction(form: FormData) {
   const id = Number(form.get("suggestionId"));
   dismissSuggestions(p.id, id ? [id] : null);
   done(`/app/p/${p.id}/tests`, { ok: id ? "Suggestion dismissed." : "All suggestions dismissed." });
+}
+
+// ---------- Approvals (human in the loop) ----------
+const approvalsPath = (id: number) => `/app/p/${id}/approvals`;
+
+export async function decideApprovalAction(form: FormData) {
+  const p = await project(form);
+  const user = await requireUser();
+  const choice = str(form, "choice");
+  if (choice !== "approve" && choice !== "approve_rule" && choice !== "reject") done(approvalsPath(p.id), { error: "Pick approve or reject." });
+  const a = await decideApproval(p.id, Number(form.get("approvalId")), choice as "approve" | "approve_rule" | "reject", user.email, str(form, "note", 500) || null);
+  if (!a) done(approvalsPath(p.id), { error: "This request was already decided or has expired." });
+  done(approvalsPath(p.id), { ok: a!.status === "approved" ? (choice === "approve_rule" ? `Approved, and "${a!.category}" will be approved automatically from now on.` : "Approved. Your agent can go ahead.") : "Rejected. If the agent tries again, it will be blocked." });
+}
+
+export async function addApprovalRuleAction(form: FormData) {
+  const p = await project(form);
+  const user = await requireUser();
+  const category = str(form, "category", 200).toLowerCase();
+  const action = str(form, "action", 100).toLowerCase();
+  if (category && action) run("INSERT OR IGNORE INTO approval_rules (project_id, category, action, created_by) VALUES (?, ?, ?, ?)", p.id, category, action, user.email);
+  done(approvalsPath(p.id), { ok: `"${action}" for "${category}" is now approved automatically.` });
+}
+
+export async function deleteApprovalRuleAction(form: FormData) {
+  const p = await project(form);
+  run("DELETE FROM approval_rules WHERE project_id = ? AND category = ? AND action = ?", p.id, str(form, "category", 200), str(form, "action", 100));
+  done(approvalsPath(p.id), { ok: "Rule removed. These actions need approval again." });
+}
+
+export async function approvalLimitAction(form: FormData) {
+  const p = await project(form, "owner");
+  const raw = str(form, "approve_over", 20);
+  const v = raw === "" ? null : Number(raw);
+  run("UPDATE projects SET approve_over = ? WHERE id = ?", v != null && Number.isFinite(v) && v >= 0 ? v : null, p.id);
+  done(approvalsPath(p.id), { ok: v == null ? "Amount limit removed." : `Actions of ${v} or more now need approval.` });
 }

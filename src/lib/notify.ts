@@ -119,10 +119,10 @@ export async function deliver(ch: Channel, msg: AlertMessage, fetcher: Fetcher =
 }
 
 /** Sends a message to every matching channel of the project. */
-export async function notify(msg: Omit<AlertMessage, "projectName" | "link">, fetcher: Fetcher = safeFetch): Promise<number> {
+export async function notify(msg: Omit<AlertMessage, "projectName" | "link"> & { link?: string }, fetcher: Fetcher = safeFetch): Promise<number> {
   const project = get<{ name: string }>("SELECT name FROM projects WHERE id = ?", msg.projectId);
   if (!project) return 0;
-  const full: AlertMessage = { ...msg, projectName: project.name, link: `${process.env.APP_URL ?? ""}/app/p/${msg.projectId}/incidents` };
+  const full: AlertMessage = { ...msg, projectName: project.name, link: `${process.env.APP_URL ?? ""}${msg.link ?? `/app/p/${msg.projectId}/incidents`}` };
   const targets = channelsFor(msg.projectId).filter((c) => wants(c, full));
   const results = await Promise.allSettled(targets.map((c) => deliver(c, full, fetcher)));
   results.forEach((r, i) => {

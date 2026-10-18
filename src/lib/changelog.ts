@@ -13,6 +13,7 @@ export const RELEASES: Release[] = [
       "🛡️ New Trust report: topic by topic, see where your AI can decide alone, where to spot-check and where a person must approve, backed by proven accuracy (95% confidence), not guesses.",
       "✋ Who checks the checker: see how often your team agrees with ProofMyAI's verdicts.",
       "🛑 POST /api/v1/check: get allow, review or block before your chatbot sends a reply or your agent acts, so customers never see a made-up answer.",
+      "✋ Approvals: agents prepare the action, a person approves what matters with one click (money, customer messages, anything irreversible, first-time categories, promises). Rejected actions stay blocked on retry, decisions become rules, and every decision is logged with who, when and why.",
     ],
   },
   {

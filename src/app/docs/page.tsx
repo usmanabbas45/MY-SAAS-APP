@@ -16,6 +16,7 @@ const TOC = [
   ["auth", "🔑 Authentication"],
   ["chat-events", "💬 POST /chat-events (live chatbot)"],
   ["check", "🛑 POST /check (stop bad answers)"],
+  ["approvals", "✋ POST /approvals (human approval)"],
   ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
@@ -116,6 +117,25 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
         ["block", "decision", "Don't send it: it's made up, against your policy, or should go to a human."],
       ]} />
       <p><code>/chat-events?wait=1</code> also returns a <code>decision</code> for each reply. Each check counts as one conversation on your plan. If the check fails or times out, fall back to sending the reply as usual (or to a human for high-stakes actions).</p>
+
+      <h2 id="approvals">✋ POST /approvals: a person approves what matters</h2>
+      <p>&quot;Automate the draft, never the send.&quot; Before your agent does something important (issues a refund, emails a customer, pays an invoice, writes to your CRM), it submits the action. Routine, reversible actions come back <code>approved</code> straight away. These wait as <code>pending</code> until someone clicks Approve or Reject on the <em>Approvals</em> page (you get an alert):</p>
+      <ul>
+        <li>anything marked <code>&quot;reversible&quot;: false</code>;</li>
+        <li>the <b>first</b> action of a new <code>category</code> (for example a new supplier). Click &quot;Approve &amp; always allow&quot; and it becomes a rule;</li>
+        <li>an <code>amount</code> at or over your limit;</li>
+        <li>text that promises a refund, discount, deadline or compensation.</li>
+      </ul>
+      <Code>{`curl -X POST ${API}/approvals \
+  -H "Authorization: Bearer ap_live_your_key" -H "Content-Type: application/json" \
+  -d '{"action": "refund", "summary": "Refund order #4471 for Sara K.", "amount": 89, "currency": "GBP",
+       "category": "refunds", "reversible": false, "agent_name": "Support agent", "action_id": "refund-4471",
+       "details": "Hi Sara, I have refunded £89 to your card. It will arrive within 5 days.",
+       "callback_url": "https://your-n8n.example.com/webhook/approval"}'`}</Code>
+      <Code>{`{"id": 812, "action_id": "refund-4471", "status": "pending", "needs_human": true,
+ "reason": "This can't be undone, so a person approves it first.", "commitments": ["a refund", "a deadline"],
+ "poll_url": "${API}/approvals/812"}`}</Code>
+      <p>Then wait for the decision: ProofMyAI POSTs <code>{`{"id", "action_id", "status", "decided_by", "note"}`}</code> to your <code>callback_url</code>, or poll <code>GET /approvals/812</code>. Only act when <code>status</code> is <code>approved</code>. Requests expire after 24 hours (<code>expires_in_hours</code>). If the agent submits an action again after a person rejected it, it stays <code>rejected</code> and you get an alert. Every decision is logged with who decided, when and their note. In n8n: HTTP Request node → Wait node (resume on webhook) → IF <code>status = approved</code>.</p>
 
       <h2 id="feedback">👍 POST /feedback: customer ratings</h2>
       <p>Send each thumbs up/down or star rating your customers give the bot. ProofMyAI shows customer satisfaction overall and per topic on the <em>Analytics</em> page. Use the same <code>conversation_id</code> you send to <code>/chat-events</code>.</p>
