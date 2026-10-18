@@ -135,7 +135,7 @@ export function IntegrationStrip() {
 }
 
 const MORE_INTEGRATIONS: [string, string][] = [
-  ["Twilio SMS", "#f22f46"], ["Zapier", "#ff4f00"], ["Google Sheets", "#0f9d58"], ["CrewAI", "#ef5b3f"], ["Slack alerts", "#4a154b"], ["Discord alerts", "#5865f2"],
+  ["Twilio SMS", "#f22f46"], ["Zapier", "#ff4f00"], ["Google Sheets", "#0f9d58"], ["HubSpot", "#ff7a59"], ["Salesforce", "#00a1e0"], ["Pipedrive", "#017737"], ["GoHighLevel", "#155eef"], ["Zoho CRM", "#e42527"], ["CrewAI", "#ef5b3f"], ["Slack alerts", "#4a154b"], ["Discord alerts", "#5865f2"],
   ["Any HTTP bot", "#5b4bf5"], ["Website widgets", "#0ea5e9"], ["Uptime checks", "#16a34a"],
 ];
 

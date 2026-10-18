@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-18", title: "CRM monitoring", tag: "New",
+    items: [
+      "🗂️ Connect HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel, Freshsales, Close, ActiveCampaign or Dynamics 365 (read-only), or any other CRM through n8n, Make or Zapier.",
+      "Alerts when new leads stop arriving, new records miss an email/phone or owner, duplicates appear, hundreds of records change at once, or leads aren't contacted in time.",
+      "Privacy first: only hashes and filled/empty flags are stored, never names, emails or phone numbers.",
+    ],
+  },
+  {
     date: "2026-10-18", title: "Verify results, heartbeats, regression alerts and AI disclosure", tag: "New",
     items: [
       "🔎 Verify results: when an agent or workflow says it's done, ProofMyAI checks the real system (the CRM record, the order) and alerts if the result isn't there.",

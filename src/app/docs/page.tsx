@@ -19,6 +19,7 @@ const TOC = [
   ["approvals", "✋ POST /approvals (human approval)"],
   ["verify", "🔎 Verify results (POST /verify)"],
   ["heartbeats", "💓 Heartbeats (scheduled jobs)"],
+  ["crm", "🗂️ CRM monitoring"],
   ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
@@ -156,6 +157,16 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
       <Code>{`curl -fsS https://proofmyai.com/api/hb/hb_your_token          # finished OK
 curl -fsS "https://proofmyai.com/api/hb/hb_your_token/fail?msg=disk%20full"   # report a failure now`}</Code>
       <p>If the check-in doesn&apos;t arrive within the schedule plus a grace period (20%, at least 5 minutes), you get an alert. It clears on the next check-in. No API key is needed: the URL is the secret, so keep it private.</p>
+
+      <h2 id="crm">🗂️ CRM monitoring</h2>
+      <p>Connect your CRM on the <em>CRM</em> page. It&apos;s read-only, and ProofMyAI stores only hashes and filled/empty flags, never names, emails or phone numbers. Direct connectors: <b>HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel, Freshsales, Close, ActiveCampaign and Microsoft Dynamics 365</b>, checked every 15 minutes. You get alerts when new leads stop arriving (learned from your CRM&apos;s rhythm), new records miss an email/phone or owner, duplicates appear, hundreds of records change at once, leads aren&apos;t contacted in time, or the connection fails.</p>
+      <p>For any other CRM (Monday, Attio, Copper, Keap, Bitrix24, Odoo, Airtable…), send records from n8n, Make or Zapier when they are created or updated:</p>
+      <Code>{`curl -X POST ${API}/crm-records \
+  -H "Authorization: Bearer ap_live_your_key" -H "Content-Type: application/json" \
+  -d '{"source": "Monday CRM", "records": [{"id": "123", "kind": "lead", "created_at": "2026-10-18T09:30:00Z",
+       "updated_at": "2026-10-18T09:30:00Z", "email": "sara@shop.co", "phone": "+44 7700 900123",
+       "name": "Sara K.", "owner": "Ali", "last_activity_at": null}]}'`}</Code>
+      <p>Response <code>202</code>: <code>{`{"received": 1, "new": 1, "duplicates": 0}`}</code>. Up to 500 records per call; <code>kind</code> is <code>contact</code>, <code>lead</code> or <code>deal</code>.</p>
 
       <h2 id="feedback">👍 POST /feedback: customer ratings</h2>
       <p>Send each thumbs up/down or star rating your customers give the bot. ProofMyAI shows customer satisfaction overall and per topic on the <em>Analytics</em> page. Use the same <code>conversation_id</code> you send to <code>/chat-events</code>.</p>

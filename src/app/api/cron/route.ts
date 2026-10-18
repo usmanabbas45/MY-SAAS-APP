@@ -15,6 +15,7 @@ import { runDueSheets } from "@/lib/sheets";
 import { expireApprovals } from "@/lib/approvals";
 import { checkHeartbeats } from "@/lib/heartbeats";
 import { qualityChecks } from "@/lib/drift";
+import { pollAllCrms } from "@/lib/crm/monitor";
 import { purgeOldErrors } from "@/lib/monitoring";
 import { sendDueOnboarding } from "@/lib/onboarding";
 import { sendRenewalReminders } from "@/lib/renewals";
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
 
 async function runAll(started: number) {
   await pollAllSources();
+  await pollAllCrms();
   const projects = all<{ id: number }>("SELECT id FROM projects WHERE is_demo = 0"); // demo data is never "live"
   for (const p of projects) {
     await periodicWorkflowChecks(p.id);
