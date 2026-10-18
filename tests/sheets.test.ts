@@ -190,7 +190,7 @@ describe("freshness column", () => {
     expect(inc.severity).toBe("high");
     expect(inc.detail).toContain("automation is running but the source has delivered nothing new");
     expect(inc.detail).toContain("backfill");
-    await checkSheet(watch(), leads("2026-10-17 07:30", "2026-10-17 10:45"), t(3.5));
+    await checkSheet(watch(), csv("Name,Created at,Synced\nLead 0,2026-10-17 07:30,yes\nLead 1,2026-10-17 10:45,no"), t(3.5));
     expect(open()).toEqual([]);
     expect(watch().status).toBe("ok");
   });
@@ -202,7 +202,31 @@ describe("freshness column", () => {
     expect(open()).toEqual(["SHEET_COLUMN_MISSING"]);
     run("UPDATE incidents SET resolved = 1");
     const r = await checkSheet(watch(), leads("soon", "n/a"), new Date(now));
-    expect(r.problems).toEqual(["dates unreadable"]);
-    expect(open()).toEqual(["SHEET_DATES_UNREADABLE"]);
+    expect(r.problems).toContain("dates unreadable");
+    expect(open()).toContain("SHEET_DATES_UNREADABLE");
+  });
+});
+
+describe("sheet structure and duplicates", () => {
+  it("alerts once when a column is removed or renamed", async () => {
+    add(0);
+    const t = new Date("2026-10-17T08:00:00Z");
+    await checkSheet(watch(), csv(rows(5)), t);
+    const r = await checkSheet(watch(), csv(rows(5).replace("Name,Email,Total", "Name,E-mail,Total")), t);
+    expect(r.problems).toContain("columns changed");
+    const inc = get<{ title: string; detail: string }>("SELECT title, detail FROM incidents WHERE code = 'SHEET_COLUMNS_CHANGED'")!;
+    expect(inc.title).toBe('Column "Email" was removed from "Leads"');
+    expect(inc.detail).toContain('New: "E-mail" (renamed?)');
+    expect((await checkSheet(watch(), csv(rows(5).replace("Name,Email,Total", "Name,E-mail,Total")), t)).problems).toEqual([]); // new baseline
+  });
+
+  it("alerts when duplicate rows appear, not on duplicates that were always there", async () => {
+    add(0);
+    const t = new Date("2026-10-17T08:00:00Z");
+    await checkSheet(watch(), csv(rows(10, "\nLead 0,lead0@x.com,0")), t); // one old duplicate
+    expect(open()).toEqual([]);
+    const r = await checkSheet(watch(), csv(rows(10, "\nLead 0,lead0@x.com,0\nLead 1,lead1@x.com,1\nLead 2,lead2@x.com,2\nLead 3,lead3@x.com,3")), t);
+    expect(r.problems).toEqual(["duplicate rows"]);
+    expect(open()).toEqual(["SHEET_DUPLICATES"]);
   });
 });

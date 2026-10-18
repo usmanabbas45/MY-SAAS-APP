@@ -38,7 +38,7 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
   return (
     <div>
       <Flash {...flash} />
-      <PageHeader title="n8n & Make monitoring" subtitle="Failures, silent failures, error spikes and workflows that stopped running" />
+      <PageHeader title="n8n & Make monitoring" subtitle="Failures, silent failures, stuck or switched-off workflows, volume drops and workflows that stopped running" />
       <div className="grid grid-4">
         <Stat label="Executions (7 days)" value={totals?.n ?? 0} />
         <Stat label="Success rate" value={rate == null ? "–" : `${rate}%`} />

@@ -8,6 +8,17 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-18", title: "Catch every automation failure", tag: "New",
+    items: [
+      "🔌 Alert when ProofMyAI can't reach your n8n or Make (expired API key, server down), so monitoring never silently stops.",
+      "⏸️ Each workflow's own rhythm is learned automatically: get alerted when one workflow stops running, even while others keep going, without false alarms for normal nights and weekends.",
+      "⏳ Stuck runs: executions still \"running\" long after they should have finished. 🔴 Workflows switched off in n8n or Make, and new Make incomplete executions.",
+      "⚠️ Runs that finish with warnings (errors swallowed), items that went in but didn't come out, and output far below or far above normal (partial data, loops, duplicates).",
+      "🧠 Empty runs are judged against each workflow's history, and you can send input_items to separate a quiet day from a broken workflow.",
+      "📗 Google Sheets: freshness check on a date column, alerts when a column is removed or renamed, and when duplicate rows suddenly appear.",
+    ],
+  },
+  {
     date: "2026-10-04", title: "Chatbot analytics", tag: "New",
     items: [
       "📈 New Analytics page: conversations, answer accuracy, resolution rate, how often customers needed a human, response times and trends over 7, 30 or 90 days.",

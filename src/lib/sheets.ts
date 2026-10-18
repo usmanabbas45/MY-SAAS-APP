@@ -17,6 +17,8 @@ export interface SheetWatch {
   stale_hours: number; required_col: string | null;
   /** Freshness check: column holding each record's date/time, how recent the newest must be, and its time zone. */
   fresh_col: string | null; fresh_hours: number; fresh_tz: string | null; newest_at: string | null;
+  /** Baselines: the header row (JSON array) and how many exact duplicate rows the sheet had. */
+  columns: string | null; dup_rows: number | null;
   status: "pending" | "ok" | "problem" | "error"; fails: number;
   last_checked_at: string | null; last_changed_at: string | null; last_hash: string | null;
   row_count: number | null; error_cells: number; blank_required: number; last_error: string | null; created_at: string;
@@ -135,6 +137,7 @@ export function newestDate(values: string[], tz: string, now = Date.now()): { ne
 export interface SheetSnapshot {
   hash: string; rows: number; errorCells: string[]; blankRequired: number; requiredFound: boolean;
   freshFound: boolean; newestAt: number | null; freshParsed: number;
+  columns: string[]; duplicates: number;
 }
 
 /** What a CSV says: data rows (after the header, ignoring blank rows), error cells and blanks in the required column. */
@@ -151,9 +154,11 @@ export function analyseCsv(text: string, requiredCol: string | null, fresh: { co
   const blankRequired = col >= 0 ? data.slice(-RECENT_ROWS).filter(({ r }) => !(r[col] ?? "").trim()).length : 0;
   const fcol = fresh.col ? header.findIndex((h) => h.trim().toLowerCase() === fresh.col!.trim().toLowerCase()) : -1;
   const { newest, parsed } = fcol >= 0 ? newestDate(data.map(({ r }) => r[fcol] ?? ""), fresh.tz || "UTC", fresh.now) : { newest: null, parsed: 0 };
+  const unique = new Set(data.map(({ r }) => r.map((c) => c.trim()).join("\u0001")));
   return {
     hash: createHash("sha256").update(text).digest("hex"), rows: data.length, errorCells, blankRequired, requiredFound: col >= 0,
     freshFound: fcol >= 0, newestAt: newest, freshParsed: parsed,
+    columns: header.map((h) => h.trim()).filter(Boolean), duplicates: data.length - unique.size,
   };
 }
 
@@ -297,13 +302,42 @@ export async function checkSheet(w: SheetWatch, fetcher?: Fetcher, now = new Dat
     });
   } // A one-off event: it stays open until someone resolves it on the Incidents page.
 
+  // 6. Columns removed or renamed (reports, formulas and automations that use them break).
+  const before: string[] = w.columns ? JSON.parse(w.columns) : [];
+  const lower = new Set(s.columns.map((c) => c.toLowerCase()));
+  const removed = before.filter((c) => !lower.has(c.toLowerCase()));
+  if (before.length && removed.length && s.columns.length) {
+    const was = new Set(before.map((c) => c.toLowerCase()));
+    const added = s.columns.filter((c) => !was.has(c.toLowerCase()));
+    problems.push("columns changed");
+    await problem({
+      module: "workflows", code: "SHEET_COLUMNS_CHANGED", severity: "medium",
+      title: `${removed.length === 1 ? `Column "${removed[0]}" was` : `${removed.length} columns were`} removed from "${w.name}"`,
+      detail: `Gone: ${removed.map((c) => `"${c}"`).join(", ")}.${added.length ? ` New: ${added.map((c) => `"${c}"`).join(", ")} (renamed?).` : ""} Automations, formulas and reports that read these columns will now get nothing or the wrong data.`,
+      dedupeKey: `${key}:cols`,
+    });
+  } // A one-off event, like vanished rows: the new header becomes the baseline.
+
+  // 7. New duplicate rows (the automation writing the same record twice, or a re-run).
+  const newDupes = s.duplicates - (w.dup_rows ?? s.duplicates);
+  if (newDupes >= Math.max(3, Math.ceil(s.rows * 0.01))) {
+    problems.push("duplicate rows");
+    await problem({
+      module: "workflows", code: "SHEET_DUPLICATES", severity: "medium",
+      title: `${plural(newDupes, "duplicate row")} appeared in "${w.name}"`,
+      detail: `The sheet now has ${plural(s.duplicates, "row")} that exactly repeat another row. The automation may be running twice, retrying after a timeout, or re-sending old data. Totals and counts built on this sheet are now too high.`,
+      dedupeKey: `${key}:dupes`,
+    });
+  }
+
   if (!w.last_hash) logSheetEvent(w, at, "ok", `Started watching "${w.name}"`, `${plural(s.rows, "row")} found. Checked every ${CHECK_EVERY_MIN} minutes.`);
   else if (changed && w.row_count != null && s.rows > w.row_count) logSheetEvent(w, at, "ok", `"${w.name}" updated: +${plural(s.rows - w.row_count, "new row")}`, `${plural(s.rows, "row")} in total.`);
   else if (changed && !problems.includes("rows disappeared")) logSheetEvent(w, at, "ok", `"${w.name}" was edited`, `${plural(s.rows, "row")} in total.`);
 
   run(
-    `UPDATE sheet_watches SET status = ?, fails = 0, last_checked_at = ?, last_changed_at = ?, last_hash = ?, row_count = ?, error_cells = ?, blank_required = ?, newest_at = ?, last_error = NULL WHERE id = ?`,
-    problems.length ? "problem" : "ok", at, lastChanged, s.hash, s.rows, s.errorCells.length, s.blankRequired, s.newestAt == null ? null : new Date(s.newestAt).toISOString(), w.id,
+    `UPDATE sheet_watches SET status = ?, fails = 0, last_checked_at = ?, last_changed_at = ?, last_hash = ?, row_count = ?, error_cells = ?, blank_required = ?, newest_at = ?, columns = ?, dup_rows = ?, last_error = NULL WHERE id = ?`,
+    problems.length ? "problem" : "ok", at, lastChanged, s.hash, s.rows, s.errorCells.length, s.blankRequired, s.newestAt == null ? null : new Date(s.newestAt).toISOString(),
+    s.columns.length ? JSON.stringify(s.columns) : w.columns, s.duplicates, w.id,
   );
   return { ok: problems.length === 0, problems, error: null, rows: s.rows };
 }

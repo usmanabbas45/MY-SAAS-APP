@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 
 async function runAll(started: number) {
   await pollAllSources();
-  const projects = all<{ id: number }>("SELECT id FROM projects");
+  const projects = all<{ id: number }>("SELECT id FROM projects WHERE is_demo = 0"); // demo data is never "live"
   for (const p of projects) await periodicWorkflowChecks(p.id);
   const suites = await runDueSuites();
   const digests = await sendDueDigests();
