@@ -27,6 +27,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM test_suggestions WHERE project_id = ?", project.id)?.n ?? 0, badgeTone: "brand" },
     { href: `${base}/agents`, label: "AI agents", icon: "🤖" },
     { href: `${base}/workflows`, label: "n8n & Make", icon: "⚙️" },
+    { href: `${base}/crm`, label: "CRM", icon: "🗂️", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND resolved = 0 AND code LIKE 'CRM_%'", project.id)?.n ?? 0 },
     { href: `${base}/sheets`, label: "Google Sheets", icon: "📗", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ? AND status IN ('problem', 'error')", project.id)?.n ?? 0 },
     { href: `${base}/uptime`, label: "Uptime", icon: "🟢", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM uptime_monitors WHERE project_id = ? AND status = 'down'", project.id)?.n ?? 0 },
     { href: `${base}/incidents`, label: "Incidents", icon: "🚨", badge: open },

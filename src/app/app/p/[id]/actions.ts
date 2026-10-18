@@ -34,6 +34,8 @@ import { isVerified, VERIFY_FIRST } from "@/lib/verify";
 import { acceptSuggestions, dismissSuggestions, generateTestSuggestions } from "@/lib/testgen";
 import { decideApproval } from "@/lib/approvals";
 import { addHeartbeat, HEARTBEAT_EVERY } from "@/lib/heartbeats";
+import { FOLLOWUP_OPTIONS, pollCrm, REQUIRED_OPTIONS, type CrmSource } from "@/lib/crm/monitor";
+import { providerById } from "@/lib/crm/providers";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -884,4 +886,59 @@ export async function deleteHeartbeatAction(form: FormData) {
   run("DELETE FROM job_heartbeats WHERE id = ? AND project_id = ?", id, p.id);
   resolveIncidents(p.id, `hb:${id}`);
   done(`/app/p/${p.id}/workflows`, { ok: "Heartbeat deleted." });
+}
+
+// ---------- CRM monitoring ----------
+const crmPath = (id: number) => `/app/p/${id}/crm`;
+
+export async function addCrmAction(form: FormData) {
+  const p = await project(form);
+  const provider = providerById(str(form, "provider"));
+  if (!provider?.fetch) done(crmPath(p.id), { error: "Pick a CRM." });
+  const over = limitError(p.user_id, "monitors");
+  if (over) done(crmPath(p.id), { error: over });
+  const creds: Record<string, string> = {};
+  for (const f of provider!.fields) {
+    const v = str(form, f.key, 4000);
+    if (!v && !f.optional) done(crmPath(p.id), { error: `${provider!.label}: ${f.label} is required.` });
+    if (v) creds[f.key] = v;
+  }
+  try {
+    for (const k of ["instance_url", "org_url", "api_url"]) if (creds[k]) await assertPublicUrl(creds[k]);
+  } catch (err) {
+    done(crmPath(p.id), { error: err instanceof Error ? err.message : "Invalid URL." });
+  }
+  const id = run(
+    "INSERT INTO crm_sources (project_id, provider, name, creds_enc, created_at) VALUES (?, ?, ?, ?, ?)",
+    p.id, provider!.id, str(form, "name", 120) || provider!.label, encrypt(JSON.stringify(creds)), new Date().toISOString(),
+  ).lastInsertRowid;
+  const r = await pollCrm(get<CrmSource>("SELECT * FROM crm_sources WHERE id = ?", id)!);
+  done(crmPath(p.id), r.error
+    ? { error: `Saved, but the first check failed: ${r.error} Fix the details, then click "Check now".` }
+    : { ok: `Connected to ${provider!.label}! Read ${r.summary?.fetched ?? 0} recently changed records. ProofMyAI checks again every 15 minutes.` });
+}
+
+export async function updateCrmAction(form: FormData) {
+  const p = await project(form);
+  const required = form.getAll("required").map(String).filter((v) => REQUIRED_OPTIONS.some(([k]) => k === v));
+  const follow = Number(str(form, "followup_hours"));
+  run("UPDATE crm_sources SET required_fields = ?, followup_hours = ? WHERE id = ? AND project_id = ?",
+    required.join(","), (FOLLOWUP_OPTIONS as readonly number[]).includes(follow) ? follow : 0, Number(form.get("crmId")), p.id);
+  done(crmPath(p.id), { ok: "Checks saved." });
+}
+
+export async function checkCrmNowAction(form: FormData) {
+  const p = await project(form);
+  const src = get<CrmSource>("SELECT * FROM crm_sources WHERE id = ? AND project_id = ?", Number(form.get("crmId")), p.id);
+  if (!src) done(crmPath(p.id), { error: "CRM not found." });
+  const r = await pollCrm(src!);
+  done(crmPath(p.id), r.error ? { error: r.error } : { ok: `Checked ${src!.name}: ${r.summary?.fetched ?? 0} changed records, ${r.summary?.created ?? 0} new.` });
+}
+
+export async function deleteCrmAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("crmId"));
+  run("DELETE FROM crm_sources WHERE id = ? AND project_id = ?", id, p.id);
+  for (const k of ["conn", "dupes", "bulk", "fields", "followup", "stale"]) resolveIncidents(p.id, `crm:${id}:${k}`);
+  done(crmPath(p.id), { ok: "CRM disconnected and its data deleted." });
 }

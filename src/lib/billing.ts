@@ -170,7 +170,8 @@ export function usage(userId: number, plan: Plan): Record<Resource, number> {
     ),
     bots: n("SELECT COUNT(*) AS n FROM bot_targets b JOIN projects p ON p.id = b.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     monitors: agents + n("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId)
-      + n("SELECT COUNT(*) AS n FROM sheet_watches s JOIN projects p ON p.id = s.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
+      + n("SELECT COUNT(*) AS n FROM sheet_watches s JOIN projects p ON p.id = s.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId)
+      + n("SELECT COUNT(*) AS n FROM crm_sources c JOIN projects p ON p.id = c.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId)
       + n("SELECT COUNT(*) AS n FROM job_heartbeats h JOIN projects p ON p.id = h.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     seats: n(
@@ -362,9 +363,9 @@ export async function portalUrl(userId: number): Promise<string> {
  * IDs of chatbot targets or workflow connections that scheduled jobs should still run: after a downgrade or an ended
  * trial, each account keeps its oldest items up to the plan limit. Returns null when every item may run.
  */
-export function scheduledIds(kind: "bots" | "sources" | "sheets"): Set<number> | null {
+export function scheduledIds(kind: "bots" | "sources" | "sheets" | "crm"): Set<number> | null {
   if (!billingEnabled()) return null;
-  const table = kind === "bots" ? "bot_targets" : kind === "sheets" ? "sheet_watches" : "workflow_sources";
+  const table = kind === "bots" ? "bot_targets" : kind === "sheets" ? "sheet_watches" : kind === "crm" ? "crm_sources" : "workflow_sources";
   const rows = all<{ id: number; user_id: number }>(`SELECT x.id, p.user_id FROM ${table} x JOIN projects p ON p.id = x.project_id ORDER BY x.id`);
   const keep = new Set<number>();
   const used = new Map<number, number>();
@@ -374,7 +375,9 @@ export function scheduledIds(kind: "bots" | "sources" | "sheets"): Set<number> |
       const plan = billingState(r.user_id).plan;
       // Agents share the monitor allowance with workflow connections, but they only run on the customer's side.
       // Sheets get what is left of that allowance after the account's workflow connections.
-      const sources = kind === "sheets" ? get<{ n: number }>("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ?", r.user_id)?.n ?? 0 : 0;
+      // CRMs get what is left after workflow connections and sheets.
+      const count = (t: string) => get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t} w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ?`, r.user_id)?.n ?? 0;
+      const sources = kind === "sheets" ? count("workflow_sources") : kind === "crm" ? count("workflow_sources") + count("sheet_watches") : 0;
       limits.set(r.user_id, kind === "bots" ? plan.bots : plan.monitors - sources);
     }
     const n = used.get(r.user_id) ?? 0;

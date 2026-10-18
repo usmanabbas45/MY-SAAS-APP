@@ -23,6 +23,7 @@ const FEATURES = [
   { icon: "🔒", title: "Privacy built in", text: "Emails, phone numbers, card numbers and IBANs are masked before anything is stored or checked by AI. Your own rules (\"never say…\") are enforced on every answer." },
   { icon: "📄", title: "Client-ready reports", text: "Share a read-only report link or save it as a PDF, with your agency's name on it. Export everything to CSV and get a weekly summary email." },
   { icon: "🛡️", title: "Safety & security checks", text: "Catch prompt-injection and jailbreak attempts, leaked system prompts, exposed card numbers, rude replies and answers in the wrong language." },
+  { icon: "🗂️", title: "CRM monitoring", text: "HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel and more, read-only. Know when leads stop arriving, come in without an email or owner, get duplicated, change in bulk or never get a follow-up." },
   { icon: "📗", title: "Google Sheets watch", text: "Get an alert when a sheet your automations fill stops updating, shows #REF! or #N/A errors, or a key column comes in empty." },
   { icon: "🟢", title: "Uptime & speed", text: "Monitor your chatbot, website or API every minute. Get an alert when it goes down or slows down, and when it's back." },
   { icon: "👥", title: "Team & client access", text: "Invite teammates or clients as viewers or editors. Perfect for agencies sharing results without sharing passwords." },

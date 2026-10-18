@@ -331,6 +331,48 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // CRM monitoring (read-only): connections, minimal record facts (hashes and filled/empty flags) and per-check counts.
+  db.exec(`CREATE TABLE IF NOT EXISTS crm_sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    name TEXT NOT NULL,
+    creds_enc TEXT,
+    required_fields TEXT NOT NULL DEFAULT 'email_or_phone',
+    followup_hours INTEGER NOT NULL DEFAULT 0,
+    fails INTEGER NOT NULL DEFAULT 0,
+    last_polled_at TEXT,
+    last_error TEXT,
+    created_at TEXT NOT NULL
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS crm_records (
+    source_id INTEGER NOT NULL REFERENCES crm_sources(id) ON DELETE CASCADE,
+    external_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    email_hash TEXT,
+    phone_hash TEXT,
+    has_email INTEGER NOT NULL,
+    has_phone INTEGER NOT NULL,
+    has_name INTEGER NOT NULL,
+    has_owner INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_activity_at TEXT,
+    activity_known INTEGER NOT NULL DEFAULT 0,
+    first_seen_at TEXT NOT NULL,
+    PRIMARY KEY (source_id, external_id)
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_crm_records_created ON crm_records (source_id, created_at)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_crm_records_email ON crm_records (source_id, email_hash)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_crm_records_phone ON crm_records (source_id, phone_hash)");
+  db.exec(`CREATE TABLE IF NOT EXISTS crm_polls (
+    source_id INTEGER NOT NULL REFERENCES crm_sources(id) ON DELETE CASCADE,
+    at TEXT NOT NULL,
+    updated INTEGER NOT NULL,
+    created INTEGER NOT NULL,
+    capped INTEGER NOT NULL DEFAULT 0
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_crm_polls ON crm_polls (source_id, at)");
   // Heartbeats (dead man's switch) for scheduled jobs.
   db.exec(`CREATE TABLE IF NOT EXISTS job_heartbeats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

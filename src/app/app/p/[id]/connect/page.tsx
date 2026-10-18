@@ -26,6 +26,7 @@ const METHODS: Method[] = [
   { id: "n8n", group: "workflows", icon: "🟠", title: "n8n", text: "Paste your n8n URL and API key. We check every workflow every 15 minutes.", time: "2 min · no code" },
   { id: "make", group: "workflows", icon: "🟣", title: "Make", text: "Paste a Make API token and your scenario IDs.", time: "2 min · no code" },
   { id: "webhook", group: "workflows", icon: "⚡", title: "Zapier or anything else", text: "Send a webhook when a workflow runs or fails.", time: "3 min" },
+  { id: "crm", group: "workflows", icon: "🗂️", title: "CRM (HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel…)", text: "Read-only. Alerts when leads stop arriving, come in without an email or owner, get duplicated or changed in bulk, or nobody follows them up.", time: "3 min · no code", page: "crm" },
   { id: "sheets", group: "workflows", icon: "📗", title: "Google Sheets", text: "Paste a sheet link. Alerts when it stops updating, shows #REF! errors or a key column comes in empty.", time: "1 min · no code", page: "sheets" },
   { id: "uptime", group: "workflows", icon: "🟢", title: "Uptime & speed", text: "Paste any URL (chatbot, website, API). Alerts when it goes down or gets slow.", time: "1 min · no code", page: "uptime" },
 ];
