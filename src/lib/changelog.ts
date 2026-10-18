@@ -8,6 +8,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-18", title: "Verify results, heartbeats, regression alerts and AI disclosure", tag: "New",
+    items: [
+      "🔎 Verify results: when an agent or workflow says it's done, ProofMyAI checks the real system (the CRM record, the order) and alerts if the result isn't there.",
+      "💓 Heartbeats: a URL your scheduled jobs call when they finish. Get an alert when a job never ran, the failure no error handler sees.",
+      "📉 Regression alerts: chatbot accuracy or agent scores dropping after a model, prompt or help-doc change, and agents that stop calling a tool or whose tool starts failing.",
+      "🇪🇺 EU AI Act check: flags replies where the bot claims to be human or dodges \"am I talking to a person?\" (Article 50, in force since 2 August 2026).",
+    ],
+  },
+  {
     date: "2026-10-18", title: "AI trust report and pre-send check", tag: "New",
     items: [
       "🛡️ New Trust report: topic by topic, see where your AI can decide alone, where to spot-check and where a person must approve, backed by proven accuracy (95% confidence), not guesses.",

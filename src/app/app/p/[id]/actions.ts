@@ -33,6 +33,7 @@ import { pollSource } from "@/lib/workflows/pollers";
 import { isVerified, VERIFY_FIRST } from "@/lib/verify";
 import { acceptSuggestions, dismissSuggestions, generateTestSuggestions } from "@/lib/testgen";
 import { decideApproval } from "@/lib/approvals";
+import { addHeartbeat, HEARTBEAT_EVERY } from "@/lib/heartbeats";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -862,4 +863,25 @@ export async function approvalLimitAction(form: FormData) {
   const v = raw === "" ? null : Number(raw);
   run("UPDATE projects SET approve_over = ? WHERE id = ?", v != null && Number.isFinite(v) && v >= 0 ? v : null, p.id);
   done(approvalsPath(p.id), { ok: v == null ? "Amount limit removed." : `Actions of ${v} or more now need approval.` });
+}
+
+// ---------- Heartbeats ----------
+export async function addHeartbeatAction(form: FormData) {
+  const p = await project(form);
+  const back = `/app/p/${p.id}/workflows`;
+  const over = limitError(p.user_id, "uptime");
+  if (over) done(back, { error: over });
+  const every = Number(str(form, "every_min"));
+  const name = str(form, "name", 100);
+  if (!name) done(back, { error: "Give the job a name." });
+  addHeartbeat(p.id, name, (HEARTBEAT_EVERY as readonly number[]).includes(every) ? every : 60);
+  done(back, { ok: `Heartbeat added. Copy its URL and call it at the end of "${name}".` });
+}
+
+export async function deleteHeartbeatAction(form: FormData) {
+  const p = await project(form);
+  const id = Number(form.get("hbId"));
+  run("DELETE FROM job_heartbeats WHERE id = ? AND project_id = ?", id, p.id);
+  resolveIncidents(p.id, `hb:${id}`);
+  done(`/app/p/${p.id}/workflows`, { ok: "Heartbeat deleted." });
 }

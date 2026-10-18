@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OutcomeCheckSchema } from "../outcome";
 import { truncate } from "../text";
 
 export const AgentStepSchema = z.object({
@@ -19,6 +20,8 @@ export const AgentRunSchema = z.object({
   status: z.enum(["success", "error", "timeout", "cancelled"]).default("success"),
   final_output: z.string().max(50000).default(""),
   steps: z.array(AgentStepSchema).max(2000).default([]),
+  /** Optional: where ProofMyAI can confirm the result really exists (a CRM record, an order, a file). */
+  verify: OutcomeCheckSchema.optional(),
 });
 
 export type AgentRun = z.infer<typeof AgentRunSchema>;

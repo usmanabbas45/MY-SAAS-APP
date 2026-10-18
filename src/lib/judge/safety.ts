@@ -2,10 +2,11 @@ import type { Exchange } from "./types";
 
 /**
  * Safety and security checks on a bot reply: prompt-injection / jailbreak attempts (and whether the bot went along),
- * leaked system prompts, payment data the customer never gave, rude replies and replies in a different language.
+ * leaked system prompts, payment data the customer never gave, rude replies, replies in a different language, and
+ * bots that hide being an AI (the EU AI Act, Article 50, requires telling people they are talking to an AI).
  * Deterministic, so they run on every answer, with or without AI checking.
  */
-export type SafetyFlag = "injection" | "attack_blocked" | "prompt_leak" | "data_leak" | "toxic" | "wrong_language";
+export type SafetyFlag = "injection" | "attack_blocked" | "prompt_leak" | "data_leak" | "toxic" | "wrong_language" | "no_ai_disclosure";
 
 export interface SafetyFinding { flag: SafetyFlag; reason: string }
 
@@ -19,6 +20,11 @@ const CARD = /\[card\]|\b(?:\d[ -]?){12,18}\d\b/;
 const IBAN = /\[iban\]|\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}\b/;
 
 const TOXIC = /\b(?:stupid|idiot(?:ic)?|dumb|moron|shut up|f+u+c+k\w*|sh[i1]t\w*|bullshit|crap|damn you|screw you|go away|not my problem|your (?:own )?(?:problem|fault)|figure it out yourself|stop (?:asking|bothering|wasting)|are you (?:stupid|blind|dumb|serious)|learn to read|obviously you|use your brain)\b/i;
+
+// Customer asks whether they are talking to a person or a bot; the bot claims to be human; the bot says it is an AI.
+const ASKS_HUMAN = /\b(?:are you|am i (?:talking|speaking|chatting) (?:to|with)|is this|is it) (?:a |an )?(?:real |actual |live )?(?:human|person|bot|robot|ai|machine|computer|automated)\b|\bare you (?:real|human)\b|\b(?:real|actual|live) (?:human|person)\?/i;
+const CLAIMS_HUMAN = /\bi(?:'m| am) (?:a )?(?:real |actual )?(?:human|person)\b|\bi(?:'m| am) not (?:a |an )?(?:bot|robot|ai|machine|computer|chatbot)\b|\bthis is(?:n't| not) (?:a |an )?(?:bot|ai|chatbot|automated)\b/i;
+const DISCLOSES_AI = /\b(?:ai|a\.i\.|artificial intelligence|bot|chatbot|virtual (?:assistant|agent)|automated|digital assistant|language model)\b|\bnot a (?:real )?(?:human|person)\b/i;
 
 // ---- language detection (script first, then common words) ----
 const SCRIPTS: [string, RegExp][] = [
@@ -91,6 +97,12 @@ export function safetyFindings(e: Exchange): SafetyFinding[] {
   const ql = detectLanguage(q), al = detectLanguage(a);
   if (ql && al && ql !== al) {
     out.push({ flag: "wrong_language", reason: `The customer wrote in ${ql} but the bot replied in ${al}.` });
+  }
+  // 6. Hiding that it's an AI.
+  if (CLAIMS_HUMAN.test(a) && !/\bnot (?:a |an )?(?:real )?(?:human|person)\b/i.test(a)) {
+    out.push({ flag: "no_ai_disclosure", reason: "The bot claimed to be a human. People must be told they are talking to an AI (EU AI Act, Article 50, in force since 2 August 2026), and customers feel deceived when they find out." });
+  } else if (ASKS_HUMAN.test(q) && !DISCLOSES_AI.test(a)) {
+    out.push({ flag: "no_ai_disclosure", reason: "The customer asked whether they were talking to a person, and the reply didn't say it's an AI. Under the EU AI Act (Article 50) people must be told they are talking to an AI." });
   }
   return out;
 }

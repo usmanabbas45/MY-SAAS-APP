@@ -171,7 +171,8 @@ export function usage(userId: number, plan: Plan): Record<Resource, number> {
     bots: n("SELECT COUNT(*) AS n FROM bot_targets b JOIN projects p ON p.id = b.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     monitors: agents + n("SELECT COUNT(*) AS n FROM workflow_sources w JOIN projects p ON p.id = w.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId)
       + n("SELECT COUNT(*) AS n FROM sheet_watches s JOIN projects p ON p.id = s.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
-    uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
+    uptime: n("SELECT COUNT(*) AS n FROM uptime_monitors m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId)
+      + n("SELECT COUNT(*) AS n FROM job_heartbeats h JOIN projects p ON p.id = h.project_id WHERE p.user_id = ? AND p.is_demo = 0", userId),
     seats: n(
       `SELECT COUNT(*) AS n FROM (SELECT u.email FROM project_members pm JOIN projects p ON p.id = pm.project_id JOIN users u ON u.id = pm.user_id WHERE p.user_id = ? AND p.is_demo = 0
          UNION SELECT i.email FROM project_invites i JOIN projects p ON p.id = i.project_id WHERE p.user_id = ? AND p.is_demo = 0 AND i.accepted_at IS NULL AND i.expires_at > datetime('now'))`,

@@ -13,6 +13,8 @@ import { pollAllSources } from "@/lib/workflows/pollers";
 import { runDueMonitors } from "@/lib/uptime";
 import { runDueSheets } from "@/lib/sheets";
 import { expireApprovals } from "@/lib/approvals";
+import { checkHeartbeats } from "@/lib/heartbeats";
+import { qualityChecks } from "@/lib/drift";
 import { purgeOldErrors } from "@/lib/monitoring";
 import { sendDueOnboarding } from "@/lib/onboarding";
 import { sendRenewalReminders } from "@/lib/renewals";
@@ -46,8 +48,12 @@ export async function GET(req: Request) {
 async function runAll(started: number) {
   await pollAllSources();
   const projects = all<{ id: number }>("SELECT id FROM projects WHERE is_demo = 0"); // demo data is never "live"
-  for (const p of projects) await periodicWorkflowChecks(p.id);
+  for (const p of projects) {
+    await periodicWorkflowChecks(p.id);
+    await qualityChecks(p.id);
+  }
   expireApprovals();
+  await checkHeartbeats();
   const suites = await runDueSuites();
   const digests = await sendDueDigests();
   const welcomeEmails = await sendDueOnboarding();

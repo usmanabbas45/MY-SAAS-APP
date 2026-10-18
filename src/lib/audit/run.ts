@@ -179,6 +179,7 @@ const BEHAVIOUR_FIX: Record<ConvFlag, string> = {
   data_leak: "Bot privacy: the bot exposed payment data",
   toxic: "Bot tone: rude or offensive replies",
   wrong_language: "Bot language: reply in the customer's language",
+  no_ai_disclosure: "Bot transparency: say it's an AI (EU AI Act, Article 50)",
 };
 
 /** Headline risk numbers for reports ("3 answers could have created legal or financial exposure"). */
@@ -186,7 +187,7 @@ export function riskSummary(auditId: number): { high: number; medium: number; fl
   const bySev = all<{ severity: Severity; n: number }>(
     "SELECT severity, COUNT(*) AS n FROM audit_items WHERE audit_id = ? AND COALESCE(corrected_verdict, verdict) <> 'correct' GROUP BY severity", auditId,
   );
-  const flags = { re_ask: 0, restart: 0, fallback: 0, contradiction: 0, injection: 0, attack_blocked: 0, prompt_leak: 0, data_leak: 0, toxic: 0, wrong_language: 0 } as Record<ConvFlag, number>;
+  const flags = { re_ask: 0, restart: 0, fallback: 0, contradiction: 0, injection: 0, attack_blocked: 0, prompt_leak: 0, data_leak: 0, toxic: 0, wrong_language: 0, no_ai_disclosure: 0 } as Record<ConvFlag, number>;
   for (const r of all<{ conv_flags: string }>("SELECT conv_flags FROM audit_items WHERE audit_id = ? AND conv_flags IS NOT NULL", auditId)) {
     for (const f of r.conv_flags.split(",") as ConvFlag[]) if (f in flags) flags[f]++;
   }

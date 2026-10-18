@@ -3,6 +3,7 @@ import { backupDue, runBackup } from "./lib/backup";
 import { checkCronHealth, reportError } from "./lib/monitoring";
 import { runDueMonitors } from "./lib/uptime";
 import { runDueSheets } from "./lib/sheets";
+import { checkHeartbeats } from "./lib/heartbeats";
 
 /**
  * Every minute: missing-reply alerts (so they arrive about a minute after the project's reply-time limit
@@ -25,6 +26,7 @@ if (process.env.DISABLE_BACKGROUND_TIMERS !== "1") {
       await step("missing-replies", alertMissingReplies);
       await step("uptime", runDueMonitors);
       await step("sheets", runDueSheets);
+      await step("heartbeats", checkHeartbeats);
       await step("cron-watchdog", checkCronHealth);
       if (backupDue()) await step("backup", runBackup);
     } finally {
