@@ -2,6 +2,7 @@ import { json, readIngest } from "@/lib/api";
 import { LiveChatSchema, processLiveChat } from "@/lib/audit/live";
 import { limitError, projectOwner } from "@/lib/billing";
 import { VERDICT_LABELS } from "@/lib/judge/types";
+import { decisionFor } from "@/lib/trust";
 
 /**
  * Live chatbot monitoring. Send each conversation (full history or just the new question/answer)
@@ -29,10 +30,9 @@ export async function POST(req: Request) {
   const { exchanges } = result;
   if (wait) {
     const grades = await result.grades;
-    return json({
-      graded: grades.length,
-      results: grades.map((g, i) => ({ turn_index: exchanges[i].turnIndex, verdict: g.verdict, label: VERDICT_LABELS[g.verdict], severity: g.severity, reason: g.reason })),
-    }, 200);
+    const results = grades.map((g, i) => ({ turn_index: exchanges[i].turnIndex, verdict: g.verdict, label: VERDICT_LABELS[g.verdict], severity: g.severity, reason: g.reason, decision: decisionFor(g.verdict, g.severity) }));
+    const decision = results.some((x) => x.decision === "block") ? "block" : results.some((x) => x.decision === "review") ? "review" : "allow";
+    return json({ graded: grades.length, decision, results }, 200);
   }
   return json({ accepted: exchanges.length }, 202);
 }

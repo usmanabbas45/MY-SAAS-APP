@@ -19,6 +19,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
   const monitor: NavItem[] = [
     { href: base, label: "Overview", icon: "📊" },
     { href: `${base}/analytics`, label: "Analytics", icon: "📈" },
+    { href: `${base}/trust`, label: "Trust report", icon: "🛡️" },
     ...(role === "viewer" ? [] : [{ href: `${base}/connect`, label: "Connect", icon: "➕" }]),
     { href: `${base}/live`, label: "Live tracking", icon: "📡" },
     { href: `${base}/chatbot`, label: "Chatbot audits", icon: "💬" },

@@ -15,6 +15,7 @@ const TOC = [
   ["no-code", "🧩 Connect without code"],
   ["auth", "🔑 Authentication"],
   ["chat-events", "💬 POST /chat-events (live chatbot)"],
+  ["check", "🛑 POST /check (stop bad answers)"],
   ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
@@ -98,6 +99,23 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
   "severity": "high", "reason": "The shipping article says Germany costs €9.90; free shipping is not mentioned."}]}`}</Code>
       <p>Verdicts: <code>correct</code>, <code>unsupported</code> (not in your docs), <code>hallucination</code> (made up), <code>should_escalate</code>, <code>off_policy</code>, <code>unclear</code>.</p>
       <p><strong>Tip:</strong> call the API without waiting for it (fire-and-forget) so your bot never slows down. The <em>Live tracking</em> page in your dashboard has ready-made cURL, JavaScript and Python snippets that do this safely, plus no-code steps for Intercom, Zendesk, Crisp and Tidio through n8n or Make.</p>
+
+      <h2 id="check">🛑 POST /check: stop a bad answer before it's sent</h2>
+      <p>The pre-send check (guardrail). Before your chatbot sends a reply, or before an AI agent acts on its decision (a refund, a discount, a booking), send the question and the draft reply. ProofMyAI checks it against your help docs and rules and answers in a few seconds. The answer is also monitored as usual.</p>
+      <Code>{`curl -X POST ${API}/check \
+  -H "Authorization: Bearer ap_live_your_key" -H "Content-Type: application/json" \
+  -d '{"question": "Can I return a sale item for a refund?",
+       "answer": "Yes, every item gets a full refund within 30 days."}'`}</Code>
+      <Code>{`{"decision": "block", "verdict": "hallucination", "label": "Made up", "severity": "high",
+ "reason": "The returns article says sale items get store credit only.",
+ "source": "Returns & refunds", "area": "Returns & refunds", "area_autonomy": "human_review",
+ "advice": "Do not send. Hand the customer to a person."}`}</Code>
+      <Fields rows={[
+        ["allow", "decision", "Safe to send or act on."],
+        ["review", "decision", "Hold it for a person to approve, or send a safe fallback such as \"Let me check that for you\". Every answer in an area your Trust report marks 🔴 returns review."],
+        ["block", "decision", "Don't send it: it's made up, against your policy, or should go to a human."],
+      ]} />
+      <p><code>/chat-events?wait=1</code> also returns a <code>decision</code> for each reply. Each check counts as one conversation on your plan. If the check fails or times out, fall back to sending the reply as usual (or to a human for high-stakes actions).</p>
 
       <h2 id="feedback">👍 POST /feedback: customer ratings</h2>
       <p>Send each thumbs up/down or star rating your customers give the bot. ProofMyAI shows customer satisfaction overall and per topic on the <em>Analytics</em> page. Use the same <code>conversation_id</code> you send to <code>/chat-events</code>.</p>
