@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { all, get, run } from "./db";
 import { raiseIncident } from "./incidents";
+import { logLiveEvent } from "./liveevents";
 import { notify } from "./notify";
 import { safeFetch } from "./security";
 
@@ -106,6 +107,8 @@ export async function submitApproval(projectId: number, a: ApprovalInput, now = 
     verdict.commitments.length ? verdict.commitments.join(", ") : null, verdict.status === "approved" ? "ProofMyAI (rule)" : null,
     verdict.status === "approved" ? now.toISOString() : null, a.callback_url ?? null, now.toISOString(), expires,
   ).lastInsertRowid;
+  logLiveEvent(projectId, "agents", verdict.status === "pending" ? "warn" : "ok",
+    verdict.status === "pending" ? `Waiting for approval: ${a.action}, ${a.summary}` : `Approved automatically: ${a.action}, ${a.summary}`, verdict.reason, now);
   if (verdict.status === "pending") {
     await notify({
       projectId, kind: "problem", module: "agents", code: "APPROVAL_NEEDED", severity: "high",
@@ -129,6 +132,7 @@ export async function decideApproval(
     run("INSERT OR IGNORE INTO approval_rules (project_id, category, action, created_by) VALUES (?, ?, ?, ?)", projectId, norm(a.category), norm(a.action), by);
   }
   const done = get<Approval>("SELECT * FROM approvals WHERE id = ?", id)!;
+  logLiveEvent(projectId, "agents", status === "approved" ? "ok" : "warn", `${status === "approved" ? "Approved" : "Rejected"} by ${by}: ${a.action}, ${a.summary}`, note ?? (choice === "approve_rule" ? `Now approved automatically for "${a.category}".` : ""), now);
   if (a.callback_url) {
     fetcher(a.callback_url, {
       method: "POST", headers: { "content-type": "application/json" },

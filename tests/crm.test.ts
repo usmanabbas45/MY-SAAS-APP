@@ -145,3 +145,18 @@ describe("POST /api/v1/crm-records (any CRM)", () => {
     expect((await pushPost(req({ records: [] }))).status).toBe(400);
   });
 });
+
+describe("CRM in Live tracking", () => {
+  it("shows new records, problems and fixes in the feed and a CRM status card", async () => {
+    const { liveFeed, sourceStatuses } = await import("@/lib/live");
+    const id = run("INSERT INTO crm_sources (project_id, provider, name, created_at, last_polled_at) VALUES (?, 'push', 'HubSpot', ?, ?)", projectId, new Date().toISOString(), new Date().toISOString()).lastInsertRowid;
+    const s = () => get<CrmSource>("SELECT * FROM crm_sources WHERE id = ?", id)!;
+    const at = new Date().toISOString();
+    const r = (i: number, email: string): CrmRecord => ({ id: `x${i}`, kind: "lead", createdAt: at, updatedAt: at, email, phone: null, name: null, owner: null });
+    await ingestCrmRecords(s(), [r(1, "a@x.com")], { first: true });
+    await ingestCrmRecords(s(), [r(2, "a@x.com"), r(3, "a@x.com"), r(4, "a@x.com")]);
+    const crm = liveFeed(projectId).filter((e) => e.source === "crm").map((e) => e.title);
+    expect(crm).toEqual(expect.arrayContaining(["Connected HubSpot", "HubSpot: +3 new records", "3 duplicate records created in HubSpot"]));
+    expect(sourceStatuses(projectId).find((x) => x.source === "crm")).toMatchObject({ state: "problem", problemsLastHour: 1 });
+  });
+});

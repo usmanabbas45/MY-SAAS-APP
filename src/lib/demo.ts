@@ -134,6 +134,42 @@ export async function createDemoProject(userId: number): Promise<number> {
       }
     }
     run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'SHEET_ERRORS', 'medium', '3 error cells in \"Daily revenue report (demo)\"', 'For example D14 (#REF!), D15 (#REF!), F2 (#N/A). Formulas or imported data are broken, so totals and reports built on this sheet are wrong.', 'demo:sheet')", id);
+    // A CRM (fed by an automation, so never polled), with a few duplicates and leads nobody contacted yet.
+    const crm = run("INSERT INTO crm_sources (project_id, provider, name, required_fields, followup_hours, last_polled_at, created_at) VALUES (?, 'push', 'HubSpot (demo)', 'email_or_phone,owner', 4, ?, ?)", id, isoDaysAgo(0), isoDaysAgo(14)).lastInsertRowid;
+    for (let i = 0; i < 60; i++) {
+      const at = new Date(Date.now() - (i * 95 + 20) * 60000).toISOString();
+      run(
+        `INSERT INTO crm_records (source_id, external_id, kind, email_hash, phone_hash, has_email, has_phone, has_name, has_owner, created_at, updated_at, last_activity_at, activity_known, first_seen_at)
+         VALUES (?, ?, 'lead', ?, NULL, 1, ?, 1, ?, ?, ?, ?, 1, ?)`,
+        crm, `demo-${i}`, `demo-hash-${i % 52}`, i % 3 ? 1 : 0, i % 7 === 3 ? 0 : 1, at, at, i < 4 || i % 5 ? at : null, at,
+      );
+    }
+    run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'CRM_DUPLICATES', 'medium', '8 duplicate records created in HubSpot (demo)', 'They have the same email as an existing lead. The website form and the n8n lead flow may both be creating the contact.', ?)", id, `crm:${crm}:dupes`);
+    for (const [mins, level, title, detail] of [
+      [12, "ok", "HubSpot (demo): +3 new records", "21 changed in total."],
+      [95, "warn", "8 duplicate records created in HubSpot (demo)", "The website form and the n8n lead flow may both be creating the contact."],
+      [140, "ok", "Approved automatically: update CRM, Mark lead Omar R. as qualified", "Approved by your rule: always allow \"crm\" for update CRM."],
+      [210, "ok", 'Heartbeat "Nightly invoice sync" is back on time', "Checked in."],
+    ] as const) {
+      run("INSERT INTO live_events (project_id, source, at, level, title, detail) VALUES (?, ?, ?, ?, ?, ?)", id, title.startsWith("Approved") ? "agents" : title.startsWith("Heartbeat") ? "workflows" : "crm", new Date(Date.now() - mins * 60000).toISOString(), level, title, detail);
+    }
+    // Two agent actions waiting for a person, one decided, and a rule learned from approvals.
+    const nowMs = Date.now();
+    type Extra = { agent?: string; details?: string; category?: string; amount?: number; reversible?: boolean; auto?: boolean; reason: string; commitments?: string; by?: string; note?: string };
+    const appr = (summary: string, action: string, extra: Extra, status: string, minsAgo: number) => run(
+      `INSERT INTO approvals (project_id, fingerprint, agent_name, action, summary, details, category, amount, currency, reversible, status, auto, reason, commitments, decided_by, decided_at, note, created_at, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, `demo-${summary}`, extra.agent ?? "Support agent", action, summary, extra.details ?? null, extra.category ?? null, extra.amount ?? null, extra.amount ? "GBP" : null,
+      extra.reversible === false ? 0 : null, status, extra.auto ? 1 : 0, extra.reason, extra.commitments ?? null, status === "pending" ? null : extra.by ?? "owner@acme-shop.com",
+      status === "pending" ? null : new Date(nowMs - minsAgo * 60000).toISOString(), extra.note ?? null, new Date(nowMs - minsAgo * 60000).toISOString(), new Date(nowMs + 20 * 3600000).toISOString(),
+    );
+    appr("Refund order #4471 for Sara K.", "refund", { amount: 89, category: "refunds", reversible: false, details: "Hi Sara, I have refunded £89 to your card. It will arrive within 5 working days.", reason: "This can't be undone, so a person approves it first.", commitments: "a refund, a deadline" }, "pending", 25);
+    appr("Pay Brightline Packaging invoice INV-2207", "pay invoice", { agent: "Bookkeeping agent", amount: 420, category: "Brightline Packaging", reason: 'First time this agent wants to pay invoice for "Brightline Packaging". Decide once, then make it a rule.' }, "pending", 70);
+    appr("Send apology with 50% discount to Omar R.", "email", { reason: "It commits your company to a discount. A person checks the promise is allowed.", commitments: "a discount", note: "No discounts this month, offer free shipping instead" }, "rejected", 300);
+    appr("Mark lead Omar R. as qualified", "update CRM", { category: "crm", auto: true, by: "ProofMyAI (rule)", reason: 'Approved by your rule: always allow "crm" for update CRM.' }, "approved", 140);
+    run("INSERT INTO approval_rules (project_id, category, action, created_by) VALUES (?, 'crm', 'update crm', 'owner@acme-shop.com')", id);
+    // A heartbeat for a nightly job.
+    run("INSERT INTO job_heartbeats (project_id, name, token, every_min, grace_min, status, last_ping_at, created_at) VALUES (?, 'Nightly invoice sync (demo)', ?, 1440, 288, 'up', ?, ?)", id, `hb_demo_${id}`, new Date(nowMs - 210 * 60000).toISOString(), isoDaysAgo(14));
     run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'chatbot', 'HALLUCINATION', 'high', 'Chatbot promised a refund on sale items', 'The bot told 3 customers that sale items get a full refund. Your policy says store credit only.', 'demo:refund')", id);
     return id;
   });

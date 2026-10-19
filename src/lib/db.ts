@@ -331,6 +331,17 @@ function migrate(db: DatabaseSync): void {
     detail TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_sheet_events ON sheet_events (project_id, at)");
+  // Live tracking events from scheduled checks (CRM, heartbeats, approvals, result checks).
+  db.exec(`CREATE TABLE IF NOT EXISTS live_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    source TEXT NOT NULL,
+    at TEXT NOT NULL,
+    level TEXT NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT NOT NULL
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_live_events ON live_events (project_id, at)");
   // CRM monitoring (read-only): connections, minimal record facts (hashes and filled/empty flags) and per-check counts.
   db.exec(`CREATE TABLE IF NOT EXISTS crm_sources (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

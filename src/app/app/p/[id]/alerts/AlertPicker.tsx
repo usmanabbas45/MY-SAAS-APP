@@ -38,7 +38,7 @@ const OPTIONS: Option[] = [
     steps: ["We POST JSON: text, event, severity, module, code, title, detail, project, link.", "Use it to open tickets, page on-call or log to a sheet."] },
 ];
 
-const MODULE_LABELS: [string, string][] = [["chatbot", "Chatbot answers & missing replies"], ["tests", "Nightly tests"], ["agents", "AI agents"], ["workflows", "n8n, Make & Sheets"], ["uptime", "Uptime"]];
+const MODULE_LABELS: [string, string][] = [["chatbot", "Chatbot answers & missing replies"], ["tests", "Nightly tests"], ["agents", "AI agents"], ["workflows", "n8n, Make, Sheets, CRM & heartbeats"], ["uptime", "Uptime"]];
 
 export function RuleFields({ severity = "medium", modules = "", resolved = false, label = "" }: { severity?: string; modules?: string; resolved?: boolean; label?: string }) {
   const mods = modules.split(",").filter(Boolean);
