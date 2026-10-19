@@ -28,7 +28,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
   const s = SOLUTIONS.find((x) => x.slug === slug);
   if (!s) notFound();
   // Where each topic begins in the tutorial (chatbot pages play from the start).
-  const start = ({ "ai-agent-monitoring": 146, "n8n-workflow-monitoring": 154 } as Record<string, number>)[s.slug];
+  const start = ({ "ai-agent-monitoring": 86, "n8n-workflow-monitoring": 100, "crm-monitoring": 130, "ai-agent-human-approval": 146 } as Record<string, number>)[s.slug];
   const data = {
     "@context": "https://schema.org",
     "@graph": [
