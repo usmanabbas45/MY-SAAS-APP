@@ -45,7 +45,7 @@ function Fields({ rows }: { rows: [string, string, string][] }) {
 export default function DocsPage() {
   return (
     <PublicPage title="Docs & API reference">
-      <p>Everything you need to connect your AI chatbot, AI agents and n8n/Make automations to ProofMyAI. Most setups take under 10 minutes and many need no code at all. Prefer video? Watch the <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">3-minute setup tutorial ↗</a>.</p>
+      <p>Everything you need to connect your AI chatbot, AI agents and n8n/Make automations to ProofMyAI. Most setups take under 10 minutes and many need no code at all. Prefer video? Watch the <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">3-minute setup tutorial ↗</a> or see alerts arrive in the <a href={`https://www.youtube.com/watch?v=${VIDEOS.live.id}`} target="_blank" rel="noopener">live demo ↗</a>.</p>
       <nav className="card docs-toc" aria-label="On this page">
         <strong>📚 On this page</strong>
         <ol>{TOC.map(([id, label]) => <li key={id}><a href={`#${id}`}>{label}</a></li>)}</ol>

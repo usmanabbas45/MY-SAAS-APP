@@ -144,7 +144,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
           <h3 style={{ margin: 0 }}>▶ Watch the 3-minute setup tutorial</h3>
           <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener" className="sub">Open on YouTube ↗</a>
         </div>
-        <p className="sub">Prefer to watch? This video walks through every step below.</p>
+        <p className="sub">Prefer to watch? This video walks through every step below. Want to see the alerts arrive? <a href={`https://www.youtube.com/watch?v=${VIDEOS.live.id}`} target="_blank" rel="noopener">Watch the live demo ↗</a></p>
         <div style={{ maxWidth: 760 }}>
           <YouTube id={VIDEOS.tutorial.id} title={VIDEOS.tutorial.title} />
         </div>
