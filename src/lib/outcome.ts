@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { run } from "./db";
 import { raiseIncident } from "./incidents";
+import { logLiveEvent } from "./liveevents";
 import { safeFetch } from "./security";
 
 type Fetcher = typeof safeFetch;
@@ -51,6 +52,7 @@ export async function verifyClaim(
     await wait(30_000);
     r = await checkOutcome(c, opts.fetcher);
   }
+  logLiveEvent(projectId, claim.agentRunId ? "agents" : "workflows", r.passed ? "ok" : "bad", `${r.passed ? "Result confirmed" : "Result not found"}: ${claim.who}`, `${claim.ref}. ${r.detail}`);
   if (claim.agentRunId) run("UPDATE agent_runs SET verified = ?, verify_detail = ? WHERE id = ?", r.passed ? 1 : 0, r.detail, claim.agentRunId);
   if (!r.passed) {
     await raiseIncident(projectId, {

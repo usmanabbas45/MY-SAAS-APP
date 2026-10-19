@@ -16,6 +16,7 @@ const SOURCE_LABEL: Record<Source, { icon: string; name: string; empty: string }
   agents: { icon: "🤖", name: "AI agents", empty: "Send agent runs (see AI agents page)" },
   workflows: { icon: "⚙️", name: "n8n & Make", empty: "Connect n8n/Make (see n8n & Make page)" },
   sheets: { icon: "📗", name: "Google Sheets", empty: "Add a sheet (see Google Sheets page)" },
+  crm: { icon: "🗂️", name: "CRM", empty: "Connect a CRM (see CRM page)" },
 };
 
 export default async function LivePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ only?: string; ok?: string; error?: string }> }) {
@@ -42,7 +43,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
       <Flash ok={flash.ok} error={flash.error} />
       <PageHeader
         title="Live tracking"
-        subtitle="Chatbot answers, agent runs, workflow executions and Google Sheets, checked the moment they happen"
+        subtitle="Chatbot answers, agent runs, workflow executions, Google Sheets and CRMs, checked the moment they happen"
         actions={
           <>
             <form action={sendTestEventAction}>{pid}<SubmitButton className="btn btn-ghost btn-sm" pendingText="Sending…">▶ Send test event</SubmitButton></form>
@@ -72,7 +73,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
         ) : null}
       </div>
 
-      <div className="grid grid-4">
+      <div className="grid grid-5">
         {statuses.map((s) => {
           const L = SOURCE_LABEL[s.source];
           return (
@@ -82,13 +83,13 @@ export default async function LivePage({ params, searchParams }: { params: Promi
                 {s.state === "ok" ? <Badge tone="ok">🟢 Working</Badge> : s.state === "problem" ? <Badge tone="bad">🔴 Problems</Badge> : <Badge>⚪ No recent data</Badge>}
               </div>
               <div className="stat-value" style={{ marginTop: 8 }}>{s.lastHour}</div>
-              {s.source === "sheets" ? (
-                <div className="sub">changes in the last hour{s.problemsLastHour ? <> · <strong style={{ color: "var(--bad)" }}>{s.problemsLastHour} sheet{s.problemsLastHour === 1 ? "" : "s"} with problems</strong></> : null}</div>
+              {s.source === "sheets" || s.source === "crm" ? (
+                <div className="sub">changes in the last hour{s.problemsLastHour ? <> · <strong style={{ color: "var(--bad)" }}>{s.problemsLastHour} {s.source === "crm" ? "open problem" : "sheet"}{s.problemsLastHour === 1 ? "" : "s"}{s.source === "crm" ? "" : " with problems"}</strong></> : null}</div>
               ) : (
                 <div className="sub">events in the last hour{s.problemsLastHour ? <> · <strong style={{ color: "var(--bad)" }}>{s.problemsLastHour} with problems</strong></> : null}</div>
               )}
               <div className="faint" style={{ marginTop: 6 }}>
-                {s.lastAt ? `${s.source === "sheets" ? "Last check" : "Last event"} ${timeAgo(iso(s.lastAt))}` : s.source === "sheets" ? <a href={`/app/p/${p.id}/sheets`}>{L.empty}</a> : L.empty}
+                {s.lastAt ? `${s.source === "sheets" || s.source === "crm" ? "Last check" : "Last event"} ${timeAgo(iso(s.lastAt))}` : s.source === "sheets" || s.source === "crm" ? <a href={`/app/p/${p.id}/${s.source}`}>{L.empty}</a> : L.empty}
               </div>
             </div>
           );
@@ -99,7 +100,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
         <div className="card-head">
           <h3>Live feed</h3>
           <div className="tabs" style={{ margin: 0 }}>
-            {[["", "All"], ["problems", "Problems only"], ["chatbot", "Chatbots"], ["agents", "Agents"], ["workflows", "Workflows"], ["sheets", "Sheets"]].map(([k, label]) => (
+            {[["", "All"], ["problems", "Problems only"], ["chatbot", "Chatbots"], ["agents", "Agents"], ["workflows", "Workflows"], ["sheets", "Sheets"], ["crm", "CRM"]].map(([k, label]) => (
               <a key={k} className={`tab ${(only ?? "") === k ? "active" : ""}`} href={k ? `${base}?only=${k}` : base}>{label}</a>
             ))}
           </div>

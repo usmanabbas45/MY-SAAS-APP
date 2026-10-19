@@ -1,6 +1,7 @@
 import { scheduledIds } from "../billing";
 import { all, get, run, transaction } from "../db";
-import { raiseIncident, resolveIncidents } from "../incidents";
+import { raiseIncident, resolveIncidents, type NewIncident } from "../incidents";
+import { logLiveEvent } from "../liveevents";
 import { decrypt, safeFetch, sha256 } from "../security";
 import { median } from "../workflows/monitor";
 import { providerById, type CrmRecord, type Fetcher } from "./providers";
@@ -44,6 +45,16 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
   const now = opts.now ?? new Date();
   const at = now.toISOString();
   const key = `crm:${src.id}`;
+  /** Raises an incident and, when it is new, shows it in Live tracking. */
+  const problem = async (inc: NewIncident) => {
+    if (await raiseIncident(src.project_id, inc)) logLiveEvent(src.project_id, "crm", inc.severity === "high" ? "bad" : "warn", inc.title, inc.detail, now);
+  };
+  /** Resolves an incident and, when one was open, shows "fixed" in Live tracking. */
+  const fixed = (suffix: string, what: string) => {
+    if (!get("SELECT 1 FROM incidents WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", src.project_id, `${key}:${suffix}`)) return;
+    resolveIncidents(src.project_id, `${key}:${suffix}`);
+    logLiveEvent(src.project_id, "crm", "ok", `${src.name}: ${what}`, "Fixed. ProofMyAI will keep watching.", now);
+  };
   let created = 0;
   let duplicates = 0;
   transaction(() => {
@@ -70,7 +81,7 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
 
   // 1. Duplicates: the same email or phone created again (an automation running twice, a form submitted twice).
   if (duplicates >= 3 || (duplicates >= 2 && duplicates >= created * 0.2)) {
-    await raiseIncident(src.project_id, {
+    await problem({
       module: "workflows", code: "CRM_DUPLICATES", severity: "medium",
       title: `${plural(duplicates, "duplicate record")} created in ${src.name}`,
       detail: `${duplicates} of the ${created} new records have the same email or phone as an existing record. An automation may be running twice, retrying after a timeout, or a form may be submitting twice. Merge them before they split your reporting and follow-ups.`,
@@ -84,13 +95,13 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
     const typical = median(history);
     const limit = Math.max(100, typical * 10);
     if (history.length >= 12 && records.length >= limit) {
-      await raiseIncident(src.project_id, {
+      await problem({
         module: "workflows", code: "CRM_BULK_CHANGE", severity: "high",
         title: `${opts.capped ? `${records.length}+` : records.length} records changed at once in ${src.name}`,
         detail: `Usually about ${Math.round(typical)} change between checks. A runaway automation, a bad import or an AI agent may be editing records in bulk. Check the CRM's audit log and pause the automation if it isn't expected.`,
         dedupeKey: `${key}:bulk`,
       });
-    } else if (records.length < limit / 2) resolveIncidents(src.project_id, `${key}:bulk`);
+    } else if (records.length < limit / 2) fixed("bulk", "bulk changes stopped");
   }
 
   // 3. New records arriving with empty key fields (a sync mapping broke, a form field was renamed).
@@ -103,13 +114,13 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
     const missing = recent.filter((r) => missingRequired(r, required)).length;
     const labels = required.map((f) => REQUIRED_OPTIONS.find(([k]) => k === f)?.[1].toLowerCase() ?? f).join(", ");
     if (recent.length >= 5 && s >= 0.3 && (older.length >= 20 ? base < 0.1 : s >= 0.5)) {
-      await raiseIncident(src.project_id, {
+      await problem({
         module: "workflows", code: "CRM_FIELDS_MISSING", severity: "medium",
         title: `${plural(missing, "new record")} in ${src.name} ${missing === 1 ? "is" : "are"} missing ${labels}`,
         detail: `${Math.round(s * 100)}% of the records created in the last 24 hours are missing a required field${older.length >= 20 ? ` (normally ${Math.round(base * 100)}%)` : ""}. A form or sync field mapping has probably changed, so these leads can't be contacted or routed.`,
         dedupeKey: `${key}:fields`,
       });
-    } else if (s < 0.1) resolveIncidents(src.project_id, `${key}:fields`);
+    } else if (s < 0.1) fixed("fields", "new records have their required fields again");
   }
 
   // 4. New leads nobody followed up (only CRMs that report last activity).
@@ -119,13 +130,13 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
       src.id, iso(now.getTime() - 7 * DAY), iso(now.getTime() - src.followup_hours * 3600000),
     )?.n ?? 0;
     if (waiting > 0) {
-      await raiseIncident(src.project_id, {
+      await problem({
         module: "workflows", code: "CRM_NO_FOLLOWUP", severity: "medium",
         title: `${plural(waiting, "new lead")} in ${src.name} not contacted within ${src.followup_hours}h`,
         detail: `They were created more than ${src.followup_hours} hours ago (in the last 7 days) and have no call, email or activity logged. The follow-up automation or the person who should call them may have stopped.`,
         dedupeKey: `${key}:followup`,
       });
-    } else resolveIncidents(src.project_id, `${key}:followup`);
+    } else fixed("followup", "every new lead has been contacted");
   }
 
   // 5. New records stopped arriving: learned from this CRM's own rhythm (nights and weekends included).
@@ -139,15 +150,17 @@ export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opt
     if (usual > 0 && usual <= 7 * DAY && pause > limit) {
       const already = get("SELECT 1 FROM incidents WHERE project_id = ? AND dedupe_key = ? AND created_at >= datetime(?)", src.project_id, staleKey, iso(times[0]));
       if (!already) {
-        await raiseIncident(src.project_id, {
+        await problem({
           module: "workflows", code: "CRM_NO_NEW_RECORDS", severity: "high",
           title: `No new records in ${src.name} for ${ago(pause)}`,
           detail: `New records normally arrive every ${ago(usual)}, and the longest normal gap was ${ago(longest)}. A website form, an ad integration or the n8n/Make flow that creates them may have stopped. Leads may be getting lost.`,
           dedupeKey: staleKey,
         });
       }
-    } else resolveIncidents(src.project_id, staleKey);
+    } else fixed("stale", "new records are arriving again");
   }
+  if (opts.first) logLiveEvent(src.project_id, "crm", "ok", `Connected ${src.name}`, `Read ${plural(records.length, "recently changed record")}. Checked every 15 minutes.`, now);
+  else if (created > 0) logLiveEvent(src.project_id, "crm", "ok", `${src.name}: +${plural(created, "new record")}`, duplicates ? `${duplicates} look like duplicates.` : `${records.length} changed in total.`, now);
   return { fetched: records.length, created, duplicates };
 }
 
@@ -162,16 +175,20 @@ export async function pollCrm(src: CrmSource, fetcher: Fetcher = safeFetch, now 
     const result = await provider.fetch(JSON.parse(decrypt(src.creds_enc)), since, fetcher);
     const summary = await ingestCrmRecords(src, result.records, { capped: result.capped, first, now });
     run("UPDATE crm_sources SET last_polled_at = ?, last_error = NULL, fails = 0 WHERE id = ?", now.toISOString(), src.id);
-    resolveIncidents(src.project_id, connKey);
+    if (get("SELECT 1 FROM incidents WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", src.project_id, connKey)) {
+      resolveIncidents(src.project_id, connKey);
+      logLiveEvent(src.project_id, "crm", "ok", `${src.name}: connection restored`, "ProofMyAI can read the CRM again.", now);
+    }
     return { summary, error: null };
   } catch (err) {
     const error = (err instanceof Error ? err.message : "Unknown error").slice(0, 300);
     run("UPDATE crm_sources SET last_error = ?, fails = fails + 1 WHERE id = ?", error, src.id);
     if (src.fails + 1 >= 2) {
-      await raiseIncident(src.project_id, {
+      const raised = await raiseIncident(src.project_id, {
         module: "workflows", code: "CRM_UNREACHABLE", severity: "high",
         title: `ProofMyAI can't read ${src.name}`, detail: `${error} Until this is fixed, problems in this CRM are not being monitored.`, dedupeKey: connKey,
       });
+      if (raised) logLiveEvent(src.project_id, "crm", "bad", `ProofMyAI can't read ${src.name}`, error, now);
     }
     return { summary: null, error };
   }
@@ -181,6 +198,8 @@ export async function pollAllCrms(now = new Date()): Promise<void> {
   const sources = all<CrmSource>(
     "SELECT s.* FROM crm_sources s JOIN projects p ON p.id = s.project_id WHERE p.is_demo = 0 AND s.provider <> 'push'",
   );
+  // Records nobody has touched for 180 days are no longer needed for any check.
+  run("DELETE FROM crm_records WHERE updated_at < ?", iso(now.getTime() - 180 * DAY));
   const allowed = scheduledIds("crm");
   for (const s of sources) if (!allowed || allowed.has(s.id)) await pollCrm(s, safeFetch, now);
 }

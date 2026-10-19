@@ -1,5 +1,6 @@
 import { all, get, run } from "./db";
 import { raiseIncident, resolveIncidents } from "./incidents";
+import { logLiveEvent } from "./liveevents";
 import { randomToken } from "./security";
 
 /**
@@ -31,11 +32,13 @@ export async function ping(token: string, failed: boolean, message: string | nul
   if (!h) return null;
   run("UPDATE job_heartbeats SET last_ping_at = ?, status = ?, last_message = ? WHERE id = ?", now.toISOString(), failed ? "failed" : "up", message, h.id);
   if (failed) {
+    logLiveEvent(h.project_id, "workflows", "bad", `Heartbeat "${h.name}" reported a failure`, message ?? "The job called its failure URL.", now);
     await raiseIncident(h.project_id, {
       module: "workflows", code: "HEARTBEAT_FAILED", severity: "high", title: `"${h.name}" reported a failure`,
       detail: message ? `It said: ${message}` : "The job called its failure URL. Check its logs.", dedupeKey: `hb:${h.id}`,
     });
   } else {
+    if (h.status !== "up") logLiveEvent(h.project_id, "workflows", "ok", h.status === "new" ? `Heartbeat "${h.name}": first check-in` : `Heartbeat "${h.name}" is back on time`, message ?? "Checked in.", now);
     resolveIncidents(h.project_id, `hb:${h.id}`);
   }
   return h;
@@ -52,6 +55,7 @@ export async function checkHeartbeats(now = new Date()): Promise<number> {
     if (now.getTime() - since <= (h.every_min + h.grace_min) * 60000) continue;
     run("UPDATE job_heartbeats SET status = 'late' WHERE id = ?", h.id);
     late++;
+    logLiveEvent(h.project_id, "workflows", "bad", `"${h.name}" didn't run on time`, `No check-in for ${Math.round((now.getTime() - since) / 60000)} minutes.`, now);
     await raiseIncident(h.project_id, {
       module: "workflows", code: "HEARTBEAT_MISSED", severity: "high", title: `"${h.name}" didn't run on time`,
       detail: h.last_ping_at

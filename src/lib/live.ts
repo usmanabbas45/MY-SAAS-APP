@@ -1,7 +1,7 @@
 import { all, get } from "./db";
 import { VERDICT_LABELS, type Verdict } from "./judge/types";
 
-export type Source = "chatbot" | "agents" | "workflows" | "sheets";
+export type Source = "chatbot" | "agents" | "workflows" | "sheets" | "crm";
 
 export interface FeedEvent {
   source: Source;
@@ -64,7 +64,10 @@ export function liveFeed(projectId: number, limit = 60): FeedEvent[] {
   const sheets = all<{ at: string; level: string; title: string; detail: string }>(
     "SELECT at, level, title, detail FROM sheet_events WHERE project_id = ? ORDER BY id DESC LIMIT ?", projectId, limit,
   ).map<FeedEvent>((r) => ({ source: "sheets", at: toMs(r.at), ok: r.level === "ok", warn: r.level === "warn", title: r.title, detail: r.detail }));
-  return [...chats, ...agents, ...flows, ...sheets].sort((a, b) => b.at - a.at).slice(0, limit);
+  const scheduled = all<{ source: Source; at: string; level: string; title: string; detail: string }>(
+    "SELECT source, at, level, title, detail FROM live_events WHERE project_id = ? ORDER BY id DESC LIMIT ?", projectId, limit,
+  ).map<FeedEvent>((r) => ({ source: r.source, at: toMs(r.at), ok: r.level === "ok", warn: r.level === "warn", title: r.title, detail: r.detail }));
+  return [...chats, ...agents, ...flows, ...sheets, ...scheduled].sort((a, b) => b.at - a.at).slice(0, limit);
 }
 
 export function sourceStatuses(projectId: number, now = Date.now()): SourceStatus[] {
@@ -104,5 +107,14 @@ export function sourceStatuses(projectId: number, now = Date.now()): SourceStatu
     source: "sheets", lastAt: sheetsLast, lastHour: sheetEvents, problemsLastHour: sheetRows?.bad ?? 0,
     state: (sheetRows?.bad ?? 0) > 0 ? "problem" : sheetsLast != null && now - sheetsLast < 24 * 3600e3 ? "ok" : "idle",
   };
-  return [make("chatbot", chat), make("agents", agents), make("workflows", flows), sheets];
+  // CRMs too: the connections' current state, and their events in the last hour.
+  const crmRows = get<{ n: number; last: string | null }>("SELECT COUNT(*) AS n, MAX(last_polled_at) AS last FROM crm_sources WHERE project_id = ?", projectId);
+  const crmBad = get<{ n: number }>("SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND resolved = 0 AND code LIKE 'CRM_%'", projectId)?.n ?? 0;
+  const crmEvents = get<{ n: number }>("SELECT COUNT(*) AS n FROM live_events WHERE project_id = ? AND source = 'crm' AND at >= ?", projectId, hourAgoIso)?.n ?? 0;
+  const crmLast = crmRows?.last ? toMs(crmRows.last) : null;
+  const crm: SourceStatus = {
+    source: "crm", lastAt: crmLast, lastHour: crmEvents, problemsLastHour: crmBad,
+    state: crmBad > 0 ? "problem" : crmLast != null && now - crmLast < 24 * 3600e3 ? "ok" : "idle",
+  };
+  return [make("chatbot", chat), make("agents", agents), make("workflows", flows), sheets, crm];
 }

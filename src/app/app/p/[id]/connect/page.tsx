@@ -10,7 +10,7 @@ import { addChatSourceAction, addIntercomSourceAction, addTargetAction, addWorkf
 
 export const metadata = { title: "Connect" };
 
-type Group = Exclude<Source, "sheets">; // Sheets are set up on their own page and counted under workflows.
+type Group = Exclude<Source, "sheets" | "crm">; // Sheets are set up on their own page and counted under workflows.
 interface Method { id: string; group: Group; icon: string; title: string; text: string; time: string; code?: boolean; page?: string }
 
 const METHODS: Method[] = [
@@ -23,11 +23,13 @@ const METHODS: Method[] = [
   { id: "endpoint", group: "chatbot", icon: "🧪", title: "Test my bot every night", text: "We ask your bot real questions daily and alert you when answers get worse.", time: "5 min · needs a bot URL" },
   { id: "agent", group: "agents", icon: "🤖", title: "AI agent in code", text: "LangChain, OpenAI Agents, Claude, CrewAI or your own. Send each run when it finishes.", time: "5 min · developer", code: true },
   { id: "agent-nocode", group: "agents", icon: "🧩", title: "AI agent in n8n or Make", text: "Add one HTTP Request step at the end of your agent workflow.", time: "3 min · no code" },
+  { id: "approvals", group: "agents", icon: "✋", title: "Human approval for agent actions", text: "Your agent asks before refunds, payments or emails to customers. You approve with one click.", time: "5 min · one HTTP step", page: "approvals" },
   { id: "n8n", group: "workflows", icon: "🟠", title: "n8n", text: "Paste your n8n URL and API key. We check every workflow every 15 minutes.", time: "2 min · no code" },
   { id: "make", group: "workflows", icon: "🟣", title: "Make", text: "Paste a Make API token and your scenario IDs.", time: "2 min · no code" },
   { id: "webhook", group: "workflows", icon: "⚡", title: "Zapier or anything else", text: "Send a webhook when a workflow runs or fails.", time: "3 min" },
   { id: "crm", group: "workflows", icon: "🗂️", title: "CRM (HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel…)", text: "Read-only. Alerts when leads stop arriving, come in without an email or owner, get duplicated or changed in bulk, or nobody follows them up.", time: "3 min · no code", page: "crm" },
   { id: "sheets", group: "workflows", icon: "📗", title: "Google Sheets", text: "Paste a sheet link. Alerts when it stops updating, shows #REF! errors or a key column comes in empty.", time: "1 min · no code", page: "sheets" },
+  { id: "heartbeat", group: "workflows", icon: "💓", title: "Heartbeat for any scheduled job", text: "Cron jobs, scripts, Zapier or webhook flows call a URL when they finish. Alert if one never runs.", time: "1 min · no code", page: "workflows#heartbeats" },
   { id: "uptime", group: "workflows", icon: "🟢", title: "Uptime & speed", text: "Paste any URL (chatbot, website, API). Alerts when it goes down or gets slow.", time: "1 min · no code", page: "uptime" },
 ];
 

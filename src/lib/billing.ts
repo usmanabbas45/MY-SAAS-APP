@@ -186,7 +186,7 @@ const LABELS: Record<Resource, string> = {
   projects: "project(s)",
   conversations: "audited conversations",
   bots: "chatbot(s) with nightly tests",
-  monitors: "workflows, sheets and AI agents",
+  monitors: "workflows, sheets, CRMs and AI agents",
   uptime: "uptime monitor(s)",
   seats: "team member(s)",
 };
