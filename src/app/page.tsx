@@ -39,6 +39,10 @@ const TOUR: TourTab[] = [
   { id: "fixes", name: "Fix list", subtitle: "Problems grouped by the help article that caused them, worst first.", img: "/tour/fixes.webp", alt: "Fix list grouping wrong answers by help article: returns, warranty, shipping and missing documentation" },
   { id: "fix-ai", name: "Fix with AI", subtitle: "One click writes the corrected article and a safe system prompt for your bot.", img: "/tour/fixres.webp", alt: "Fix with AI result showing a corrected help article ready to copy" },
   { id: "analytics", name: "Analytics", subtitle: "Topics customers ask about, accuracy per topic, resolution, satisfaction and gaps in your docs.", img: "/tour/analytics.webp", alt: "Chatbot analytics: topics, accuracy per topic, resolution rate and customer satisfaction" },
+  { id: "trust", name: "Trust report", subtitle: "Topic by topic: where your AI can decide alone, where to spot-check and where a person must approve.", img: "/tour/trust.webp", alt: "AI trust report: trust score 85, 44% of decisions can be made alone, recommendations per topic" },
+  { id: "approvals", name: "Approvals", subtitle: "Agents prepare refunds, payments and emails. You approve the risky ones with one click.", img: "/tour/approvals.webp", alt: "Approvals inbox with a refund and an invoice payment waiting for one-click approval" },
+  { id: "crm", name: "CRM", subtitle: "HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel and more: duplicates, missing fields, leads not followed up.", img: "/tour/crm.webp", alt: "CRM monitoring for HubSpot showing duplicates and leads not followed up" },
+  { id: "live", name: "Live tracking", subtitle: "Every answer, agent run, workflow, sheet and CRM change, checked the moment it happens.", img: "/tour/live.webp", alt: "Live tracking with status cards for chatbots, agents, n8n, Google Sheets and CRM, and a live feed" },
   { id: "connect", name: "Connect", subtitle: "Intercom, WhatsApp, Zendesk, n8n, Make or one HTTP call. Each takes 2 to 5 minutes.", img: "/tour/connect.webp", alt: "Connect page with no-code options for chatbots, AI agents and workflows" },
 ];
 
@@ -309,7 +313,7 @@ export default function Landing() {
       </section>
 
       <section className="lp-section reveal" id="video" aria-labelledby="video-title">
-        <h2 id="video-title">See ProofMyAI in 75 seconds</h2>
+        <h2 id="video-title">See ProofMyAI in 95 seconds</h2>
         <p className="lp-lead">Connect in 2 minutes, catch wrong answers with the exact fix, and get alerted before your customers notice.</p>
         <div className="video-wrap">
           <ScrollVideo src={DEMO_VIDEO.src} webm={DEMO_VIDEO.webm} poster={DEMO_VIDEO.poster} title={DEMO_VIDEO.title} />
