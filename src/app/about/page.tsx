@@ -6,7 +6,7 @@ import { DEVELOPER_NAME, DEVELOPER_URL, whatsappLink } from "@/lib/support";
 
 export const metadata = {
   title: "About ProofMyAI",
-  description: "Who builds ProofMyAI and why: independent quality monitoring for AI chatbots, AI agents and n8n/Make automations.",
+  description: "Who builds ProofMyAI and why: independent quality monitoring for AI chatbots, AI agents, n8n/Make automations, Google Sheets and CRMs.",
   alternates: { canonical: "/about" },
 };
 
@@ -15,7 +15,7 @@ export default function AboutPage() {
     <PublicPage title="About ProofMyAI">
       <p>ProofMyAI is built by <strong>{LEGAL_NAME}</strong>, an independent developer in {LEGAL_COUNTRY} who builds AI chatbots and n8n automations for businesses.</p>
       <h2>💡 Why it exists</h2>
-      <p>Businesses now let AI talk to their customers and run their operations, but almost nobody checks what it actually says and does. Chatbots make up prices and policies, agents loop and burn money, and automations report &quot;success&quot; while doing nothing. The business usually finds out from an angry customer. ProofMyAI is the independent check that catches these problems first and shows exactly what to fix.</p>
+      <p>Businesses now let AI talk to their customers and run their operations, but almost nobody checks what it actually says and does. Chatbots make up prices and policies, agents loop and burn money, automations report &quot;success&quot; while doing nothing, and leads quietly stop reaching the CRM. The business usually finds out from an angry customer. ProofMyAI is the independent check that catches these problems first and shows exactly what to fix.</p>
       <h2>🤝 How we work</h2>
       <ul>
         <li><strong>Privacy first:</strong> personal data is masked by default, and every project controls retention, results-only storage and whether an AI provider is used. See the <Link href="/security">Trust Center</Link>.</li>

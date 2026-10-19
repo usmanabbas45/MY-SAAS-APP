@@ -22,8 +22,8 @@ export const COMPARISONS: Comparison[] = [
     slug: "langfuse-alternative",
     name: "Langfuse",
     title: "ProofMyAI vs Langfuse: a no-code Langfuse alternative for chatbot monitoring",
-    description: "Langfuse is an open-source LLM engineering platform for developers. ProofMyAI is no-code chatbot, agent and n8n/Make monitoring for businesses and agencies. Compare features, setup and who each is for.",
-    summary: "Langfuse is an excellent open-source platform for engineering teams who instrument their own LLM code with tracing, prompt management and evaluations. ProofMyAI is built for the people who run a support chatbot or automations and don't want to write code: it checks every customer answer against your help docs, tells you what to fix, and also watches n8n/Make workflows.",
+    description: "Langfuse is an open-source LLM engineering platform for developers. ProofMyAI is no-code chatbot, agent, n8n/Make, Sheets and CRM monitoring for businesses and agencies. Compare features, setup and who each is for.",
+    summary: "Langfuse is an excellent open-source platform for engineering teams who instrument their own LLM code with tracing, prompt management and evaluations. ProofMyAI is built for the people who run a support chatbot or automations and don't want to write code: it checks every customer answer against your help docs, tells you what to fix, and also watches n8n/Make workflows, Google Sheets and CRMs.",
     rows: [
       ["Built for", "Business owners, support teams and agencies", "Developers and AI engineering teams"],
       ["Setup", "No code: upload chat exports, paste an Intercom token, add a WhatsApp webhook or n8n/Make key", "Add the SDK or OpenTelemetry instrumentation to your application code"],
@@ -46,7 +46,7 @@ export const COMPARISONS: Comparison[] = [
     slug: "langsmith-alternative",
     name: "LangSmith",
     title: "ProofMyAI vs LangSmith: a no-code LangSmith alternative for businesses",
-    description: "LangSmith is LangChain's developer platform for tracing, testing and evaluating LLM apps. ProofMyAI is no-code monitoring for support chatbots, AI agents and n8n/Make workflows. See the differences.",
+    description: "LangSmith is LangChain's developer platform for tracing, testing and evaluating LLM apps. ProofMyAI is no-code monitoring for support chatbots, AI agents, n8n/Make workflows and CRMs. See the differences.",
     summary: "LangSmith, from the LangChain team, helps developers debug, test and evaluate LLM applications and agents. ProofMyAI is for businesses and agencies who run chatbots and automations: connect without code, get every customer answer checked against your own docs, and receive a fix list and alerts.",
     rows: [
       ["Built for", "Business owners, support teams and agencies", "Developers building LLM apps and agents"],

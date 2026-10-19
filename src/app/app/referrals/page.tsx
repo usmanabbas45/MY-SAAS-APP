@@ -63,7 +63,7 @@ export default async function ReferralsPage() {
         <div className="card" style={{ marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>How it works</h2>
           <ol className="ref-steps">
-            <li><strong>Share your link</strong> with anyone who runs a chatbot, AI agent or n8n/Make workflows.</li>
+            <li><strong>Share your link</strong> with anyone who runs a chatbot, AI agent, n8n/Make workflows or a CRM.</li>
             <li><strong>They sign up</strong> within 60 days of clicking it, and start any paid plan.</li>
             <li><strong>When they make their first payment</strong>, you both get one month of your own plan free on your next bill.</li>
           </ol>

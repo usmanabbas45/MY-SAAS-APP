@@ -24,7 +24,7 @@ export default function BlogIndex() {
       <SiteHeader />
       <main className="legal blog">
         <h1>📚 Guides</h1>
-        <p className="lp-lead" style={{ textAlign: "left" }}>Practical, no-fluff guides to making AI chatbots, AI agents and n8n/Make automations reliable.</p>
+        <p className="lp-lead" style={{ textAlign: "left" }}>Practical, no-fluff guides to making AI chatbots, AI agents, n8n/Make automations, Google Sheets and CRMs reliable.</p>
         <div className="post-list">
           {POSTS.map((p) => (
             <article key={p.slug} className="card post-card">

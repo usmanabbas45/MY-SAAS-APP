@@ -46,11 +46,11 @@ export function components(now = new Date()): Component[] {
     dbOk = false;
   }
   out.push({ icon: "🌐", name: "Website & dashboard", description: "proofmyai.com and the app", health: "operational", detail: "Responding" });
-  out.push({ icon: "🔌", name: "Data API", description: "Chat events, agent runs and workflow runs", health: dbOk ? "operational" : "outage", detail: dbOk ? "Accepting data" : "Cannot store data right now" });
+  out.push({ icon: "🔌", name: "Data API", description: "Chat events, pre-send checks, approvals, agent runs, workflow runs, CRM records and heartbeats", health: dbOk ? "operational" : "outage", detail: dbOk ? "Accepting data" : "Cannot store data right now" });
   out.push({ icon: "🗄️", name: "Database", description: "Stores your results", health: dbOk ? (dbMs > 500 ? "degraded" : "operational") : "outage", detail: dbOk ? `Query time ${Math.max(1, Math.round(dbMs))} ms` : "Not reachable" });
 
   const hb = dbOk ? get<{ last_run_at: string; ok: number; detail: string | null }>("SELECT last_run_at, ok, detail FROM heartbeats WHERE name = 'cron'") : undefined;
-  let bg: Component = { icon: "⏱️", name: "Background checks", description: "n8n/Make polling, nightly bot tests, missing-reply alerts", health: "not_configured", detail: "Waiting for the first scheduled run" };
+  let bg: Component = { icon: "⏱️", name: "Background checks", description: "n8n/Make, Google Sheets and CRM polling, heartbeats, nightly bot tests, missing-reply alerts", health: "not_configured", detail: "Waiting for the first scheduled run" };
   if (hb) {
     const ago = minutesAgo(hb.last_run_at, now);
     const when = ago < 1 ? "just now" : ago < 90 ? `${Math.round(ago)} min ago` : `${Math.round(ago / 60)} h ago`;

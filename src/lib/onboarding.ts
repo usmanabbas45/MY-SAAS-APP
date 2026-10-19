@@ -35,7 +35,7 @@ export function welcomeEmail(step: 1 | 2 | 3, userId: number, projectId: number 
   const unsub = { label: "Unsubscribe", url: welcomeUnsubUrl(userId) };
   let mail: Mail;
   if (step === 1) {
-    mail = compose("Connect your chatbot in 2 minutes", "Pick what ProofMyAI should watch: a chatbot, an AI agent or your n8n/Make workflows.", {
+    mail = compose("Connect your chatbot in 2 minutes", "Pick what ProofMyAI should watch: a chatbot, an AI agent, your n8n/Make workflows, a Google Sheet or your CRM.", {
       icon: "👋",
       title: "Let's check your first AI answers",
       paragraphs: [
@@ -45,6 +45,7 @@ export function welcomeEmail(step: 1 | 2 | 3, userId: number, projectId: number 
         "💬 A chatbot: upload a chat export, or connect Intercom, WhatsApp or your own bot (about 2 minutes)",
         "🤖 An AI agent: one line of code or an n8n/Make HTTP step sends each run",
         "⚙️ n8n or Make: paste your API key and every workflow failure is caught",
+        "📗 A Google Sheet or 🗂️ your CRM (HubSpot, Salesforce, Pipedrive…): paste a link or read-only token and get an alert when data stops or breaks",
       ],
       cta: { label: "Connect in 2 minutes", url: `${base}/connect` },
       after: ["Not ready yet? Click “Try with demo data” on your dashboard to see a full example with real-looking results first.", "Stuck? Just reply to this email. I read every one."],
