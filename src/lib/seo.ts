@@ -215,15 +215,15 @@ export const VIDEOS = {
 } satisfies Record<string, Video>;
 
 /** schema.org VideoObject so Google can show the video in search results. */
-/** Self-hosted 75-second product demo (public/video). */
+/** Self-hosted 95-second product demo (public/video). */
 export const DEMO_VIDEO = {
-  src: "/video/proofmyai-demo.mp4",
-  webm: "/video/proofmyai-demo.webm",
-  poster: "/video/proofmyai-demo-poster.jpg",
-  title: "Is your AI chatbot lying to your customers? ProofMyAI in 75 seconds",
-  description: "See how ProofMyAI connects in 2 minutes, flags wrong chatbot answers with the exact fix, catches AI agent loops and silent n8n/Make failures, and alerts you on Slack, email or WhatsApp.",
-  duration: "PT1M15S",
-  uploadDate: "2026-10-02",
+  src: "/video/proofmyai-demo-2026-10.mp4",
+  webm: "/video/proofmyai-demo-2026-10.webm",
+  poster: "/video/proofmyai-demo-2026-10-poster.jpg",
+  title: "Is your AI chatbot lying to your customers? ProofMyAI in 95 seconds",
+  description: "See how ProofMyAI checks every chatbot answer and shows the fix, monitors AI agents, n8n, Make, Google Sheets and CRMs like HubSpot and Salesforce, shows where your AI can decide alone in the trust report, lets you approve risky agent actions with one click, and alerts you on WhatsApp, Slack or email.",
+  duration: "PT1M35S",
+  uploadDate: "2026-10-19",
 };
 
 export function demoVideoJsonLd() {

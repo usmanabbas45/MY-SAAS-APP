@@ -148,7 +148,7 @@ export function ProductTour({ tabs, video, poster }: { tabs: TourTab[]; video: s
         </button>
       </div>
       <p className="tour-sub" key={demo ? "demo" : tabs[active].id} aria-live="polite">
-        {demo ? "75-second walkthrough of ProofMyAI." : tabs[active].subtitle}
+        {demo ? "95-second walkthrough of ProofMyAI." : tabs[active].subtitle}
       </p>
       <div className="tour-frame" id="tour-panel" role="tabpanel" aria-labelledby={demo ? undefined : `tour-tab-${tabs[active].id}`}>
         <div className="tour-bar" aria-hidden><i /><i /><i /><span>app.proofmyai.com</span></div>

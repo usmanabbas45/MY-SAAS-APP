@@ -133,9 +133,26 @@ export async function createDemoProject(userId: number): Promise<number> {
         if (conv % 3 === 0) run("INSERT INTO chat_feedback (project_id, conversation_id, value, created_at) VALUES (?, ?, ?, ?)", id, `live-${conv}`, bad ? 0 : 1, isoDaysAgo(d, (c * 3) % 11));
       }
     }
+    // Topics the bot handles well, so the Trust report shows where it can decide alone, and some human reviews.
+    for (const [topic, q, a, n, wrong] of [
+      ["Order tracking", "Where is my order?", "You can track it with the link in your shipping email. Orders ship within 1 business day.", 150, 0],
+      ["Store hours & contact", "When are you open?", "Our support team is available Monday to Friday, 9am to 6pm.", 60, 2],
+    ] as const) {
+      for (let i = 0; i < n; i++) {
+        const bad = i < wrong;
+        run(
+          `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, topic)
+           VALUES (?, ?, 1, ?, ?, ?, ?, ?, NULL, 0.9, '[]', 0.05, ?, ?)`,
+          live, `t-${topic}-${i}`, q, a, bad ? "unsupported" : "correct", bad ? "low" : "none", bad ? "Opening hours on public holidays are not in the help docs." : "Matches the help docs.",
+          isoDaysAgo(i % 28, i % 11), topic,
+        );
+      }
+    }
+    run("UPDATE audit_items SET feedback = 'agree' WHERE audit_id = ? AND id IN (SELECT id FROM audit_items WHERE audit_id = ? ORDER BY id LIMIT 46)", live, live);
+    run("UPDATE audit_items SET feedback = 'disagree', corrected_verdict = 'correct' WHERE audit_id = ? AND id IN (SELECT id FROM audit_items WHERE audit_id = ? AND verdict <> 'correct' ORDER BY id DESC LIMIT 3)", live, live);
     run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'SHEET_ERRORS', 'medium', '3 error cells in \"Daily revenue report (demo)\"', 'For example D14 (#REF!), D15 (#REF!), F2 (#N/A). Formulas or imported data are broken, so totals and reports built on this sheet are wrong.', 'demo:sheet')", id);
     // A CRM (fed by an automation, so never polled), with a few duplicates and leads nobody contacted yet.
-    const crm = run("INSERT INTO crm_sources (project_id, provider, name, required_fields, followup_hours, last_polled_at, created_at) VALUES (?, 'push', 'HubSpot (demo)', 'email_or_phone,owner', 4, ?, ?)", id, isoDaysAgo(0), isoDaysAgo(14)).lastInsertRowid;
+    const crm = run("INSERT INTO crm_sources (project_id, provider, name, required_fields, followup_hours, last_polled_at, created_at) VALUES (?, 'hubspot', 'HubSpot', 'email_or_phone,owner', 4, ?, ?)", id, new Date(Date.now() - 6 * 60000).toISOString(), isoDaysAgo(14)).lastInsertRowid;
     for (let i = 0; i < 60; i++) {
       const at = new Date(Date.now() - (i * 95 + 20) * 60000).toISOString();
       run(
@@ -144,10 +161,10 @@ export async function createDemoProject(userId: number): Promise<number> {
         crm, `demo-${i}`, `demo-hash-${i % 52}`, i % 3 ? 1 : 0, i % 7 === 3 ? 0 : 1, at, at, i < 4 || i % 5 ? at : null, at,
       );
     }
-    run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'CRM_DUPLICATES', 'medium', '8 duplicate records created in HubSpot (demo)', 'They have the same email as an existing lead. The website form and the n8n lead flow may both be creating the contact.', ?)", id, `crm:${crm}:dupes`);
+    run("INSERT INTO incidents (project_id, module, code, severity, title, detail, dedupe_key) VALUES (?, 'workflows', 'CRM_DUPLICATES', 'medium', '8 duplicate records created in HubSpot', 'They have the same email as an existing lead. The website form and the n8n lead flow may both be creating the contact.', ?)", id, `crm:${crm}:dupes`);
     for (const [mins, level, title, detail] of [
-      [12, "ok", "HubSpot (demo): +3 new records", "21 changed in total."],
-      [95, "warn", "8 duplicate records created in HubSpot (demo)", "The website form and the n8n lead flow may both be creating the contact."],
+      [12, "ok", "HubSpot: +3 new records", "21 changed in total."],
+      [95, "warn", "8 duplicate records created in HubSpot", "The website form and the n8n lead flow may both be creating the contact."],
       [140, "ok", "Approved automatically: update CRM, Mark lead Omar R. as qualified", "Approved by your rule: always allow \"crm\" for update CRM."],
       [210, "ok", 'Heartbeat "Nightly invoice sync" is back on time', "Checked in."],
     ] as const) {
