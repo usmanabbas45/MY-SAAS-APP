@@ -256,11 +256,11 @@ export const VIDEOS = {
     uploadDate: "2026-10-19",
   },
   tutorial: {
-    id: "j02a0DP3lPg",
-    title: "How to Monitor Your AI Chatbot, AI Agents & n8n Workflows (Full Setup Tutorial) | ProofMyAI",
-    description: "Step-by-step setup: run your first chatbot audit, read the fix list, add rules, share client reports, turn on live tracking and nightly tests, monitor AI agents and n8n/Make, and get alerts.",
-    duration: "PT3M14S",
-    uploadDate: "2026-09-28",
+    id: "YryNJFoh9DI",
+    title: "ProofMyAI Setup Tutorial 2026: Monitor Chatbots, AI Agents, n8n, Google Sheets & Your CRM",
+    description: "Step-by-step setup: add help articles, check your chatbot, Fix with AI, nightly tests, AI agents, n8n and Make with heartbeats, Google Sheets, CRM monitoring, one-click approvals for agent actions, the AI trust report, live tracking and alerts.",
+    duration: "PT3M25S",
+    uploadDate: "2026-10-19",
   },
 } satisfies Record<string, Video>;
 
