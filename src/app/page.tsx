@@ -274,9 +274,9 @@ export default function Landing() {
       <section className="lp-hero lp-hero-split">
         <div className="hero-spotlight" aria-hidden />
         <div className="lp-hero-copy">
-          <Link href="/blog/chatbot-analytics-metrics" className="shiny-pill"><span className="shiny-pill-new">New</span><span className="shiny-text">Chatbot analytics &amp; topic insights</span> →</Link>
+          <Link href="/changelog" className="shiny-pill"><span className="shiny-pill-new">New</span><span className="shiny-text">CRM monitoring, one-click approvals &amp; Grok support</span> →</Link>
           <h1 style={{ marginTop: 18 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text gradient-anim">Know when it</span> <WordRotate words={["gets things wrong.", "makes things up.", "breaks your policy.", "leaks card data.", "misses a hand-over."]} /></h1>
-          <p>ProofMyAI checks your chatbot&apos;s answers, your AI agent runs and your n8n/Make workflows, then tells you exactly what broke and how to fix it, before your customers notice.</p>
+          <p>ProofMyAI checks your chatbot&apos;s answers, your AI agents, your n8n/Make workflows, Google Sheets and CRM, then tells you exactly what broke and how to fix it, before your customers notice.</p>
           <div className="row lp-hero-ctas">
             <ShortcutLink href="/signup" k="s" className="btn btn-lg btn-shimmer" event="hero_start">Get your free AI audit →</ShortcutLink>
             <ShortcutLink href="#tour" k="d" className="btn btn-ghost btn-lg" event="hero_demo">▶ See it in action</ShortcutLink>

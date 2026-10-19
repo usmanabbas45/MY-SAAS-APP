@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "ProofMyAI · AI quality monitoring",
     short_name: "ProofMyAI",
-    description: "Monitor AI chatbots, AI agents and n8n/Make workflows.",
+    description: "Monitor AI chatbots, AI agents, n8n/Make workflows, Google Sheets and CRMs.",
     start_url: "/app",
     display: "standalone",
     background_color: "#f6f7fb",

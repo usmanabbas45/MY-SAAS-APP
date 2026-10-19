@@ -66,7 +66,7 @@ function renderHtml(preheader: string, b: Block, footer: string): string {
 <tr><td style="padding:18px 8px;text-align:center;font-size:12px;line-height:1.6;color:${MUTED};">
   ${footer}<br>
   <a href="${esc(appUrl())}/app" style="color:${MUTED};">Dashboard</a> &middot; <a href="${esc(SITE_URL)}/status" style="color:${MUTED};">Status</a> &middot; <a href="${esc(SITE_URL)}/support" style="color:${MUTED};">Support</a> &middot; <a href="mailto:${esc(SUPPORT_EMAIL)}" style="color:${MUTED};">${esc(SUPPORT_EMAIL)}</a><br>
-  ProofMyAI &middot; Quality monitoring for AI chatbots, agents and automations
+  ProofMyAI &middot; Quality monitoring for AI chatbots, agents, automations and CRMs
 </td></tr>
 </table></td></tr></table></body></html>`;
 }

@@ -52,7 +52,7 @@ export default function StatusPage() {
       </div>
 
       <h2>📈 Background checks, last 30 days</h2>
-      <p className="sub">Share of scheduled checks (every 15 minutes: n8n/Make polling, nightly tests, missing-reply alerts) that ran successfully.{avg !== null ? <> Average: <strong>{avg.toFixed(2)}%</strong>.</> : " History starts with the first scheduled run."}</p>
+      <p className="sub">Share of scheduled checks (every 15 minutes: n8n/Make, Sheets and CRM polling, heartbeats, nightly tests, missing-reply alerts) that ran successfully.{avg !== null ? <> Average: <strong>{avg.toFixed(2)}%</strong>.</> : " History starts with the first scheduled run."}</p>
       <div className="uptime-bars" aria-label="Daily background check uptime">
         {history.map((d) => (
           <span

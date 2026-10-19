@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-19", title: "Grok support, live demo video and new screenshots", tag: "New",
+    items: [
+      "✖️ Grok (xAI) chatbots: Connect → Grok has ready-made JavaScript and Python examples and a nightly-test recipe. Bots on ChatGPT, Claude, Gemini or Llama connect the same way.",
+      "🎥 New live demo video: watch a wrong answer get flagged, the WhatsApp and Slack alert arrive, a reply blocked before sending, a refund approved with one click, CRM duplicates caught and a missed job alerted.",
+      "📊 The Overview now shows your AI trust score, approvals waiting, CRM and Sheets & heartbeats status at a glance.",
+    ],
+  },
+  {
     date: "2026-10-18", title: "CRM monitoring", tag: "New",
     items: [
       "🗂️ Connect HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel, Freshsales, Close, ActiveCampaign or Dynamics 365 (read-only), or any other CRM through n8n, Make or Zapier.",

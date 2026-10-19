@@ -4,7 +4,7 @@ import { SITE_URL, VIDEOS } from "@/lib/seo";
 
 export const metadata = {
   title: "Docs & API reference",
-  description: "How to connect AI chatbots, AI agents and n8n/Make workflows to ProofMyAI: setup steps, REST API reference with examples, limits and error codes.",
+  description: "How to connect AI chatbots, AI agents, n8n/Make workflows, Google Sheets and CRMs to ProofMyAI: setup steps, REST API reference with examples, limits and error codes.",
   alternates: { canonical: "/docs" },
 };
 
@@ -45,7 +45,7 @@ function Fields({ rows }: { rows: [string, string, string][] }) {
 export default function DocsPage() {
   return (
     <PublicPage title="Docs & API reference">
-      <p>Everything you need to connect your AI chatbot, AI agents and n8n/Make automations to ProofMyAI. Most setups take under 10 minutes and many need no code at all. Prefer video? Watch the <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">3-minute setup tutorial ↗</a> or see alerts arrive in the <a href={`https://www.youtube.com/watch?v=${VIDEOS.live.id}`} target="_blank" rel="noopener">live demo ↗</a>.</p>
+      <p>Everything you need to connect your AI chatbot (on any AI model, including Grok, ChatGPT, Claude and Gemini), AI agents, n8n/Make automations, Google Sheets and CRM to ProofMyAI. Most setups take under 10 minutes and many need no code at all. Prefer video? Watch the <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">3-minute setup tutorial ↗</a> or see alerts arrive in the <a href={`https://www.youtube.com/watch?v=${VIDEOS.live.id}`} target="_blank" rel="noopener">live demo ↗</a>.</p>
       <nav className="card docs-toc" aria-label="On this page">
         <strong>📚 On this page</strong>
         <ol>{TOC.map(([id, label]) => <li key={id}><a href={`#${id}`}>{label}</a></li>)}</ol>
@@ -56,7 +56,7 @@ export default function DocsPage() {
         <li><Link href="/signup">Create a free account</Link> (50 conversations a month free).</li>
         <li>Open your project → <strong>Settings</strong> and copy your <strong>API key</strong> (it starts with <code>ap_live_</code>). Each project has its own key.</li>
         <li>Pick what you want to monitor: upload chat transcripts, connect n8n/Make, or send events to the API below.</li>
-        <li>Add a Slack, email, Telegram or webhook channel under <strong>Settings → Notifications</strong> so you hear about problems.</li>
+        <li>Add a WhatsApp, Slack, Teams, email, Telegram or webhook channel under <strong>Settings → Notifications</strong> so you hear about problems.</li>
       </ol>
 
       <h2 id="no-code">🧩 Connect without code</h2>
@@ -66,6 +66,10 @@ export default function DocsPage() {
         <li><strong>n8n:</strong> n8n → Settings → n8n API → create a key. In ProofMyAI open <em>n8n &amp; Make</em> → Connect n8n and paste your n8n URL and key. Executions are pulled every 15 minutes.</li>
         <li><strong>Make:</strong> Make → Profile → API access → add a token with <code>scenarios:read</code>. Connect Make in ProofMyAI with your scenario IDs.</li>
         <li><strong>WhatsApp live monitoring (WAHA):</strong> add the webhook <code>{API}/whatsapp/waha</code> to your WAHA session with the event <code>message.any</code> and header <code>X-Api-Key</code> set to your project key. Customer messages and bot replies are paired and checked; phone numbers are replaced with anonymous codes.</li>
+        <li><strong>Intercom (Fin):</strong> in <em>Connect → Intercom</em>, paste an Intercom access token. Every Fin or bot reply is checked automatically.</li>
+        <li><strong>Google Sheets:</strong> in <em>Google Sheets</em>, paste a sheet link. Alerts when it stops updating, shows #REF! or other errors, a key column comes in empty, columns change or rows are duplicated.</li>
+        <li><strong>CRM:</strong> in <em>CRM</em>, paste a read-only token for HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel and others (see <a href="#crm">CRM monitoring</a>).</li>
+        <li><strong>Grok, ChatGPT, Claude or Gemini bots:</strong> any model works. <em>Connect → Grok (xAI) chatbot</em> has a ready-made example; the same call works for every model (see <a href="#chat-events">POST /chat-events</a>).</li>
         <li><strong>Twilio / WhatsApp:</strong> in <em>Live tracking</em>, connect Twilio with a read-only API key to check bot replies on SMS and WhatsApp.</li>
       </ul>
 

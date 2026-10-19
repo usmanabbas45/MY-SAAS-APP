@@ -48,7 +48,7 @@ export function SiteFooter() {
       <div className="site-footer-grid">
         <div>
           <Link href="/" className="logo" style={{ padding: 0 }}><span className="logo-mark" aria-hidden>✓</span>ProofMyAI</Link>
-          <p className="sub" style={{ marginTop: 10, maxWidth: 280 }}>Quality monitoring for AI chatbots, AI agents and n8n/Make workflows. Prove your AI works.</p>
+          <p className="sub" style={{ marginTop: 10, maxWidth: 280 }}>Quality monitoring for AI chatbots, AI agents, n8n/Make workflows, Google Sheets and CRMs. Prove your AI works.</p>
         </div>
         <div>
           <h2 className="foot-h">Product</h2>

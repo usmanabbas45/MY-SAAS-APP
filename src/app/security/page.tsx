@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default function SecurityPage() {
   const subs = subprocessors();
   return (
-    <PublicPage title="Trust Center" updated="28 September 2026">
+    <PublicPage title="Trust Center" updated="19 October 2026">
       <p>ProofMyAI processes conversations between businesses and their customers, so we built it to collect as little as possible and to give each business control over what is stored and where it goes. This page answers the questions a data protection review usually asks.</p>
 
       <h2>🏢 Who we are</h2>
@@ -28,6 +28,7 @@ export default function SecurityPage() {
         <li><strong>AI provider off:</strong> checks run with rules and your own neural model only, so no data leaves ProofMyAI.</li>
         <li><strong>Delete any time:</strong> audits, projects or your whole account, removed immediately from the live database.</li>
         <li><strong>Upload instead of connect:</strong> audits can run on exported, anonymised files with no live connection to your systems.</li>
+        <li><strong>CRM and Google Sheets monitoring is read-only:</strong> ProofMyAI never writes to your CRM or sheet. From CRM records it keeps only one-way hashes of emails and phone numbers (to spot duplicates), filled/empty flags and timestamps, never names, emails or phone numbers, and deletes them after 180 days.</li>
       </ul>
       <p className="sub">Masking is pattern-based. It greatly reduces personal data, but it cannot guarantee that every free-text detail is caught. For highly sensitive data, combine it with results-only mode, short retention, AI off, or self-hosting.</p>
 
@@ -55,7 +56,7 @@ export default function SecurityPage() {
       <ul>
         <li>HTTPS for every connection; security certificates managed by our host.</li>
         <li>Passwords hashed with scrypt; login sessions stored only as hashes in secure, http-only cookies; sign out of all devices at any time.</li>
-        <li>Integration secrets (n8n/Make keys, bot headers) encrypted with AES-256-GCM.</li>
+        <li>Integration secrets (n8n/Make keys, CRM, Intercom and Twilio tokens, bot headers) encrypted with AES-256-GCM.</li>
         <li>Every page and API call checks that the data belongs to the requesting account; API keys are per project and can be replaced instantly.</li>
         <li>Protection against requests to private networks (SSRF) for every outbound call, and rate limits on logins and the API.</li>
         <li>Administrator access is limited to the operator and every admin action is logged. Support staff never see API keys, and we only open a customer&apos;s conversations to help that customer, at their request.</li>

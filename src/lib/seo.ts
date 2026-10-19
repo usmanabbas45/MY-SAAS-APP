@@ -7,7 +7,7 @@ export const SAME_AS = [
 ];
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "contact@usmanabbas.dev";
 export const SITE_DESCRIPTION =
-  "ProofMyAI checks your AI chatbot answers, AI agent runs and n8n/Make workflows, catches wrong answers, hallucinations and silent failures, and tells you exactly what to fix. Free AI audit.";
+  "ProofMyAI checks AI chatbot answers, AI agents, n8n/Make workflows, Google Sheets and CRMs, catches hallucinations and silent failures, and shows what to fix.";
 
 export const FAQS: { q: string; a: string }[] = [
   { q: "What does ProofMyAI do?", a: "ProofMyAI is a quality monitor for AI and automations. It checks every answer your AI chatbot gives against your own help docs, watches AI agents for loops, errors and runaway costs, lets you approve risky agent actions with one click, and monitors n8n and Make workflows, Google Sheets and CRMs like HubSpot and Salesforce for failures and silent failures. A trust report shows where your AI can decide alone, and when something breaks you get an alert and a clear fix list." },
