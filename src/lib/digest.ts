@@ -3,6 +3,31 @@ import { all, get, run } from "./db";
 import { sendMail } from "./email";
 import { digestEmail, type DigestData } from "./emails";
 import { projectHealth } from "./health";
+import { trustReport } from "./trust";
+
+/** The newer modules, only for projects that use them. */
+export function digestExtras(projectId: number): [string, string][] {
+  const n = (sql: string) => get<{ n: number }>(sql, projectId)?.n ?? 0;
+  const out: [string, string][] = [];
+  const t = trustReport(projectId, 30);
+  if (t.score != null) out.push(["🛡️ AI trust score", `${t.score}/100 · ${t.autopilotShare ?? 0}% of decisions can be made alone`]);
+  const decided = n("SELECT COUNT(*) AS n FROM approvals WHERE project_id = ? AND created_at >= datetime('now', '-7 days')");
+  const waiting = n("SELECT COUNT(*) AS n FROM approvals WHERE project_id = ? AND status = 'pending'");
+  if (decided || waiting) out.push(["✋ Agent approvals", `${decided} this week · ${waiting} waiting for you`]);
+  const crm = n("SELECT COUNT(*) AS n FROM crm_sources WHERE project_id = ?");
+  if (crm) {
+    const fresh = n("SELECT COUNT(*) AS n FROM crm_records r JOIN crm_sources s ON s.id = r.source_id WHERE s.project_id = ? AND r.created_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-7 days')");
+    const bad = n("SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND resolved = 0 AND code LIKE 'CRM_%'");
+    out.push(["🗂️ CRM", `${fresh} new records this week · ${bad ? `${bad} open problem${bad === 1 ? "" : "s"}` : "healthy"}`]);
+  }
+  const sheets = n("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ?");
+  const beats = n("SELECT COUNT(*) AS n FROM job_heartbeats WHERE project_id = ?");
+  if (sheets || beats) {
+    const bad = n("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ? AND status IN ('problem', 'error')") + n("SELECT COUNT(*) AS n FROM job_heartbeats WHERE project_id = ? AND status IN ('late', 'failed')");
+    out.push(["📗 Sheets & 💓 scheduled jobs", `${sheets} sheet${sheets === 1 ? "" : "s"} · ${beats} job${beats === 1 ? "" : "s"} · ${bad ? `${bad} with problems` : "all healthy"}`]);
+  }
+  return out;
+}
 
 interface DigestProject { id: number; name: string; alert_email: string }
 
@@ -23,6 +48,7 @@ export function digestData(projectId: number, name: string): DigestData {
     newIncidents: n(`SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND created_at >= ${since}`),
     openIncidents: h.openIncidents,
     top: all<{ title: string }>("SELECT title FROM incidents WHERE project_id = ? AND resolved = 0 ORDER BY CASE severity WHEN 'high' THEN 0 ELSE 1 END, id DESC LIMIT 3", projectId).map((t) => t.title),
+    extras: digestExtras(projectId),
   };
 }
 
@@ -46,6 +72,7 @@ export function digestText(projectId: number, name: string, appUrl: string): str
     "",
     `Chatbot answers checked this week: ${answers} (${bad} with problems)`,
     `New incidents this week: ${newIncidents} · still open: ${h.openIncidents}`,
+    ...digestExtras(projectId).map(([k, v]) => `${k}: ${v}`),
     ...(top.length ? ["", "Needs attention:", ...top.map((t) => `  • ${t.title}`)] : []),
     "",
     `Open your dashboard: ${appUrl}/app/p/${projectId}`,

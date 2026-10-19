@@ -189,6 +189,8 @@ export interface DigestData {
   newIncidents: number;
   openIncidents: number;
   top: string[];
+  /** Trust score, approvals, CRM, sheets and heartbeats: shown only for what the project uses. */
+  extras?: [string, string][];
 }
 
 export function digestEmail(d: DigestData, unsubscribe?: { url: string; headers: Record<string, string> }): Mail {
@@ -203,6 +205,7 @@ export function digestEmail(d: DigestData, unsubscribe?: { url: string; headers:
       ...d.modules.map(([label, score, detail]) => [label, score == null ? "Not set up" : `${score}% · ${detail}`] as [string, string]),
       ["🔍 Answers checked", `${d.answers} (${d.bad} with problems)`],
       ["🚨 Incidents", `${d.newIncidents} new this week · ${d.openIncidents} open`],
+      ...(d.extras ?? []),
     ],
     ...(d.top.length ? { bullets: d.top.map((t) => `⚠️ ${t}`) } : {}),
     cta: { label: "Open your dashboard", url: base },

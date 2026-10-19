@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActivityChart } from "@/components/charts";
 import { PageHeader, ScoreBadge, ScoreRing, SeverityBadge, timeAgo } from "@/components/ui";
+import { trustReport } from "@/lib/trust";
 import { requireUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { all, get } from "@/lib/db";
@@ -32,6 +33,7 @@ export default async function Overview({ params, searchParams }: { params: Promi
     { done: count("SELECT COUNT(*) AS n FROM test_cases WHERE project_id = ?") > 0, text: "Add nightly test questions for your bot", href: `${base}/tests` },
     { done: count("SELECT COUNT(*) AS n FROM agent_runs WHERE project_id = ?") > 0, text: "Connect an AI agent", href: `${base}/connect` },
     { done: count("SELECT COUNT(*) AS n FROM workflow_runs WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM workflow_sources WHERE project_id = ?") > 0, text: "Connect n8n, Make or Zapier", href: `${base}/connect` },
+    { done: count("SELECT COUNT(*) AS n FROM crm_sources WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ?") > 0, text: "Watch your CRM or a Google Sheet", href: `${base}/crm` },
     { done: Boolean(get("SELECT 1 FROM alert_channels WHERE project_id = ? AND enabled = 1 AND verify_hash IS NULL AND type <> 'email'", p.id)), text: "Get alerts on WhatsApp, Slack or your phone", href: `${base}/alerts` },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
@@ -39,6 +41,14 @@ export default async function Overview({ params, searchParams }: { params: Promi
   const askFeedback = doneSteps >= 1 && daysSinceSignup >= 3 && !(await cookies()).get("pma_fb_dismissed") && !userHasGivenFeedback(user.id);
   const nothingConnected = steps[0].done === false && !steps[3].done && !steps[4].done
     && count("SELECT COUNT(*) AS n FROM chat_sources WHERE project_id = ?") + count("SELECT COUNT(*) AS n FROM bot_targets WHERE project_id = ?") === 0;
+  const trust = trustReport(p.id, 30);
+  const approvalsWaiting = count("SELECT COUNT(*) AS n FROM approvals WHERE project_id = ? AND status = 'pending'");
+  const crmSources = count("SELECT COUNT(*) AS n FROM crm_sources WHERE project_id = ?");
+  const crmProblems = count("SELECT COUNT(*) AS n FROM incidents WHERE project_id = ? AND resolved = 0 AND code LIKE 'CRM_%'");
+  const sheetsWatched = count("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ?");
+  const beats = count("SELECT COUNT(*) AS n FROM job_heartbeats WHERE project_id = ?");
+  const lateBeats = count("SELECT COUNT(*) AS n FROM job_heartbeats WHERE project_id = ? AND status IN ('late', 'failed')");
+  const badSheets = count("SELECT COUNT(*) AS n FROM sheet_watches WHERE project_id = ? AND status IN ('problem', 'error')");
   const moduleLinks = { chatbot: `${base}/chatbot`, tests: `${base}/tests`, agents: `${base}/agents`, workflows: `${base}/workflows` } as const;
 
   return (
@@ -103,6 +113,29 @@ export default async function Overview({ params, searchParams }: { params: Promi
             <span className="stat-foot">{h.modules[k].detail}</span>
           </Link>
         ))}
+      </div>
+
+      <div className="grid grid-4" style={{ marginTop: 16 }}>
+        <Link href={`${base}/trust`} className="card stat" style={{ color: "inherit", textDecoration: "none" }}>
+          <span className="stat-label">🛡️ AI trust score</span>
+          <span className="stat-value">{trust.score == null ? "–" : `${trust.score}/100`}</span>
+          <span className="stat-foot">{trust.score == null ? "needs 20+ checked answers" : `${trust.autopilotShare ?? 0}% of decisions can be made alone`}</span>
+        </Link>
+        <Link href={`${base}/approvals`} className="card stat" style={{ color: "inherit", textDecoration: "none" }}>
+          <span className="stat-label">✋ Approvals waiting</span>
+          <span className="stat-value" style={approvalsWaiting ? { color: "var(--warn)" } : undefined}>{approvalsWaiting}</span>
+          <span className="stat-foot">{approvalsWaiting ? "agent actions need your yes or no" : "nothing waiting for you"}</span>
+        </Link>
+        <Link href={`${base}/crm`} className="card stat" style={{ color: "inherit", textDecoration: "none" }}>
+          <span className="stat-label">🗂️ CRM</span>
+          <span className="stat-value" style={crmProblems ? { color: "var(--bad)" } : undefined}>{crmSources ? (crmProblems ? `${crmProblems} problem${crmProblems === 1 ? "" : "s"}` : "Healthy") : "–"}</span>
+          <span className="stat-foot">{crmSources ? `${crmSources} CRM${crmSources === 1 ? "" : "s"} watched` : "Connect HubSpot, Salesforce, Pipedrive…"}</span>
+        </Link>
+        <Link href={sheetsWatched || !beats ? `${base}/sheets` : `${base}/workflows#heartbeats`} className="card stat" style={{ color: "inherit", textDecoration: "none" }}>
+          <span className="stat-label">📗 Sheets & 💓 heartbeats</span>
+          <span className="stat-value" style={badSheets + lateBeats ? { color: "var(--bad)" } : undefined}>{sheetsWatched + beats ? (badSheets + lateBeats ? `${badSheets + lateBeats} problem${badSheets + lateBeats === 1 ? "" : "s"}` : "Healthy") : "–"}</span>
+          <span className="stat-foot">{sheetsWatched + beats ? `${sheetsWatched} sheet${sheetsWatched === 1 ? "" : "s"} · ${beats} scheduled job${beats === 1 ? "" : "s"}` : "Watch a sheet or a scheduled job"}</span>
+        </Link>
       </div>
 
       <div className="grid grid-2" style={{ marginTop: 16 }}>

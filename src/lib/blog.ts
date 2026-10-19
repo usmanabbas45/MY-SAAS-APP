@@ -23,6 +23,63 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "crm-leads-stopped-coming-in",
+    title: "Leads Stopped Coming Into Your CRM? 6 Silent Failures and How to Get Alerted",
+    seoTitle: "Leads Stopped Coming Into Your CRM? Get Alerted",
+    description: "Why leads silently stop reaching HubSpot, Salesforce, Pipedrive, Zoho or GoHighLevel, the 6 CRM failures that never show an error, and how to get a WhatsApp or Slack alert automatically.",
+    date: "2026-10-19",
+    readMins: 6,
+    tags: ["CRM", "HubSpot", "Monitoring"],
+    answer: "Leads usually stop reaching a CRM because an integration broke quietly: an expired Facebook Lead Ads or form connection, a changed field mapping, or an n8n/Make flow that stopped. Nothing shows an error, so watch the CRM itself: alert when no new records arrive for longer than normal, when new records miss an email or owner, when duplicates or bulk changes appear, and when new leads aren't contacted in time.",
+    body: `
+## Why leads stop reaching your CRM
+
+Your CRM rarely breaks. What breaks is everything that writes into it:
+
+- **An expired connection.** Facebook Lead Ads, Google Ads and form tools connect with a login that expires or gets revoked. Leads stop, with no error in the CRM.
+- **A changed field mapping.** Someone renames a form field or a CRM property, and new leads arrive with an empty email, phone or owner.
+- **A stopped automation.** An n8n or Make flow is switched off, hits a limit, or fails after an API change.
+- **A double trigger.** Two automations (or a retry) create the same contact twice.
+- **A runaway update.** A bulk import, a buggy workflow or an AI agent edits hundreds of records at once.
+- **No follow-up.** The leads arrive, but the routing or follow-up step stopped, so nobody calls them.
+
+## The 6 checks every CRM needs
+
+1. **No new records for longer than normal.** Learn the normal gap between new leads (including nights and weekends) and alert when the current gap is clearly longer.
+2. **Required fields filled.** Compare the share of new records missing an email/phone or owner with the usual share.
+3. **Duplicates.** Flag new records whose email or phone matches an existing one.
+4. **Bulk changes.** Alert when far more records change between checks than usual.
+5. **Follow-up time.** Count new leads with no activity after your target time (for example 4 hours).
+6. **Connection health.** Alert when the CRM can't be read, so monitoring never silently stops.
+
+## How to set it up in ProofMyAI
+
+1. Open **CRM** in ProofMyAI and pick your CRM: HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel, Freshsales, Close, ActiveCampaign or Dynamics 365.
+2. Create a **read-only** token with the steps shown and paste it. For any other CRM, send records from n8n, Make or Zapier.
+3. Click **Edit checks** to choose required fields and the follow-up time.
+4. Pick where alerts go: WhatsApp, Slack, Microsoft Teams, Discord, Telegram or email.
+
+ProofMyAI checks every 15 minutes, never writes to your CRM, and stores only hashes and filled/empty flags, never names, emails or phone numbers. See [CRM monitoring](/solutions/crm-monitoring).
+
+## Prevent it from happening again
+
+- Use a shared integration account, not a personal login that leaves with an employee.
+- Lock important CRM properties so they can't be renamed casually.
+- Add an error branch to your n8n or Make lead flows, and watch them with [n8n and Make monitoring](/solutions/n8n-workflow-monitoring).
+`,
+    takeaways: [
+      "CRMs rarely break; the forms, ad connections and automations that write into them do, and they fail without an error.",
+      "Watch the CRM itself: new-record rhythm, required fields, duplicates, bulk changes, follow-up time and connection health.",
+      "Read-only monitoring every 15 minutes catches a broken lead flow the same day instead of next week.",
+    ],
+    faqs: [
+      { q: "Does CRM monitoring need write access?", a: "No. ProofMyAI uses read-only tokens and never changes your CRM." },
+      { q: "Will a quiet weekend trigger a false alarm?", a: "No. ProofMyAI learns your CRM's longest normal gap, weekends included, and only alerts when the current gap is clearly longer." },
+      { q: "My CRM isn't on the list. Can I still use it?", a: "Yes. Send new and updated records from n8n, Make or Zapier to ProofMyAI's /api/v1/crm-records endpoint and the same checks run." },
+    ],
+    cta: { text: "Watch your CRM free", href: "/signup" },
+  },
+  {
     slug: "google-sheets-not-updating-alerts",
     title: "Google Sheet Not Updating From n8n, Make or Zapier? How to Get an Alert Automatically",
     seoTitle: "Google Sheet Not Updating? Get an Automatic Alert",
