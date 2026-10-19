@@ -115,3 +115,15 @@ describe("silent regressions", () => {
     expect(d).toContain('"lookup_order" now fails in 100% of calls (was 0%)');
   });
 });
+
+describe("weekly digest covers the newer modules", () => {
+  it("lists approvals, CRM and heartbeats only when used", async () => {
+    const { digestExtras } = await import("@/lib/digest");
+    expect(digestExtras(projectId)).toEqual([]);
+    run("INSERT INTO approvals (project_id, fingerprint, action, summary, status, reason, created_at, expires_at) VALUES (?, 'f', 'refund', 'R', 'pending', 'x', datetime('now'), datetime('now', '+1 day'))", projectId);
+    run("INSERT INTO crm_sources (project_id, provider, name, created_at) VALUES (?, 'push', 'HubSpot', ?)", projectId, new Date().toISOString());
+    addHeartbeat(projectId, "Backup", 1440);
+    const labels = digestExtras(projectId).map(([k]) => k);
+    expect(labels).toEqual(["✋ Agent approvals", "🗂️ CRM", "📗 Sheets & 💓 scheduled jobs"]);
+  });
+});

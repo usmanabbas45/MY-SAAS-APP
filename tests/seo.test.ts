@@ -21,7 +21,7 @@ describe("blog content", () => {
         expect([
           "/signup", "/docs", "/free-audit", "/tools/ai-chatbot-checker",
           "/solutions/ai-chatbot-monitoring", "/solutions/n8n-workflow-monitoring", "/solutions/ai-agent-monitoring",
-          "/solutions/ai-chatbot-compliance-monitoring", "/solutions/ai-chatbot-monitoring-for-agencies",
+          "/solutions/ai-chatbot-compliance-monitoring", "/solutions/ai-chatbot-monitoring-for-agencies", "/solutions/crm-monitoring", "/solutions/ai-agent-human-approval",
           ...POSTS.map((x) => `/blog/${x.slug}`), ...COMPARISONS.map((c) => `/compare/${c.slug}`),
         ]).toContain(href);
       }

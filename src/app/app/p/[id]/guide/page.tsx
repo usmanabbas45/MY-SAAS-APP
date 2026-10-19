@@ -65,12 +65,63 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       ),
     },
     {
+      title: "Watch a Google Sheet", time: "1 min",
+      body: (
+        <ol>
+          <li>In Google Sheets click <strong>Share</strong> → General access: <strong>Anyone with the link</strong> (Viewer) → <strong>Copy link</strong>.</li>
+          <li>Open <Link href={`${b}/sheets`}>Google Sheets</Link>, paste the link and pick how long it may go without changes.</li>
+          <li>Optional: a column that must never be empty (e.g. Email) and a date column (e.g. Created at) to catch &quot;no new records from the source&quot;.</li>
+        </ol>
+      ),
+    },
+    {
+      title: "Connect your CRM", time: "3 min",
+      body: (
+        <ol>
+          <li>Open <Link href={`${b}/crm`}>CRM</Link> and click your CRM: HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel, Freshsales, Close, ActiveCampaign or Dynamics 365.</li>
+          <li>Follow the steps shown to create a <strong>read-only</strong> token, paste it and click <strong>Connect</strong>.</li>
+          <li>Click <strong>Edit checks</strong>: choose the fields every new lead must have and how fast leads must be contacted.</li>
+          <li>Any other CRM: send records from n8n, Make or Zapier (the example is under &quot;Any other CRM&quot;).</li>
+        </ol>
+      ),
+    },
+    {
+      title: "Add a heartbeat for scheduled jobs", time: "1 min",
+      body: (
+        <ol>
+          <li>Open <Link href={`${b}/workflows#heartbeats`}>n8n &amp; Make → Heartbeats</Link>, name the job and choose how often it runs.</li>
+          <li>Click <strong>Copy URL</strong> and call it at the end of the job (an HTTP Request node in n8n, or <code>curl -fsS URL</code> in a script).</li>
+          <li>If the call doesn&apos;t arrive on time, you get an alert. Call <code>URL/fail</code> to report a failure straight away.</li>
+        </ol>
+      ),
+    },
+    {
+      title: "Let a person approve risky agent actions", time: "5 min",
+      body: (
+        <ol>
+          <li>Before your agent issues a refund, pays an invoice or emails a customer, send the action to <code>POST /api/v1/approvals</code> (see <Link href="/docs#approvals">Docs</Link>).</li>
+          <li>Routine actions come back <em>approved</em>. Risky ones wait on the <Link href={`${b}/approvals`}>Approvals</Link> page and you get an alert.</li>
+          <li>Click <strong>Approve</strong>, <strong>Reject</strong> or <strong>Approve &amp; always allow</strong> to turn your decision into a rule. In n8n, add a Wait node that resumes on the callback.</li>
+          <li>To stop a made-up chatbot answer before it&apos;s sent, use <code>POST /api/v1/check</code> (allow / review / block).</li>
+        </ol>
+      ),
+    },
+    {
+      title: "Check your AI trust report", time: "1 min",
+      body: (
+        <ul>
+          <li>Open <Link href={`${b}/trust`}>Trust report</Link> once you have 20+ checked answers per topic.</li>
+          <li>🟢 topics can be left to the AI, 🟡 need a weekly spot check, 🔴 need a person. Review a few verdicts in an audit (Agree / correct it) so the &quot;team agrees&quot; number is meaningful.</li>
+        </ul>
+      ),
+    },
+    {
       title: "Turn on alerts", time: "2 min",
       body: (
         <ol>
-          <li>Slack: create an Incoming Webhook (api.slack.com/messaging/webhooks). Discord: Channel settings → Integrations → Webhooks → New webhook → Copy URL.</li>
-          <li>Paste it in <Link href={`${b}/settings`}>Settings</Link> → Alert webhook → <strong>Save</strong>.</li>
-          <li>Click <strong>Send test alert</strong> to check it works.</li>
+          <li>Open <Link href={`${b}/alerts`}>Alerts</Link> and pick WhatsApp, Slack, Microsoft Teams, Discord, Telegram or email.</li>
+          <li>Follow the steps on the card (for WhatsApp, just type your number and enter the code you receive).</li>
+          <li>Choose which problems each channel gets, then click <strong>Send test alert</strong> to check it works.</li>
         </ol>
       ),
     },
