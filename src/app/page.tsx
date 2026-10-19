@@ -35,7 +35,7 @@ const FEATURES = [
 ];
 
 const TOUR: TourTab[] = [
-  { id: "overview", name: "Overview", subtitle: "One health score for your chatbot, agents and workflows, with open incidents first.", img: "/tour/overview.webp", alt: "ProofMyAI overview: AI health score 66, 14-day chart of workflow runs and agent score, accuracy cards and open incidents" },
+  { id: "overview", name: "Overview", subtitle: "One health score for your chatbot, agents, workflows, sheets and CRM, plus your trust score and approvals waiting.", img: "/tour/overview.webp", alt: "ProofMyAI overview: AI health score 66, 14-day chart, accuracy cards, AI trust score, approvals waiting, CRM and Google Sheets status" },
   { id: "audit", name: "Chatbot audit", subtitle: "Every answer graded against your help docs: correct, made up, not in docs, should escalate.", img: "/tour/audit.webp", alt: "Chatbot audit report with verdict counts and the answers that were made up" },
   { id: "fixes", name: "Fix list", subtitle: "Problems grouped by the help article that caused them, worst first.", img: "/tour/fixes.webp", alt: "Fix list grouping wrong answers by help article: returns, warranty, shipping and missing documentation" },
   { id: "fix-ai", name: "Fix with AI", subtitle: "One click writes the corrected article and a safe system prompt for your bot.", img: "/tour/fixres.webp", alt: "Fix with AI result showing a corrected help article ready to copy" },
