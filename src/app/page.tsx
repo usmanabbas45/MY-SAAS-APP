@@ -318,7 +318,7 @@ export default function Landing() {
         <div className="video-wrap">
           <ScrollVideo src={DEMO_VIDEO.src} webm={DEMO_VIDEO.webm} poster={DEMO_VIDEO.poster} title={DEMO_VIDEO.title} />
           <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>
-            Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
+            <a href={`https://www.youtube.com/watch?v=${VIDEOS.marketing.id}`} target="_blank" rel="noopener">Watch on YouTube ↗</a> · Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
           </p>
         </div>
       </section>

@@ -199,11 +199,11 @@ export interface Video { id: string; title: string; description: string; duratio
 
 export const VIDEOS = {
   marketing: {
-    id: "1LWFQ3ROJ14",
-    title: "Is Your AI Chatbot Lying to Customers? Catch It Before They Do | ProofMyAI",
-    description: "ProofMyAI checks every AI chatbot answer, AI agent run and n8n/Make workflow, catches wrong answers and silent failures, and tells you exactly what to fix.",
-    duration: "PT1M24S",
-    uploadDate: "2026-09-28",
+    id: "Z4oiiTvkL2A",
+    title: "Is Your AI Quietly Failing? ProofMyAI Checks Chatbots, AI Agents, n8n & Your CRM",
+    description: "ProofMyAI checks every AI chatbot answer against your own help docs and shows the fix, monitors AI agents, n8n, Make, Google Sheets and CRMs (HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel), shows where your AI can decide on its own in the trust report, lets you approve risky agent actions with one click, and alerts you on WhatsApp, Slack or email.",
+    duration: "PT1M35S",
+    uploadDate: "2026-10-19",
   },
   tutorial: {
     id: "j02a0DP3lPg",
