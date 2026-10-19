@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { sourceStatuses, type Source } from "@/lib/live";
 import { projectAccess } from "@/lib/projects";
-import { agentSnippets, liveChatSnippets, workflowSnippets } from "@/lib/snippets";
+import { agentSnippets, grokSnippets, liveChatSnippets, workflowSnippets } from "@/lib/snippets";
 import { addChatSourceAction, addIntercomSourceAction, addTargetAction, addWorkflowSourceAction, sendTestEventAction } from "../actions";
 
 export const metadata = { title: "Connect" };
@@ -20,6 +20,7 @@ const METHODS: Method[] = [
   { id: "whatsapp", group: "chatbot", icon: "📱", title: "WhatsApp bot (WAHA)", text: "Paste one webhook URL in WAHA. Every message is checked live.", time: "2 min · no code" },
   { id: "twilio", group: "chatbot", icon: "☎️", title: "WhatsApp or SMS via Twilio", text: "Read-only: we read your Twilio message log every 15 minutes.", time: "3 min · no code" },
   { id: "website", group: "chatbot", icon: "💻", title: "My own chatbot (code)", text: "Custom GPT backend, website widget or any bot you built. One HTTP call.", time: "5 min · developer", code: true },
+  { id: "grok", group: "chatbot", icon: "✖️", title: "Grok (xAI) chatbot", text: "A bot built on Grok? Add one call after each reply. Works the same for ChatGPT, Claude, Gemini or Llama bots.", time: "5 min · developer", code: true },
   { id: "endpoint", group: "chatbot", icon: "🧪", title: "Test my bot every night", text: "We ask your bot real questions daily and alert you when answers get worse.", time: "5 min · needs a bot URL" },
   { id: "agent", group: "agents", icon: "🤖", title: "AI agent in code", text: "LangChain, OpenAI Agents, Claude, CrewAI or your own. Send each run when it finishes.", time: "5 min · developer", code: true },
   { id: "agent-nocode", group: "agents", icon: "🧩", title: "AI agent in n8n or Make", text: "Add one HTTP Request step at the end of your agent workflow.", time: "3 min · no code" },
@@ -84,6 +85,7 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
   const back = method ? `${base}/connect?with=${method.id}` : `${base}/connect`;
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const chat = liveChatSnippets(appUrl, p.api_key);
+  const grok = grokSnippets(appUrl, p.api_key);
   const agent = agentSnippets(appUrl, p.api_key);
   const flow = workflowSnippets(appUrl, p.api_key);
   const waUrl = chat.url.replace(/\/chat-events$/, "/whatsapp/waha");
@@ -288,6 +290,26 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
             <p className="sub">Also send each customer message as it arrives with just <code>{`{"conversation_id": "...", "question": "..."}`}</code>. No reply within {p.reply_timeout_sec || 120} seconds = alert.</p>
           </Step>
           <Step n={3} title="Not ready to code yet? Send a test event to see how results look">
+            <form action={sendTestEventAction}>{pid}<SubmitButton className="btn btn-ghost" pendingText="Sending…">▶ Send test event</SubmitButton></form>
+          </Step>
+        </ol>
+      );
+      break;
+    case "grok":
+      steps = (
+        <ol className="cx-steps">
+          <Step n={1} title="After Grok replies, send the conversation to ProofMyAI">
+            <Code blocks={[["JavaScript / TypeScript", grok.js], ["Python", grok.python], ["cURL (try it now)", chat.curl]]} />
+            <p className="hint">Your ProofMyAI key is already filled in. Your xAI key stays in your own code. The report is fire-and-forget with a 2-second limit, so your bot never waits or breaks.</p>
+          </Step>
+          <Step n={2} title="Add your help articles">
+            <p className="sub">Every Grok answer is checked against them: made-up prices, wrong policies, missed hand-overs and unsafe replies. <Link href={`${base}/chatbot`}>Add help articles →</Link></p>
+          </Step>
+          <Step n={3} title="Optional: test your Grok bot every night">
+            <p className="sub">Choose <Link href={`${base}/connect?with=endpoint`}>Test my bot every night</Link> and use your bot&apos;s URL. If your bot is just a system prompt on xAI, use <code>https://api.x.ai/v1/chat/completions</code>, this body, the answer location <code>choices.0.message.content</code> and the header <code>{`{"Authorization": "Bearer YOUR_XAI_KEY"}`}</code>:</p>
+            <CopyField label="Body" value={grok.testBody} />
+          </Step>
+          <Step n={4} title="Not ready to code yet? Send a test event to see how results look">
             <form action={sendTestEventAction}>{pid}<SubmitButton className="btn btn-ghost" pendingText="Sending…">▶ Send test event</SubmitButton></form>
           </Step>
         </ol>

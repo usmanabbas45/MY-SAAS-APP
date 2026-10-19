@@ -137,6 +137,33 @@ export const SOLUTIONS: Solution[] = [
     ],
   },
   {
+    slug: "grok-chatbot-monitoring",
+    title: "Grok Chatbot Monitoring: Check Every Grok (xAI) Answer",
+    description: "Built a support bot or AI agent on Grok? ProofMyAI checks every Grok answer against your help docs and policies, blocks wrong replies before customers see them, and alerts you on WhatsApp, Slack or email.",
+    kicker: "Grok (xAI) monitoring",
+    intro: "Grok is built to answer directly and with personality. That's great for engagement, but in customer support a confident answer that isn't in your policy turns into a refund, a complaint or a screenshot. ProofMyAI checks every answer your Grok bot gives, against your own help docs and rules, and tells you the moment one is wrong.",
+    definition: "Grok chatbot monitoring is checking every answer a chatbot or AI agent built on xAI's Grok models gives your customers, for accuracy against your own documentation, policy breaks, unsafe content and missed hand-overs, so mistakes are caught and fixed before they cost you.",
+    problems: [
+      "A Grok bot promises a refund, discount or delivery date your policy doesn't allow",
+      "Answers sound sure even when the fact isn't in your help docs",
+      "A tone that works on social media is wrong for an upset customer",
+      "A model update changes how your bot answers and nobody notices",
+      "Nobody has time to read every conversation",
+    ],
+    steps: [
+      { title: "Add one call", text: "After your bot gets Grok's reply, send the conversation to ProofMyAI in the background (fire-and-forget, 2-second limit). No code? Use one HTTP step in n8n, Make or Zapier, or upload a chat export." },
+      { title: "Every answer checked", text: "Each reply is compared with your help articles and your rules: correct, made up, not in docs, off policy or should escalate. Safety checks flag leaked personal data and a bot claiming to be human." },
+      { title: "Block, alert and fix", text: "Ask ProofMyAI before sending and get allow, review or block. Problems reach WhatsApp, Slack or email, and the fix list shows which help article to correct." },
+    ],
+    features: ["Works with any Grok model through xAI's OpenAI-compatible API", "Answers checked against your own help docs", "Pre-send check: allow, review or block", "Your rules: \u201cnever promise…\u201d, \u201calways hand over when…\u201d", "Nightly tests that catch changes after a model update", "One-click approval for refunds and other risky agent actions", "Alerts on WhatsApp, Slack, Teams or email"],
+    faqs: [
+      { q: "Can I connect a Grok chatbot to ProofMyAI?", a: "Yes. ProofMyAI checks the question and the answer, not the model, so a bot built on Grok connects the same way as any other: one HTTP call after each reply, an HTTP step in n8n, Make or Zapier, or a chat export upload. The Connect page has a ready-made Grok code example." },
+      { q: "Does ProofMyAI need my xAI API key?", a: "No. Your xAI key stays in your own code. ProofMyAI only receives the conversation you send it. The only exception is optional nightly testing directly against xAI's API, where the key is stored encrypted." },
+      { q: "Can ProofMyAI test my Grok bot automatically?", a: "Yes. Nightly tests send real customer questions to your bot's URL, or straight to xAI's chat completions endpoint with your bot's system prompt, and alert you when answers get worse, for example after a model update." },
+      { q: "Does it also work for ChatGPT, Claude, Gemini or Llama bots?", a: "Yes. The checks are the same for any model, so you can switch models and compare quality on the same questions." },
+    ],
+  },
+  {
     slug: "ai-agent-human-approval",
     title: "Human Approval for AI Agents: Approve Risky Actions in One Click",
     description: "Let AI agents prepare refunds, payments and customer emails while a person approves the risky ones with one click. First-time actions, irreversible steps and promises wait; rejected actions stay blocked; every decision is logged.",
