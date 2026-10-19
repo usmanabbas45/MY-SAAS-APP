@@ -262,6 +262,13 @@ export const VIDEOS = {
     duration: "PT3M25S",
     uploadDate: "2026-10-19",
   },
+  live: {
+    id: "h8HYUrIBQiw",
+    title: "ProofMyAI Live Demo: Watch It Catch a Wrong AI Answer, a Risky Refund & a Missed Job in Real Time",
+    description: "Everything happens in the real app, live: a wrong chatbot answer flagged in seconds, the alert on WhatsApp and Slack, the pre-send check blocking a bad reply, an AI agent's refund approved with one click, duplicate CRM leads caught, and a missed nightly job alerted and then auto-resolved.",
+    duration: "PT1M46S",
+    uploadDate: "2026-10-19",
+  },
 } satisfies Record<string, Video>;
 
 /** schema.org VideoObject so Google can show the video in search results. */

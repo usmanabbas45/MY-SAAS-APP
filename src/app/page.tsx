@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ScoreRing } from "@/components/ui";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { BeamDiagram, CatchDemo, HeroMockup, IntegrationMarquee, Meteors, StepArt } from "@/components/illustrations";
+import { YouTube } from "@/components/video";
 import { CopyBox, NumberTicker, ProductTour, ScrollVideo, ShortcutLink, StartTabs, WordRotate, type TourTab } from "@/components/landing";
 import { foundingSpotsLeft } from "@/lib/founding";
 import { FOUNDING_OFFER, publishedTestimonials, ratingSummary } from "@/lib/testimonials";
@@ -204,6 +205,7 @@ const structuredData = {
     demoVideoJsonLd(),
     videoJsonLd(VIDEOS.marketing),
     videoJsonLd(VIDEOS.tutorial),
+    videoJsonLd(VIDEOS.live),
   ],
 };
 
@@ -320,6 +322,14 @@ export default function Landing() {
           <p className="sub" style={{ textAlign: "center", marginTop: 14 }}>
             <a href={`https://www.youtube.com/watch?v=${VIDEOS.marketing.id}`} target="_blank" rel="noopener">Watch on YouTube ↗</a> · Ready to set it up? <a href={`https://www.youtube.com/watch?v=${VIDEOS.tutorial.id}`} target="_blank" rel="noopener">Watch the 3-minute setup tutorial ↗</a>
           </p>
+        </div>
+      </section>
+
+      <section className="lp-section lp-band reveal" id="live-demo" aria-labelledby="live-demo-title">
+        <h2 id="live-demo-title">Watch it catch problems live</h2>
+        <p className="lp-lead">No slides. A wrong answer flagged in seconds, the alert on WhatsApp and Slack, a risky refund approved with one click, duplicate CRM leads and a missed job, all in the real app.</p>
+        <div className="video-wrap">
+          <YouTube id={VIDEOS.live.id} title={VIDEOS.live.title} />
         </div>
       </section>
 
