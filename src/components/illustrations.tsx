@@ -117,7 +117,7 @@ export function StepArt({ step }: { step: 1 | 2 | 3 }) {
 const INTEGRATIONS: [string, string][] = [
   ["Intercom", "#1f8ded"], ["Tidio", "#0566ff"], ["Crisp", "#1972f5"], ["Zendesk", "#03363d"], ["Chatbase", "#111827"],
   ["Custom GPTs", "#10a37f"], ["n8n", "#ea4b71"], ["Make", "#6d00cc"], ["LangChain", "#1c3c3c"], ["OpenAI Agents", "#0f172a"],
-  ["Claude agents", "#d97757"], ["WhatsApp", "#25d366"],
+  ["Claude agents", "#d97757"], ["WhatsApp", "#25d366"], ["Grok bots", "#111111"],
 ];
 
 /** "Works with" strip: monogram tiles (not official logos). */

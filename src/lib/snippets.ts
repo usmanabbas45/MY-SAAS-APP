@@ -101,3 +101,52 @@ def report_chat(chat_id, messages):
 threading.Thread(target=report_chat, args=(chat_id, messages), daemon=True).start()`,
   };
 }
+
+/** Grok (xAI) bots: call xAI as usual, then report the conversation to ProofMyAI without waiting. */
+export function grokSnippets(appUrl: string, key: string) {
+  const url = `${appUrl}/api/v1/chat-events`;
+  return {
+    js: `// xAI's API is OpenAI-compatible: npm install openai
+import OpenAI from "openai";
+
+const grok = new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: "https://api.x.ai/v1" });
+
+export async function reply(chatId, messages) {
+  const res = await grok.chat.completions.create({ model: process.env.XAI_MODEL, messages }); // the Grok model you use
+  const answer = res.choices[0].message.content;
+
+  // Report to ProofMyAI: fire-and-forget, 2-second limit, never blocks or breaks your bot.
+  fetch("${url}", {
+    method: "POST",
+    headers: { Authorization: "Bearer ${key}", "Content-Type": "application/json" },
+    body: JSON.stringify({ conversation_id: chatId, messages: [...messages.filter((m) => m.role !== "system"), { role: "assistant", content: answer }] }),
+    signal: AbortSignal.timeout(2000),
+  }).catch(() => {});
+
+  return answer;
+}`,
+    python: `# xAI's API is OpenAI-compatible: pip install openai requests
+import os, threading, requests
+from openai import OpenAI
+
+grok = OpenAI(api_key=os.environ["XAI_API_KEY"], base_url="https://api.x.ai/v1")
+
+def report_chat(chat_id, messages):
+    try:
+        requests.post("${url}",
+                      headers={"Authorization": "Bearer ${key}"},
+                      json={"conversation_id": chat_id, "messages": messages},
+                      timeout=2)
+    except Exception:
+        pass  # monitoring must never break your bot
+
+def reply(chat_id, messages):
+    res = grok.chat.completions.create(model=os.environ["XAI_MODEL"], messages=messages)  # the Grok model you use
+    answer = res.choices[0].message.content
+    convo = [m for m in messages if m["role"] != "system"] + [{"role": "assistant", "content": answer}]
+    threading.Thread(target=report_chat, args=(chat_id, convo), daemon=True).start()
+    return answer`,
+    /** Body for "Test my bot every night" when the bot is a system prompt on xAI's API. */
+    testBody: `{"model": "YOUR_GROK_MODEL", "messages": [{"role": "system", "content": "YOUR BOT'S SYSTEM PROMPT"}, {"role": "user", "content": "{{question}}"}]}`,
+  };
+}

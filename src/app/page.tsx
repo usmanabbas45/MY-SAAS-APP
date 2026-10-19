@@ -300,6 +300,7 @@ export default function Landing() {
       <section className="lp-section lp-works" aria-label="Works with">
         <p className="lp-works-title">Works with the tools you already use</p>
         <IntegrationMarquee />
+        <p className="sub" style={{ textAlign: "center", marginTop: 10 }}>Works with any AI model: Grok, ChatGPT, Claude, Gemini, Llama, Mistral or DeepSeek. <Link href="/solutions/grok-chatbot-monitoring">Using Grok? →</Link></p>
       </section>
 
       <section className="lp-section reveal" id="flow" aria-labelledby="flow-title">

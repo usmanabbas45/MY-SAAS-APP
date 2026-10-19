@@ -23,6 +23,68 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "grok-chatbot-customer-support",
+    title: "Building a Support Bot on Grok? How to Check Every Answer Before It Costs You",
+    seoTitle: "Grok Support Bot: How to Check Every Answer",
+    description: "Using xAI's Grok for a support chatbot or AI agent? The 5 mistakes to watch for, how to connect monitoring in 5 minutes, and how to block a wrong answer before customers see it.",
+    date: "2026-10-19",
+    readMins: 5,
+    tags: ["Grok", "Chatbots", "Monitoring"],
+    answer: "To run a Grok support bot safely, check every answer against your own help docs and policies, not just the model's confidence. Send each conversation to a monitor after Grok replies, add rules for promises the bot must never make, block wrong answers before sending when the risk is high, and run the same test questions every night so a model update can't silently change your bot.",
+    body: `
+## Why Grok bots need checking
+
+Grok is fast, capable and built to answer directly. Those are good traits in a chatbot. But every large language model, Grok included, can sound certain about something that isn't true for *your* business. In support, that shows up as:
+
+- **Promises you can't keep.** "Yes, sale items get a full refund." Your policy says store credit only.
+- **Facts that aren't in your docs.** Delivery times, prices or opening hours the bot filled in itself.
+- **The wrong tone.** A witty reply to a customer who has been charged twice.
+- **Missed hand-overs.** An angry customer or a legal question the bot keeps answering instead of passing to a person.
+- **Silent changes.** A new model version answers the same question differently and nobody notices for weeks.
+
+None of these show up as an error. Your bot keeps running, and the only signal is a refund request or a bad review.
+
+## Connect a Grok bot in 5 minutes
+
+xAI's API is OpenAI-compatible: you call \`https://api.x.ai/v1\` with the standard OpenAI client. After you get Grok's reply, send the conversation to ProofMyAI in the background:
+
+- **Your own code:** one fire-and-forget HTTP call with a 2-second limit, so your bot never waits or breaks. The Connect page in ProofMyAI gives you a ready-made JavaScript and Python example with your key filled in.
+- **n8n, Make or Zapier:** add one HTTP step after the Grok step.
+- **No code at all:** export your chats as CSV and upload them.
+
+Your xAI key stays in your own code. ProofMyAI only sees the conversation you send.
+
+## What gets checked
+
+Each answer is graded against your help articles: **correct**, **made up**, **not in docs**, **off policy** or **should escalate**. Safety checks also flag leaked personal data and a bot claiming to be human. Add your own rules in plain English, for example "never promise a refund on sale items".
+
+Wrong answers are grouped by the help article that caused them, so you fix the cause once instead of reading transcripts.
+
+## Block a wrong answer before the customer sees it
+
+For high-risk replies, ask ProofMyAI *before* sending. It returns **allow**, **review** or **block** in about a second. A blocked answer can be replaced with a safe hand-over message. If your Grok bot is an agent that issues refunds or sends emails, route those actions through one-click approval instead.
+
+## Test it every night
+
+Add 10 to 20 real customer questions and ProofMyAI asks your bot every night. You can point it at your bot's URL, or straight at xAI's chat completions endpoint with your bot's system prompt. If answers get worse after a model update, you get an alert the next morning.
+
+[See how Grok monitoring works](/solutions/grok-chatbot-monitoring) or [start free](/signup).
+`,
+    takeaways: [
+      "Grok, like every model, can sound sure about things that aren't true for your business",
+      "Send each conversation to a monitor after Grok replies: one fire-and-forget call",
+      "Check answers against your own help docs and plain-English rules",
+      "Block high-risk wrong answers before sending; approve risky agent actions with one click",
+      "Run the same questions nightly so a model update can't change your bot silently",
+    ],
+    faqs: [
+      { q: "Does ProofMyAI work with Grok?", a: "Yes. It checks the question and answer, so any Grok-based bot connects with one HTTP call, an n8n/Make/Zapier step or a chat export." },
+      { q: "Do I have to share my xAI API key?", a: "No. Only for optional nightly tests run directly against xAI's API, and then it's stored encrypted." },
+      { q: "Will monitoring slow my bot down?", a: "No. The report is sent in the background with a 2-second limit and never blocks the reply. Only the optional pre-send check waits, about a second." },
+    ],
+    cta: { text: "Check your Grok bot free", href: "/signup" },
+  },
+  {
     slug: "crm-leads-stopped-coming-in",
     title: "Leads Stopped Coming Into Your CRM? 6 Silent Failures and How to Get Alerted",
     seoTitle: "Leads Stopped Coming Into Your CRM? Get Alerted",
