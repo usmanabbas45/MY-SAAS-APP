@@ -16,12 +16,14 @@ const TOC = [
   ["auth", "🔑 Authentication"],
   ["chat-events", "💬 POST /chat-events (live chatbot)"],
   ["check", "🛑 POST /check (stop bad answers)"],
+  ["test-runs", "🧪 POST /test-runs (CI regression tests)"],
   ["approvals", "✋ POST /approvals (human approval)"],
   ["verify", "🔎 Verify results (POST /verify)"],
   ["heartbeats", "💓 Heartbeats (scheduled jobs)"],
   ["crm", "🗂️ CRM monitoring"],
   ["feedback", "👍 POST /feedback (customer ratings)"],
   ["agent-runs", "🤖 POST /agent-runs (AI agents)"],
+  ["otel", "📡 OpenTelemetry traces"],
   ["workflow-runs", "⚙️ POST /workflow-runs (n8n, Make, Zapier)"],
   ["errors", "⚠️ Errors & limits"],
   ["privacy", "🔒 Privacy & data"],
@@ -63,7 +65,7 @@ export default function DocsPage() {
       <ul>
         <li><strong>Chat transcripts:</strong> export conversations from Intercom, Tidio, Crisp, Zendesk or any bot as CSV/JSON and upload them in <em>Chatbot audits</em>. Add your help articles first so answers are checked against them.</li>
         <li><strong>Nightly bot tests:</strong> in <em>Chatbot tests</em>, paste your bot&apos;s HTTP endpoint and a list of questions with the facts a right answer must include. ProofMyAI asks your bot every night.</li>
-        <li><strong>n8n:</strong> n8n → Settings → n8n API → create a key. In ProofMyAI open <em>n8n &amp; Make</em> → Connect n8n and paste your n8n URL and key. Executions are pulled every 15 minutes.</li>
+        <li><strong>n8n:</strong> n8n → Settings → n8n API → create a key. In ProofMyAI open <em>n8n &amp; Make</em> → Connect n8n and paste your n8n URL and key. Executions are pulled every 15 minutes, and workflows that stop running or go quiet are caught too. <strong>For instant alerts</strong> (seconds, not minutes), also add an <em>Error Trigger</em> workflow in n8n that posts to <a href="#workflow-runs">POST /workflow-runs</a>.</li>
         <li><strong>Make:</strong> Make → Profile → API access → add a token with <code>scenarios:read</code>. Connect Make in ProofMyAI with your scenario IDs.</li>
         <li><strong>WhatsApp live monitoring (WAHA):</strong> add the webhook <code>{API}/whatsapp/waha</code> to your WAHA session with the event <code>message.any</code> and header <code>X-Api-Key</code> set to your project key. Customer messages and bot replies are paired and checked; phone numbers are replaced with anonymous codes.</li>
         <li><strong>Intercom (Fin):</strong> in <em>Connect → Intercom</em>, paste an Intercom access token. Every Fin or bot reply is checked automatically.</li>
@@ -116,14 +118,48 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
        "answer": "Yes, every item gets a full refund within 30 days."}'`}</Code>
       <Code>{`{"decision": "block", "verdict": "hallucination", "label": "Made up", "severity": "high",
  "reason": "The returns article says sale items get store credit only.",
- "source": "Returns & refunds", "area": "Returns & refunds", "area_autonomy": "human_review",
+ "source": "Returns & refunds",
+ "evidence": "Sale items can be returned for store credit only, not a refund.",
+ "area": "Returns & refunds", "area_autonomy": "human_review",
  "advice": "Do not send. Hand the customer to a person."}`}</Code>
+      <p><code>evidence</code> is the exact sentence from your help docs behind the verdict. A quote from the AI judge is only kept if it appears in your docs word for word, so the evidence is never made up. It&apos;s also shown on every checked answer in your dashboard and in the CSV export.</p>
       <Fields rows={[
         ["allow", "decision", "Safe to send or act on."],
         ["review", "decision", "Hold it for a person to approve, or send a safe fallback such as \"Let me check that for you\". Every answer in an area your Trust report marks 🔴 returns review."],
         ["block", "decision", "Don't send it: it's made up, against your policy, or should go to a human."],
       ]} />
       <p><code>/chat-events?wait=1</code> also returns a <code>decision</code> for each reply. Each check counts as one conversation on your plan. If the check fails or times out, fall back to sending the reply as usual (or to a human for high-stakes actions).</p>
+
+      <h2 id="test-runs">🧪 POST /test-runs: regression tests in your deploy pipeline</h2>
+      <p>Changed a prompt, a model or your help docs? Run your saved <em>Chatbot tests</em> before the change goes live. ProofMyAI asks your bot every test question right now and answers with pass/fail per question. Point <code>url</code> at a preview or staging deployment to test a pull request. CI runs don&apos;t raise incidents and don&apos;t replace the nightly run.</p>
+      <Fields rows={[
+        ["bot", "string or number", "Name or id of the saved bot. Optional when the project has one bot."],
+        ["url", "string", "Optional: test this address instead of the saved one (same body template and answer location)."],
+        ["min_pass_rate", "number 0–1", "Share of questions that must pass for ok to be true. Default 1 (all)."],
+      ]} />
+      <Code>{`curl -X POST ${API}/test-runs \\
+  -H "Authorization: Bearer $PROOFMYAI_KEY" -H "Content-Type: application/json" \\
+  -d '{"url": "https://preview-42.yourbot.com/chat"}'
+
+{"ok": false, "bot": "Support bot", "passed": 19, "failed": 1, "total": 20, "pass_rate": 0.95,
+ "failures": [{"question": "Can I return a sale item?", "answer": "Yes, full refund.",
+   "reason": "The answer contains a forbidden statement: \\"full refund\\"."}]}`}</Code>
+      <p>GitHub Actions example: fail the build when answers get worse.</p>
+      <Code>{`# .github/workflows/bot-tests.yml
+name: Chatbot regression tests
+on: [pull_request]
+jobs:
+  proofmyai:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run ProofMyAI tests
+        run: |
+          RESULT=$(curl -s -X POST ${API}/test-runs \\
+            -H "Authorization: Bearer \${{ secrets.PROOFMYAI_KEY }}" -H "Content-Type: application/json" \\
+            -d '{"url": "\${{ vars.PREVIEW_BOT_URL }}"}')
+          echo "$RESULT"
+          echo "$RESULT" | jq -e '.ok == true' > /dev/null`}</Code>
+      <p>Limit: 30 test runs per project per hour. Each question is graded by the AI judge when AI checking is on, otherwise by the expected facts and forbidden phrases you saved.</p>
 
       <h2 id="approvals">✋ POST /approvals: a person approves what matters</h2>
       <p>&quot;Automate the draft, never the send.&quot; Before your agent does something important (issues a refund, emails a customer, pays an invoice, writes to your CRM), it submits the action. Routine, reversible actions come back <code>approved</code> straight away. These wait as <code>pending</code> until someone clicks Approve or Reject on the <em>Approvals</em> page (you get an alert):</p>
@@ -208,6 +244,13 @@ curl -fsS "https://proofmyai.com/api/hb/hb_your_token/fail?msg=disk%20full"   # 
   {"code": "TOOL_ERRORS", "severity": "high", "message": "..."},
   {"code": "ENDED_ON_ERROR", "severity": "medium", "message": "The last step failed but the run still reported success."}]}`}</Code>
       <p>Issue codes: <code>RUN_FAILED</code>, <code>TOOL_ERRORS</code>, <code>LOOP_DETECTED</code>, <code>TOO_MANY_STEPS</code>, <code>OVER_BUDGET</code>, <code>SLOW_RUN</code>, <code>EMPTY_OUTPUT</code>, <code>ENDED_ON_ERROR</code>, plus from the AI review <code>GOAL_NOT_MET</code> and <code>UNGROUNDED_OUTPUT</code>. Set your step, cost and time limits in project Settings.</p>
+
+      <h2 id="otel">📡 OpenTelemetry traces (no code changes)</h2>
+      <p>Already instrumented with OpenTelemetry, or using a framework that is (LangChain/LangGraph, CrewAI, OpenAI Agents SDK, LlamaIndex, Vercel AI SDK, or OpenLLMetry/OpenInference instrumentation)? Point the exporter at ProofMyAI with three environment variables. Each finished trace becomes an agent run with the same checks: failed steps, loops, runaway cost and latency, empty output, and step-by-step timing.</p>
+      <Code>{`OTEL_EXPORTER_OTLP_ENDPOINT=${SITE_URL}/api/v1/otel
+OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer ap_live_your_key
+OTEL_EXPORTER_OTLP_PROTOCOL=http/json`}</Code>
+      <p>Spans that follow the OpenTelemetry GenAI conventions (<code>gen_ai.*</code>) or OpenInference (<code>openinference.span.kind</code>, <code>input.value</code>, <code>output.value</code>) become LLM, tool and retrieval steps, with tokens, timing and errors. The agent name comes from <code>gen_ai.agent.name</code> or your <code>service.name</code>. Send OTLP as JSON; protobuf isn&apos;t supported yet.</p>
 
       <h2 id="workflow-runs">⚙️ POST /workflow-runs: n8n, Make and Zapier</h2>
       <p>Most people connect n8n or Make with an API key instead (see above). Use this endpoint for Zapier, self-built pipelines, or to push runs yourself. Send one run or an array of up to 500.</p>

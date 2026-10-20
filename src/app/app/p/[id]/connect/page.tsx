@@ -22,7 +22,7 @@ const METHODS: Method[] = [
   { id: "website", group: "chatbot", icon: "💻", title: "My own chatbot (code)", text: "Custom GPT backend, website widget or any bot you built. One HTTP call.", time: "5 min · developer", code: true },
   { id: "grok", group: "chatbot", icon: "✖️", title: "Grok (xAI) chatbot", text: "A bot built on Grok? Add one call after each reply. Works the same for ChatGPT, Claude, Gemini or Llama bots.", time: "5 min · developer", code: true },
   { id: "endpoint", group: "chatbot", icon: "🧪", title: "Test my bot every night", text: "We ask your bot real questions daily and alert you when answers get worse.", time: "5 min · needs a bot URL" },
-  { id: "agent", group: "agents", icon: "🤖", title: "AI agent in code", text: "LangChain, OpenAI Agents, Claude, CrewAI or your own. Send each run when it finishes.", time: "5 min · developer", code: true },
+  { id: "agent", group: "agents", icon: "🤖", title: "AI agent in code", text: "LangChain, OpenAI Agents, Claude, CrewAI or your own. Send each run when it finishes, or point your OpenTelemetry exporter here.", time: "5 min · developer", code: true },
   { id: "agent-nocode", group: "agents", icon: "🧩", title: "AI agent in n8n or Make", text: "Add one HTTP Request step at the end of your agent workflow.", time: "3 min · no code" },
   { id: "approvals", group: "agents", icon: "✋", title: "Human approval for agent actions", text: "Your agent asks before refunds, payments or emails to customers. You approve with one click.", time: "5 min · one HTTP step", page: "approvals" },
   { id: "n8n", group: "workflows", icon: "🟠", title: "n8n", text: "Paste your n8n URL and API key. We check every workflow every 15 minutes.", time: "2 min · no code" },
@@ -349,6 +349,10 @@ export default async function ConnectPage({ params, searchParams }: { params: Pr
             <p className="hint">Only <code>run_id</code> and <code>agent_name</code> are required. Add <code>goal</code> and <code>steps</code> for the full AI review.</p>
           </Step>
           <Step n={2} title="Run your agent once" />
+          <Step n={3} title="Already use OpenTelemetry? Skip the code and set these instead">
+            <Code blocks={[["Environment variables", `OTEL_EXPORTER_OTLP_ENDPOINT=${appUrl}/api/v1/otel\nOTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer ${p.api_key}\nOTEL_EXPORTER_OTLP_PROTOCOL=http/json`]]} />
+            <p className="hint">Works with LangChain/LangGraph, CrewAI, OpenAI Agents SDK, LlamaIndex and Vercel AI SDK tracing (OpenTelemetry GenAI or OpenInference). Each trace becomes one agent run. <a href="/docs#otel" target="_blank" rel="noopener">Details ↗</a></p>
+          </Step>
         </ol>
       );
       break;

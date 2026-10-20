@@ -38,6 +38,7 @@ export default async function TestsPage({ params, searchParams }: { params: Prom
     <div>
       <Flash {...flash} />
       <PageHeader title="Chatbot tests" subtitle="Ask your bot the same important questions every night and get alerted when an answer breaks" />
+      <p className="sub" style={{ marginTop: -6 }}>🧪 Developers: run these tests on every pull request too, against a preview URL, and fail the build when an answer breaks. <a href="/docs#test-runs" target="_blank" rel="noopener">GitHub Actions example ↗</a></p>
 
       <div className="grid grid-2">
         <div className="card">

@@ -1,5 +1,6 @@
 import { all, get, run, transaction } from "../db";
 import { buildKbIndex, featureVector, signalsFor, type KbIndex } from "../judge/features";
+import { bestSentence } from "../judge/evidence";
 import { heuristicGrade } from "../judge/heuristic";
 import { aiForProject, JudgeError, judgeConcurrency, judgeLabel, llmGradeConversation } from "../judge/llm";
 import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
@@ -102,18 +103,20 @@ export function storeGradedItem(auditId: number, e: Exchange, g: Grade, index: K
   // "Don't store transcripts" mode: keep the verdict, reason and scores, but not the chat text itself.
   const frustrated = isFrustrated(e.question) ? 1 : 0;
   const topic = topicFor(e.question, grade.sourceDoc, g.topic);
+  // Evidence comes from the business's own docs (never from the customer), so it is kept even in results-only mode.
+  const evidence = grade.evidence ?? (grade.sourceDoc ? bestSentence(index.docs.find((d) => d.title === grade.sourceDoc), e.question, e.answer, grade.reason) : null);
   const storeText = get<{ s: number }>("SELECT p.store_text AS s FROM audits a JOIN projects p ON p.id = a.project_id WHERE a.id = ?", auditId)?.s ?? 1;
   if (!storeText) e = { ...e, question: NOT_STORED, answer: NOT_STORED };
   run(
     `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, frustrated, rule_hit,
-       conv_flags, latency_ms, cost_usd, bot_error, topic)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?)`,
+       conv_flags, latency_ms, cost_usd, bot_error, topic, evidence)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
     auditId, e.conversationId, e.turnIndex, e.question, e.answer, grade.verdict, grade.severity, grade.reason + note, grade.sourceDoc,
     grade.confidence, JSON.stringify(features), riskScore(model, features, grade.verdict, grade.confidence),
     frustrated, hit, flags.length ? flags.join(",") : null,
-    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null, topic,
+    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null, topic, evidence,
   );
-  return grade;
+  return { ...grade, evidence };
 }
 
 /** Operational data a bot can send with a reply (live tracking). */

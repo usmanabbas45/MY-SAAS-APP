@@ -3,6 +3,7 @@ import { CookieSettingsLink } from "@/components/analytics";
 import { ThemeToggle } from "@/components/client";
 import { PointerGlow, ScrollPerf } from "@/components/landing";
 import { currentUser } from "@/lib/auth";
+import { COMPARISONS } from "@/lib/compare";
 import { SOLUTIONS, SUPPORT_EMAIL } from "@/lib/seo";
 import { DEVELOPER_NAME, DEVELOPER_URL, whatsappLink } from "@/lib/support";
 
@@ -58,8 +59,7 @@ export function SiteFooter() {
             <li><Link href="/#faq">FAQ</Link></li>
             <li><Link href="/free-audit">Free AI audit (done for you)</Link></li>
             <li><Link href="/tools/ai-chatbot-checker">Free chatbot answer checker</Link></li>
-            <li><Link href="/compare/langfuse-alternative">ProofMyAI vs Langfuse</Link></li>
-            <li><Link href="/compare/langsmith-alternative">ProofMyAI vs LangSmith</Link></li>
+            {COMPARISONS.map((c) => <li key={c.slug}><Link href={`/compare/${c.slug}`}>ProofMyAI vs {c.name}</Link></li>)}
             <li><Link href="/blog">Guides</Link></li>
             <li><Link href="/docs">Docs &amp; API</Link></li>
             <li><Link href="/changelog">Changelog</Link></li>

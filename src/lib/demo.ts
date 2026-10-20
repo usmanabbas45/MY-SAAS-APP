@@ -1,6 +1,7 @@
 import { ingestAgentRun } from "./agents/ingest";
 import { scoreFromSeverities } from "./audit/run";
 import { all, get, run, transaction } from "./db";
+import { bestSentence } from "./judge/evidence";
 import type { Severity, Verdict } from "./judge/types";
 import { newApiKey } from "./projects";
 import { recordWorkflowRun } from "./workflows/monitor";
@@ -147,6 +148,13 @@ export async function createDemoProject(userId: number): Promise<number> {
           isoDaysAgo(i % 28, i % 11), topic,
         );
       }
+    }
+    // The sentence from the help docs behind each verdict, as a real check would store it.
+    const docs = DOCS.map(([title, content]) => ({ title, content }));
+    for (const it of all<{ id: number; question: string; answer: string; source_doc: string; reason: string }>(
+      "SELECT i.id, i.question, i.answer, i.source_doc, i.reason FROM audit_items i JOIN audits a ON a.id = i.audit_id WHERE a.project_id = ? AND i.source_doc IS NOT NULL", id,
+    )) {
+      run("UPDATE audit_items SET evidence = ? WHERE id = ?", bestSentence(docs.find((d) => d.title === it.source_doc), it.question, it.answer, it.reason), it.id);
     }
     run("UPDATE audit_items SET feedback = 'agree' WHERE audit_id = ? AND id IN (SELECT id FROM audit_items WHERE audit_id = ? ORDER BY id LIMIT 46)", live, live);
     run("UPDATE audit_items SET feedback = 'disagree', corrected_verdict = 'correct' WHERE audit_id = ? AND id IN (SELECT id FROM audit_items WHERE audit_id = ? AND verdict <> 'correct' ORDER BY id DESC LIMIT 3)", live, live);

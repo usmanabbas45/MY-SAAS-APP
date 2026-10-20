@@ -6,6 +6,7 @@ import { recordAiUsage, type AiUse } from "../aicost";
 import { get, run } from "../db";
 import { clamp } from "../text";
 import { JudgeError } from "./errors";
+import { verifyQuote } from "./evidence";
 import { geminiJudge, geminiKey, geminiModel } from "./gemini";
 import { SEVERITIES, VERDICTS, type Exchange, type Grade, type KbDoc } from "./types";
 
@@ -172,6 +173,7 @@ greeting or restarting as if the conversation just began, and generic fallback r
 Severity reflects business harm: high = could cost money, legal exposure or a lost customer; medium = misleading or frustrating; low = minor quality issue; none = for correct replies.
 source_doc: the exact title of the knowledge-base doc that should back this answer (or that needs fixing/adding), or null if none applies.
 reason: one or two plain-English sentences a non-technical business owner can act on.
+evidence: the single sentence from the knowledge base that backs your verdict (the fact the answer matches or contradicts), copied word for word, max 250 characters. null if no sentence applies. Never paraphrase: quotes that are not found in the knowledge base are discarded.
 confidence: 0 to 1, how sure you are of the verdict.
 topic: what the customer asked about, as a short 1-3 word category in Title Case (for example "Delivery", "Returns & Refunds", "Pricing", "Account & Login", "Talk to a Human", "Greetings"). Use the title of the matching knowledge-base doc when one fits, and reuse the same wording for the same subject.`;
 
@@ -185,6 +187,7 @@ const ChatGrades = z.object({
       source_doc: z.string().nullable(),
       confidence: z.number(),
       topic: z.string().optional(), // optional: a missing topic must never fail the grading
+      evidence: z.string().nullable().optional(),
     }),
   ),
 });
@@ -227,6 +230,7 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
       sourceDoc: g.source_doc && titles.has(g.source_doc) ? g.source_doc : null,
       confidence: clamp(g.confidence, 0, 1),
       topic: g.topic?.trim().slice(0, 40) || null,
+      evidence: verifyQuote(g.evidence, docs)?.quote ?? null,
     };
   });
   storeGrades(cacheKey, projectId, result);
