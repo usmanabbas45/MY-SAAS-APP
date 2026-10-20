@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-20", title: "Evidence on every verdict, CI tests and OpenTelemetry", tag: "New",
+    items: [
+      "📄 Every checked answer now shows the exact sentence from your help docs behind the verdict. A quote is only kept if it really appears in your docs, so the evidence is never made up. Also in the CSV export and the /check API.",
+      "🧪 POST /api/v1/test-runs: run your chatbot tests from GitHub Actions or any CI against a preview URL, and fail the build when an answer breaks.",
+      "📡 OpenTelemetry: point an OTLP exporter at ProofMyAI and every agent trace (LangChain, CrewAI, OpenAI Agents, LlamaIndex…) becomes a checked agent run with step timing, tokens and errors.",
+    ],
+  },
+  {
     date: "2026-10-19", title: "Grok support, live demo video and new screenshots", tag: "New",
     items: [
       "✖️ Grok (xAI) chatbots: Connect → Grok has ready-made JavaScript and Python examples and a nightly-test recipe. Bots on ChatGPT, Claude, Gemini or Llama connect the same way.",

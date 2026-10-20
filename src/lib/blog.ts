@@ -23,6 +23,93 @@ export interface Post {
 
 export const POSTS: Post[] = [
   {
+    slug: "catch-live-ai-chatbot-agent-workflow-errors",
+    title: "Best Tools to Catch Live Errors in AI Chatbots, Agents and Workflows (2026)",
+    seoTitle: "Best Tools to Catch Live AI Chatbot, Agent & Workflow Errors",
+    description: "An honest guide to tools that catch live errors in AI chatbots, AI agents and n8n/Make workflows: Langfuse, LangSmith, Braintrust, Helicone, n8n error workflows and ProofMyAI. Who each is for.",
+    date: "2026-10-20",
+    readMins: 7,
+    tags: ["AI monitoring", "AI agents", "n8n"],
+    answer: "No single tool catches every kind of AI failure. Developer observability tools (Langfuse, LangSmith, Braintrust, Helicone) trace model calls, costs and evaluations inside your own code. n8n and Make error workflows catch failed executions. ProofMyAI is the no-code option that checks whether live chatbot answers match your own help docs, watches AI agents, n8n/Make, Google Sheets and CRMs for failures and silent failures, and alerts you on WhatsApp, Slack or email. Most teams combine a developer tool with live business monitoring.",
+    body: `
+## Three kinds of live AI errors
+
+Before choosing a tool, separate the problems, because each tool sees a different one:
+
+- **Technical errors:** an API call failed, a tool timed out, a model returned an error, costs spiked. Logs and traces catch these.
+- **Wrong answers:** everything ran fine, but the chatbot promised a refund your policy doesn't allow, or an agent made up an order status. Only a check against your own docs and rules catches these.
+- **Silent failures:** a workflow reports "success" but did nothing. Zero orders synced, a Google Sheet stopped updating, leads stopped reaching the CRM, a nightly job never ran. No error is ever thrown.
+
+## The options
+
+| Tool | Best for | Catches wrong answers vs your docs | Watches workflows, sheets, CRMs | Needs code |
+|---|---|---|---|---|
+| Langfuse | Open-source tracing for your own LLM app | With custom evaluators | No | Yes |
+| LangSmith | Debugging LangChain / LangGraph agents | With custom evaluators | No | Yes |
+| Braintrust | Evals and experiments for AI product teams | With custom scorers | No | Yes |
+| Helicone | Request logging, cost and caching gateway | No | No | Small change |
+| n8n / Make error workflows | Alerts when an execution fails | No | Failed runs only | No |
+| ProofMyAI | Live checks for the business running the AI | Built in, with evidence quotes | Yes, incl. silent failures | No (API and OpenTelemetry optional) |
+
+### Langfuse
+
+Open-source LLM observability: nested traces of every model and tool call, cost and latency, prompt management and evaluations. Ideal when engineers instrument their own app. See [ProofMyAI vs Langfuse](/compare/langfuse-alternative).
+
+### LangSmith
+
+LangChain's platform for tracing, debugging and evaluating agents, with datasets and evaluators. The natural choice if you build with LangChain or LangGraph. See [ProofMyAI vs LangSmith](/compare/langsmith-alternative).
+
+### Braintrust
+
+An evaluation and observability platform for teams building AI products: experiments, prompt comparisons, scored production logs. Strong for iterating on prompts and models. See [ProofMyAI vs Braintrust](/compare/braintrust-alternative).
+
+### Helicone
+
+An open-source gateway in front of your model provider that logs every request with cost and latency, plus caching and rate limits. Great for cost control; it doesn't judge whether answers are right. See [ProofMyAI vs Helicone](/compare/helicone-alternative).
+
+### n8n and Make error workflows
+
+Free and built in: an Error Trigger (n8n) or error handler (Make) can post to Slack or email when an execution fails. They don't notice a run that "succeeded" with zero items, a workflow that stopped running, or a wrong AI answer inside the flow.
+
+### ProofMyAI
+
+Built for the business running the AI rather than the engineer building it:
+
+- every live chatbot answer checked against your help docs and rules, with the **exact sentence from your docs** as evidence;
+- a **pre-send check** that blocks a wrong reply before the customer sees it, and **one-click approval** for risky agent actions such as refunds;
+- AI agent runs with a step-by-step timeline (send them by API or point an **OpenTelemetry** exporter at ProofMyAI);
+- n8n and Make failures, **silent failures**, stopped and stuck workflows; Google Sheets and CRMs (HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel) watched for missing leads, duplicates and broken data; heartbeats for scheduled jobs;
+- nightly and CI regression tests, a trust report showing where your AI can decide alone, and alerts on WhatsApp, Slack, Teams or email.
+
+It's newer than the developer platforms above and doesn't do prompt management or experiments.
+
+## How to choose
+
+- **You build the AI in code and need to debug it:** Langfuse or LangSmith, plus Braintrust if you run systematic evals.
+- **You mainly need cost and request logs:** Helicone.
+- **You run a chatbot, agent or automations for a business (or for clients) and need to know when something is wrong:** live monitoring with ProofMyAI, which you can [start free](/signup).
+- **Engineering teams:** many use both: a tracing tool for debugging, and live business checks for wrong answers and silent failures.
+
+## Test any tool before you trust it
+
+Whatever you pick, break things on purpose before relying on it: make a workflow return zero items, expire an API key, give your bot a wrong help article, and pause a scheduled job. A good monitor alerts you on all four, says why, and tells you when it's fixed.
+`,
+    takeaways: [
+      "Live AI errors come in three kinds: technical errors, wrong answers and silent failures",
+      "Developer tools (Langfuse, LangSmith, Braintrust, Helicone) trace and evaluate your own code",
+      "n8n/Make error workflows only catch runs that fail loudly",
+      "ProofMyAI checks live answers against your docs and catches silent failures in workflows, sheets and CRMs, without code",
+      "Test any monitor by breaking things on purpose before you rely on it",
+    ],
+    faqs: [
+      { q: "What is the best tool to catch live AI chatbot errors?", a: "If you need to know when a live chatbot gives a wrong answer, you need answers checked against your own help docs and policies: ProofMyAI does this without code. If you build the bot yourself and need traces of every model call, add Langfuse or LangSmith." },
+      { q: "How do I catch silent failures in n8n or Make?", a: "Error workflows only fire on failed executions. To catch runs that succeed but do nothing, workflows that stop running and stuck executions, use a monitor that learns each workflow's normal volume and rhythm, such as ProofMyAI." },
+      { q: "Does ProofMyAI support OpenTelemetry?", a: "Yes. Point an OTLP/HTTP JSON exporter at ProofMyAI and each finished trace becomes an agent run, with LLM, tool and retrieval steps, timing, tokens and errors." },
+      { q: "Can I use ProofMyAI with Langfuse or LangSmith?", a: "Yes. They solve different problems: tracing for developers, and live answer and workflow checks with alerts for the business. Many teams run both." },
+    ],
+    cta: { text: "Catch your first live error free", href: "/signup" },
+  },
+  {
     slug: "grok-chatbot-customer-support",
     title: "Building a Support Bot on Grok? How to Check Every Answer Before It Costs You",
     seoTitle: "Grok Support Bot: How to Check Every Answer",

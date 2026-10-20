@@ -68,9 +68,16 @@ export function basicGradeTest(expected: string, mustNot: string, answer: string
   return { pass: true, reason: "All expected facts are present." };
 }
 
-export async function runSuite(targetId: number): Promise<{ runId: number; passed: number; failed: number }> {
-  const target = get<Target>("SELECT * FROM bot_targets WHERE id = ?", targetId);
-  if (!target) throw new Error("Bot target not found");
+export interface SuiteResult { question: string; answer: string; pass: boolean; reason: string }
+
+/**
+ * Asks the bot every test question and grades the answers. `ci` runs come from a deploy pipeline: they can point
+ * at a preview URL and don't raise incidents or count as the nightly run, because nothing is live yet.
+ */
+export async function runSuite(targetId: number, opts: { url?: string; ci?: boolean } = {}): Promise<{ runId: number; passed: number; failed: number; results: SuiteResult[] }> {
+  const stored = get<Target>("SELECT * FROM bot_targets WHERE id = ?", targetId);
+  if (!stored) throw new Error("Bot target not found");
+  const target = opts.url ? { ...stored, url: opts.url } : stored;
   const cases = all<TestCase>("SELECT id, question, expected, must_not FROM test_cases WHERE project_id = ? ORDER BY id", target.project_id);
   if (cases.length === 0) throw new Error("Add at least one test question first");
 
@@ -100,9 +107,11 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
       run("INSERT INTO test_results (run_id, case_id, question, answer, pass, reason) VALUES (?, ?, ?, ?, ?, ?)",
         lastInsertRowid, r.c.id, r.c.question, r.answer, r.pass ? 1 : 0, r.reason);
     }
-    run("UPDATE bot_targets SET last_run_at = datetime('now') WHERE id = ?", targetId);
+    if (!opts.ci) run("UPDATE bot_targets SET last_run_at = datetime('now') WHERE id = ?", targetId);
     return lastInsertRowid;
   });
+  const summary = results.map((r) => ({ question: r.c.question, answer: r.answer, pass: r.pass, reason: r.reason }));
+  if (opts.ci) return { runId, passed, failed, results: summary };
 
   const dedupeKey = `tests:${targetId}`;
   if (failed > 0) {
@@ -115,7 +124,7 @@ export async function runSuite(targetId: number): Promise<{ runId: number; passe
   } else {
     resolveIncidents(target.project_id, dedupeKey);
   }
-  return { runId, passed, failed };
+  return { runId, passed, failed, results: summary };
 }
 
 /** Runs every target that has not run in the last 24 hours (called from the cron endpoint). */

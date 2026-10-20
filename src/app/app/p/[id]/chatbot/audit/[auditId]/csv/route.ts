@@ -12,11 +12,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   );
   if (!audit) return new Response("Not found", { status: 404 });
   const rows = all<Record<string, unknown>>(
-    `SELECT conversation_id, turn_index, question, answer, verdict, corrected_verdict, severity, reason, source_doc,
+    `SELECT conversation_id, turn_index, question, answer, verdict, corrected_verdict, severity, reason, source_doc, evidence,
             ROUND(risk * 100) AS risk_percent, frustrated, rule_hit, feedback, created_at
        FROM audit_items WHERE audit_id = ? ORDER BY id`, audit.id,
   );
-  const header = ["conversation_id", "turn_index", "question", "answer", "verdict", "corrected_verdict", "severity", "reason", "source_doc", "risk_percent", "frustrated", "rule_hit", "feedback", "created_at"];
+  const header = ["conversation_id", "turn_index", "question", "answer", "verdict", "corrected_verdict", "severity", "reason", "source_doc", "evidence", "risk_percent", "frustrated", "rule_hit", "feedback", "created_at"];
   const csv = [header.join(","), ...rows.map((r) => header.map((h) => csvCell(r[h])).join(","))].join("\r\n");
   const file = audit.name.replace(/[^\w.-]+/g, "-").slice(0, 60) || "audit";
   return new Response(`﻿${csv}`, {

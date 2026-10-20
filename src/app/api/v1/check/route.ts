@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   return json({
     decision,
     verdict: g.verdict, label: VERDICT_LABELS[g.verdict], severity: g.severity, reason: g.reason,
-    source: g.sourceDoc, area, area_autonomy: autonomy,
+    source: g.sourceDoc, evidence: g.evidence ?? null, area, area_autonomy: autonomy,
     advice: decision === "allow" ? "Safe to send." : decision === "review" ? "Hold this reply for a person to approve, or send a safe fallback." : "Do not send. Hand the customer to a person.",
   }, 200);
 }

@@ -609,6 +609,7 @@ function migrate(db: DatabaseSync): void {
   addColumn(db, "projects", "tests_generated_at", "TEXT");
   // Chatbot analytics: topic of each answer, and ratings from the bot's own users (thumbs up/down, stars).
   addColumn(db, "audit_items", "topic", "TEXT");
+  addColumn(db, "audit_items", "evidence", "TEXT");
   db.exec(`CREATE TABLE IF NOT EXISTS chat_feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

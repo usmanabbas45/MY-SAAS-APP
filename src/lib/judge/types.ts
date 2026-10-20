@@ -47,6 +47,8 @@ export interface Grade {
   confidence: number;
   /** Short label for what the customer asked about (AI judge only). */
   topic?: string | null;
+  /** Exact sentence from the help docs that backs the verdict (verified to appear in the docs). */
+  evidence?: string | null;
 }
 
 export function exchangesOf(conv: Conversation): Exchange[] {
