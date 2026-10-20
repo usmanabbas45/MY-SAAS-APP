@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Flash } from "@/components/ui";
 import { adminEmails, adminStats, isAdmin, listUsers, PAGE_SIZE, recentAdminLog, requireAdmin, SEGMENTS, SORTS, type Segment, type Sort } from "@/lib/admin";
-import { backupNowAction, bulkUserAction, indexNowAction } from "./actions";
+import { backupNowAction, bulkUserAction, indexNowAction, runBenchmarkAction } from "./actions";
 import { SubmitButton } from "@/components/client";
 import { KEEP_DAYS, lastBackup, listBackups, sizeLabel } from "@/lib/backup";
 import { errorCount, recentErrors } from "@/lib/monitoring";
@@ -50,6 +50,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <Link className="btn btn-ghost btn-sm" href="/app/admin/costs">💰 AI costs</Link>
         <Link className="btn btn-ghost btn-sm" href="/status">🟢 Status page</Link>
         <form action={indexNowAction}><button className="btn btn-ghost btn-sm" title="Ask Bing (and ChatGPT search, Copilot) to re-crawl every public page now">📣 Notify search engines</button></form>
+        <form action={runBenchmarkAction}><SubmitButton className="btn btn-ghost btn-sm" pendingText="Running (about 1 minute)…">🧪 Run accuracy benchmark</SubmitButton></form>
       </p>
 
       <div className="grid grid-4 grid-5">

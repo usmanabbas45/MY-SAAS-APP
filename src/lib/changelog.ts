@@ -13,6 +13,10 @@ export const RELEASES: Release[] = [
       "📄 Every checked answer now shows the exact sentence from your help docs behind the verdict. A quote is only kept if it really appears in your docs, so the evidence is never made up. Also in the CSV export and the /check API.",
       "🧪 POST /api/v1/test-runs: run your chatbot tests from GitHub Actions or any CI against a preview URL, and fail the build when an answer breaks.",
       "📡 OpenTelemetry: point an OTLP exporter at ProofMyAI and every agent trace (LangChain, CrewAI, OpenAI Agents, LlamaIndex…) becomes a checked agent run with step timing, tokens and errors.",
+      "📏 Public accuracy benchmark: how many wrong answers ProofMyAI catches and how many false alarms it raises, on a labelled dataset you can download and rerun (/benchmark).",
+      "📶 Live tracking shows how fresh each connection is: live (instant) or scheduled, last data, last and next check, and an alert when a scheduled check is overdue.",
+      "🧪 Add to tests: turn any real customer question into a nightly/CI test in one click, with the fact from your help docs as the expected answer.",
+      "🛠️ Fewer false alarms: \"Can I speak to a real person?\" followed by a hand-over is no longer flagged by the AI-disclosure check, and basic mode now spots a wrong number for the topic (e.g. £30 instead of £50).",
     ],
   },
   {

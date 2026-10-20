@@ -4,6 +4,7 @@ import { liveMetrics, unansweredMessages } from "@/lib/audit/live";
 import { requireUser } from "@/lib/auth";
 import type { ChatSource } from "@/lib/connectors/twilio";
 import { all } from "@/lib/db";
+import { connectionFreshness } from "@/lib/freshness";
 import { addChatSourceAction, deleteChatSourceAction, pollChatSourceAction, sendTestEventAction } from "../actions";
 import { liveFeed, sourceStatuses, type Source } from "@/lib/live";
 import { projectAccess } from "@/lib/projects";
@@ -31,6 +32,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
   const intercom = allSources.filter((s) => s.platform === "intercom");
   const pid = <input type="hidden" name="projectId" value={p.id} />;
   const statuses = sourceStatuses(p.id);
+  const fresh = connectionFreshness(p.id);
   const feed = liveFeed(p.id, 80).filter((e) => !only || e.source === only || (only === "problems" && !e.ok));
   const snippets = liveChatSnippets(process.env.APP_URL || "http://localhost:3000", p.api_key);
   const waUrl = snippets.url.replace(/\/chat-events$/, "/whatsapp/waha");
@@ -95,6 +97,31 @@ export default async function LivePage({ params, searchParams }: { params: Promi
           );
         })}
       </div>
+
+      {fresh.length ? (
+        <div className="card">
+          <div className="card-head"><div><h3>📶 Connections: how fresh is your data?</h3><span className="sub">⚡ Live = your system sends data the moment it happens. 🔁 Scheduled = ProofMyAI reads it every few minutes.</span></div></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Connection</th><th>How it arrives</th><th>Last data</th><th>Last / next check</th><th>Status</th></tr></thead>
+              <tbody>
+                {fresh.map((f, i) => (
+                  <tr key={`${f.kind}-${f.name}-${i}`}>
+                    <td><strong>{f.name}</strong><div className="sub">{f.kind}</div></td>
+                    <td>{f.delivery === "live" ? "⚡ Live" : "🔁 Scheduled"}<div className="sub">{f.every}</div></td>
+                    <td>{f.lastData ? timeAgo(new Date(f.lastData).toISOString()) : "–"}</td>
+                    <td>{f.lastCheck ? timeAgo(new Date(f.lastCheck).toISOString()) : "–"}{f.nextCheck ? <div className="sub">next {f.nextCheck > Date.now() ? `in ${Math.max(1, Math.round((f.nextCheck - Date.now()) / 60000))} min` : "due now"}</div> : null}</td>
+                    <td>
+                      <Badge tone={f.state === "fresh" ? "ok" : f.state === "waiting" || f.state === "quiet" ? "muted" : "bad"}>{({ fresh: "✓ Up to date", delayed: "Delayed", error: "Error", waiting: "Waiting", quiet: "Quiet" } as const)[f.state]}</Badge>
+                      {f.note ? <div className="sub" style={{ maxWidth: 280 }}>{f.note}</div> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="card-head">
