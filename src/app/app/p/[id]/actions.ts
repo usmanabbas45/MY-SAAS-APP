@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { parseTranscripts } from "@/lib/audit/parse";
-import { createAudit, executeAudit } from "@/lib/audit/run";
+import { createAudit, executeAudit, NOT_STORED } from "@/lib/audit/run";
 import { customMatcher, redactConversations } from "@/lib/pii";
 import { RETENTION_OPTIONS } from "@/lib/retention";
 import { processLiveChat } from "@/lib/audit/live";
@@ -187,6 +187,23 @@ export async function feedbackAction(form: FormData) {
   const back = String(form.get("back") ?? "");
   revalidatePath(`/app/p/${p.id}/chatbot/audit/${auditId}`);
   redirect(`/app/p/${p.id}/chatbot/audit/${auditId}${back.startsWith("?") ? back : ""}#item-${itemId}`);
+}
+
+/**
+ * Turns a real customer question into a regression test in one click: the expected fact is the sentence from the
+ * help docs behind the verdict, so the nightly and CI tests check the bot keeps (or starts) getting it right.
+ */
+export async function addItemToTestsAction(form: FormData) {
+  const p = await project(form);
+  const itemId = Number(form.get("itemId"));
+  const it = get<{ question: string; evidence: string | null; audit_id: number }>(
+    "SELECT i.question, i.evidence, i.audit_id FROM audit_items i JOIN audits a ON a.id = i.audit_id WHERE i.id = ? AND a.project_id = ?", itemId, p.id,
+  );
+  if (!it || !it.evidence || it.question === NOT_STORED) done(`/app/p/${p.id}/chatbot`, { error: "This answer can't be turned into a test." });
+  if (!get("SELECT 1 FROM test_cases WHERE project_id = ? AND question = ?", p.id, it.question)) {
+    run("INSERT INTO test_cases (project_id, question, expected, must_not) VALUES (?, ?, ?, '')", p.id, it.question.slice(0, 2000), it.evidence);
+  }
+  done(`/app/p/${p.id}/tests`, { ok: `Added to your chatbot tests: "${it.question.slice(0, 80)}". A right answer must include: ${it.evidence.slice(0, 120)}` });
 }
 
 // ---------- Custom rules ----------

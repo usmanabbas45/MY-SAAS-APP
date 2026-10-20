@@ -11,7 +11,7 @@ import { all, get } from "@/lib/db";
 import { VERDICT_LABELS, VERDICTS, type Verdict } from "@/lib/judge/types";
 import { MIN_TRAINING_LABELS } from "@/lib/ml/risk";
 import { projectAccess } from "@/lib/projects";
-import { feedbackAction, fixWithAiAction, shareAuditAction } from "../../../actions";
+import { addItemToTestsAction, feedbackAction, fixWithAiAction, shareAuditAction } from "../../../actions";
 
 export const metadata = { title: "Audit results" };
 
@@ -227,7 +227,14 @@ export default async function AuditPage({ params, searchParams }: {
                     </div>
                     <p style={{ marginTop: 12, marginBottom: 8 }}><strong>Why:</strong> {it.reason}{it.source_doc ? <> <span className="sub">· Related article: <strong>{it.source_doc}</strong></span></> : null}</p>
                     {it.evidence ? (
-                      <blockquote className="evidence"><span className="sub">📄 Your help article{it.source_doc ? <> <strong>{it.source_doc}</strong></> : null} says:</span> &ldquo;{it.evidence}&rdquo;</blockquote>
+                      <blockquote className="evidence">
+                        <span className="sub">📄 Your help article{it.source_doc ? <> <strong>{it.source_doc}</strong></> : null} says:</span> &ldquo;{it.evidence}&rdquo;
+                        <form action={addItemToTestsAction} style={{ display: "inline", marginLeft: 8 }}>
+                          <input type="hidden" name="projectId" value={p.id} />
+                          <input type="hidden" name="itemId" value={it.id} />
+                          <button className="btn btn-ghost btn-sm" title="Ask your bot this question every night (and in CI) and check the answer includes this fact">🧪 Add to tests</button>
+                        </form>
+                      </blockquote>
                     ) : null}
                     <form action={feedbackAction} className="row">
                       <input type="hidden" name="projectId" value={p.id} />

@@ -1,3 +1,4 @@
+import { extractNumbers } from "../text";
 import { bestDoc, signalsFor, type KbIndex } from "./features";
 import type { Exchange, Grade } from "./types";
 
@@ -23,9 +24,18 @@ export function heuristicGrade(ex: Exchange, index: KbIndex): Grade {
     return { ...base, verdict: "unclear", severity: "low", confidence: 0.2,
       reason: "No knowledge base uploaded, so the answer cannot be checked against your docs." };
   }
-  if (s.unknownNumberRatio >= 0.5 && s.answerLength > 3) {
+  if (s.unknownNumberRatio >= 0.5 && s.answerLength >= 2) {
     return { ...base, verdict: "hallucination", severity: "high", confidence: 0.6,
       reason: "The answer states numbers (prices, dates, limits) that do not appear anywhere in your knowledge base." };
+  }
+  // A number that exists somewhere in the docs but not in the article this question is about is usually the
+  // wrong number for this topic (e.g. "free delivery over £30" when the delivery article says £50).
+  const doc = index.docs.find((d) => d.title === source);
+  const docNums = new Set(doc ? extractNumbers(doc.content) : []);
+  const wrongNum = docNums.size ? extractNumbers(ex.answer).find((n) => !docNums.has(n)) : undefined;
+  if (wrongNum && !s.refusal && !s.escalated) {
+    return { ...base, verdict: "hallucination", severity: "high", confidence: 0.5,
+      reason: `The answer says "${wrongNum}", but your "${source}" article doesn't mention that number. Check it's right.` };
   }
   if (s.refusal) {
     return s.questionCoverage >= 0.5

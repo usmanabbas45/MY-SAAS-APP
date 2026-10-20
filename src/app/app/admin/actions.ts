@@ -11,6 +11,22 @@ import { runBackup } from "@/lib/backup";
 import { getTicket, replyToTicket, setTicketStatus, ticketCode } from "@/lib/support";
 import { LEAD_STATUS_LABELS, LEAD_STATUSES, setLeadStatus, type LeadStatus } from "@/lib/leads";
 
+/** Runs the public accuracy benchmark with the live AI judge and publishes the result on /benchmark. */
+export async function runBenchmarkAction() {
+  const admin = await requireAdmin();
+  const { runBenchmark, saveBenchmark } = await import("@/lib/benchmark/run");
+  let msg: string;
+  try {
+    const r = await runBenchmark("ai");
+    saveBenchmark(r);
+    logAdmin(admin.email, "run_benchmark", r.judge, `recall ${r.metrics.recall}% · precision ${r.metrics.precision}%`);
+    msg = `ok=${encodeURIComponent(`Benchmark done: ${r.metrics.recall}% of problems caught, ${r.metrics.falseAlarmRate}% false alarms. Published on /benchmark.`)}`;
+  } catch (err) {
+    msg = `error=${encodeURIComponent(err instanceof Error ? err.message : "Benchmark failed")}`;
+  }
+  redirect(`/app/admin?${msg}`);
+}
+
 async function target(form: FormData) {
   const admin = await requireAdmin();
   const id = Number(form.get("userId"));

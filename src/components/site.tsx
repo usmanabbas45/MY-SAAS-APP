@@ -63,6 +63,7 @@ export function SiteFooter() {
             <li><Link href="/blog">Guides</Link></li>
             <li><Link href="/docs">Docs &amp; API</Link></li>
             <li><Link href="/changelog">Changelog</Link></li>
+            <li><Link href="/benchmark">Accuracy benchmark</Link></li>
             <li><Link href="/status">System status</Link></li>
           </ul>
         </div>

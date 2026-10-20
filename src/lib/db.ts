@@ -610,6 +610,16 @@ function migrate(db: DatabaseSync): void {
   // Chatbot analytics: topic of each answer, and ratings from the bot's own users (thumbs up/down, stars).
   addColumn(db, "audit_items", "topic", "TEXT");
   addColumn(db, "audit_items", "evidence", "TEXT");
+  // Public accuracy benchmark runs (see lib/benchmark).
+  db.exec(`CREATE TABLE IF NOT EXISTS benchmark_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mode TEXT NOT NULL,
+    judge TEXT NOT NULL,
+    version TEXT NOT NULL,
+    metrics_json TEXT NOT NULL,
+    results_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
   db.exec(`CREATE TABLE IF NOT EXISTS chat_feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
