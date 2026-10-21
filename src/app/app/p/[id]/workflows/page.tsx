@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import { CopyButton, SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, ScoreBadge, Stat, StatusBadge, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -12,7 +13,7 @@ export const metadata = { title: "n8n & Make" };
 
 export default async function WorkflowsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = projectAccess(user.id, Number((await params).id)).project;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
   const flash = await searchParams;
   const sources = all<{ id: number; platform: string; name: string; base_url: string; scenario_ids: string; expected_interval_min: number | null; last_polled_at: string | null; last_error: string | null }>(
     "SELECT id, platform, name, base_url, scenario_ids, expected_interval_min, last_polled_at, last_error FROM workflow_sources WHERE project_id = ? ORDER BY id", p.id,
@@ -193,6 +194,7 @@ export default async function WorkflowsPage({ params, searchParams }: { params: 
           </div>
         </div>
       ) : null}
+      <WatchPanel projectId={p.id} module="workflows" back={`/app/p/${p.id}/workflows`} canEdit={role !== "viewer"} />
     </div>
   );
 }

@@ -36,6 +36,8 @@ import { decideApproval } from "@/lib/approvals";
 import { addHeartbeat, HEARTBEAT_EVERY } from "@/lib/heartbeats";
 import { FOLLOWUP_OPTIONS, pollCrm, REQUIRED_OPTIONS, type CrmSource } from "@/lib/crm/monitor";
 import { providerById } from "@/lib/crm/providers";
+import { addWatch, backtest, WATCH_MODULES, type WatchModule } from "@/lib/watches";
+import { translateWatch } from "@/lib/watchparse";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -204,6 +206,53 @@ export async function addItemToTestsAction(form: FormData) {
     run("INSERT INTO test_cases (project_id, question, expected, must_not) VALUES (?, ?, ?, '')", p.id, it.question.slice(0, 2000), it.evidence);
   }
   done(`/app/p/${p.id}/tests`, { ok: `Added to your chatbot tests: "${it.question.slice(0, 80)}". A right answer must include: ${it.evidence.slice(0, 120)}` });
+}
+
+// ---------- Custom watches (plain English) ----------
+
+const MAX_WATCHES = 25;
+
+/** Back to the feature page the watch form was on (only this project's own pages). */
+function watchBack(form: FormData, projectId: number): string {
+  const back = String(form.get("back") ?? "");
+  return back.startsWith(`/app/p/${projectId}/`) && !/[\\\s?#]/.test(back) && !back.includes("//") && !back.includes("..") ? back : `/app/p/${projectId}`;
+}
+
+function watchModule(form: FormData): WatchModule | null {
+  const m = String(form.get("module") ?? "");
+  return (WATCH_MODULES as readonly string[]).includes(m) ? (m as WatchModule) : null;
+}
+
+export async function addWatchAction(form: FormData) {
+  const p = await project(form);
+  const back = watchBack(form, p.id);
+  const module = watchModule(form);
+  const prompt = str(form, "prompt", 500);
+  if (!module) done(back, { error: "Unknown feature." });
+  if (prompt.length < 8) done(back, { error: "Describe what to watch, e.g. “Alert me if any workflow returns 0 items”." });
+  if ((get<{ n: number }>("SELECT COUNT(*) AS n FROM watches WHERE project_id = ?", p.id)?.n ?? 0) >= MAX_WATCHES) done(back, { error: `You can have up to ${MAX_WATCHES} watches per project. Delete one first.` });
+  if (!rateLimit(`watch-add:${p.id}`, 30, 3600000)) done(back, { error: "Too many new watches in an hour. Try again later." });
+  const t = await translateWatch(p.id, module, prompt);
+  if (!t.ok) done(back, { error: t.error });
+  addWatch(p.id, module, prompt, t.spec);
+  const would = backtest(p.id, module, t.spec);
+  done(back, { ok: `Watching. ProofMyAI understood: ${t.spec.summary} In the last 7 days this would have alerted ${would} time${would === 1 ? "" : "s"}.` });
+}
+
+export async function deleteWatchAction(form: FormData) {
+  const p = await project(form);
+  const back = watchBack(form, p.id);
+  const id = Number(form.get("watchId"));
+  run("DELETE FROM watches WHERE id = ? AND project_id = ?", id, p.id);
+  run("UPDATE incidents SET resolved = 1 WHERE project_id = ? AND dedupe_key = ? AND resolved = 0", p.id, `watch:${id}`);
+  done(back, { ok: "Watch deleted." });
+}
+
+export async function toggleWatchAction(form: FormData) {
+  const p = await project(form);
+  const back = watchBack(form, p.id);
+  run("UPDATE watches SET enabled = 1 - enabled, last_checked_at = ? WHERE id = ? AND project_id = ?", new Date().toISOString(), Number(form.get("watchId")), p.id);
+  done(back, { ok: "Watch updated." });
 }
 
 // ---------- Custom rules ----------

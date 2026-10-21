@@ -1,6 +1,7 @@
+import { WatchPanel } from "../WatchPanel";
 import { CopyButton } from "@/components/client";
 import { Sparkline } from "@/components/charts";
-import { Badge, Empty, PageHeader, ScoreBadge, SeverityBadge, Stat, StatusBadge, timeAgo } from "@/components/ui";
+import { Badge, Empty, Flash, PageHeader, ScoreBadge, SeverityBadge, Stat, StatusBadge, timeAgo } from "@/components/ui";
 import type { AgentStep, Issue } from "@/lib/agents/checks";
 import { requireUser } from "@/lib/auth";
 import { all, get } from "@/lib/db";
@@ -10,9 +11,10 @@ import { truncate } from "@/lib/text";
 
 export const metadata = { title: "AI agents" };
 
-export default async function AgentsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AgentsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = projectAccess(user.id, Number((await params).id)).project;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
+  const flash = await searchParams;
   const runs = all<{ id: number; external_id: string; agent_name: string; goal: string; status: string; final_output: string; steps_json: string; total_cost_usd: number; total_ms: number; issues_json: string; score: number; created_at: string; verified: number | null; verify_detail: string | null }>(
     "SELECT * FROM agent_runs WHERE project_id = ? ORDER BY id DESC LIMIT 50", p.id,
   );
@@ -29,6 +31,7 @@ export default async function AgentsPage({ params }: { params: Promise<{ id: str
 
   return (
     <div>
+      <Flash ok={flash.ok} error={flash.error} />
       <PageHeader title="AI agents" subtitle="Every agent run is checked for loops, tool errors, runaway cost, empty output and unsupported claims" />
       <div className="grid grid-4">
         <Stat label="Runs (7 days)" value={week?.n ?? 0} foot={<Sparkline values={trend} color="var(--ok)" />} />
@@ -113,6 +116,7 @@ export default async function AgentsPage({ params }: { params: Promise<{ id: str
           </div>
         ))}
       </div>
+      <WatchPanel projectId={p.id} module="agents" back={`/app/p/${p.id}/agents`} canEdit={role !== "viewer"} />
     </div>
   );
 }

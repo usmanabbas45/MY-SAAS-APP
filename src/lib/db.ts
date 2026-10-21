@@ -631,6 +631,20 @@ function migrate(db: DatabaseSync): void {
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_trace_events ON trace_events (project_id, trace_id, at)");
   addColumn(db, "approvals", "trace_id", "TEXT");
+  // Custom watches: plain-English monitoring requests turned into rules (lib/watches).
+  db.exec(`CREATE TABLE IF NOT EXISTS watches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    module TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    spec_json TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    last_checked_at TEXT,
+    last_fired_at TEXT,
+    fired_count INTEGER NOT NULL DEFAULT 0
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_watches_project ON watches (project_id, module)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_trace ON audit_items (trace_id) WHERE trace_id IS NOT NULL");
   // Public accuracy benchmark runs (see lib/benchmark).
   db.exec(`CREATE TABLE IF NOT EXISTS benchmark_runs (

@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import { AutoRefresh, SubmitButton } from "@/components/client";
 import { Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -15,7 +16,7 @@ const stateOf = (m: Monitor): keyof typeof STATUS => (m.status !== "down" && m.f
 
 export default async function UptimePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser();
-  const p = projectAccess(user.id, Number((await params).id)).project;
+  const { project: p, role } = projectAccess(user.id, Number((await params).id));
   const flash = await searchParams;
   const monitors = all<Monitor>("SELECT * FROM uptime_monitors WHERE project_id = ? ORDER BY CASE status WHEN 'down' THEN 0 ELSE 1 END, id", p.id);
   const free = billingState(p.user_id).plan.id === "free";
@@ -97,6 +98,7 @@ export default async function UptimePage({ params, searchParams }: { params: Pro
           <SubmitButton pendingText="Checking…">Add monitor</SubmitButton>
         </form>
       </div>
+      <WatchPanel projectId={p.id} module="uptime" back={`/app/p/${p.id}/uptime`} canEdit={role !== "viewer"} />
     </div>
   );
 }

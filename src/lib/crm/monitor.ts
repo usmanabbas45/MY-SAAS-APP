@@ -4,6 +4,7 @@ import { raiseIncident, resolveIncidents, type NewIncident } from "../incidents"
 import { logLiveEvent } from "../liveevents";
 import { decrypt, safeFetch, sha256 } from "../security";
 import { median } from "../workflows/monitor";
+import { watchSoon } from "../watches";
 import { providerById, type CrmRecord, type Fetcher } from "./providers";
 
 /**
@@ -44,6 +45,7 @@ export interface IngestSummary { fetched: number; created: number; duplicates: n
 export async function ingestCrmRecords(src: CrmSource, records: CrmRecord[], opts: { capped?: boolean; first?: boolean; now?: Date } = {}): Promise<IngestSummary> {
   const now = opts.now ?? new Date();
   const at = now.toISOString();
+  watchSoon(src.project_id);
   const key = `crm:${src.id}`;
   /** Raises an incident and, when it is new, shows it in Live tracking. */
   const problem = async (inc: NewIncident) => {

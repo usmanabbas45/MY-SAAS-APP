@@ -243,6 +243,26 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
   return grades;
 }
 
+const WATCH_INSTRUCTIONS = `You turn a business owner's plain-English monitoring request into a structured watch rule for ProofMyAI.
+Use only the listed fields. kind: "each" = alert on every matching event; "above" = alert when MORE than threshold matching events happen within window_minutes; "below" = alert when FEWER than threshold happen within window_minutes ("hasn't run for 2 hours" = below, threshold 1, window 120).
+Field conditions go in filters (op: eq, neq, contains, not_contains, gt, gte, lt, lte; value as text). Times in milliseconds for *_ms fields, money as plain numbers. A number with a unit ($, seconds, steps, items) is a filter; "more than N … per hour/day" is a count threshold.
+severity: high for urgent, money, safety or "stopped"; medium by default; low if the user says it's just FYI. summary: one short sentence of what you understood.
+If the request can't be expressed with these fields, return kind "each" with no filters.`;
+
+const WatchRule = z.object({
+  kind: z.enum(["each", "above", "below"]),
+  filters: z.array(z.object({ field: z.string(), op: z.enum(["eq", "neq", "contains", "not_contains", "gt", "gte", "lt", "lte"]), value: z.string() })),
+  threshold: z.number().nullable(),
+  window_minutes: z.number().nullable(),
+  severity: z.enum(["low", "medium", "high"]),
+  summary: z.string(),
+});
+
+/** Translates a watch prompt into a rule (the caller validates it against the module's fields). */
+export async function llmTranslateWatch(prompt: string, sourceLabel: string, fields: string, use?: AiUse): Promise<z.infer<typeof WatchRule>> {
+  return callJudge(WATCH_INSTRUCTIONS, null, `<watching>${sourceLabel}</watching>\n<fields>\n${fields}\n</fields>\n<request>${prompt.slice(0, 500)}</request>`, WatchRule, use);
+}
+
 const CACHE_DAYS = 30;
 const gradesInFlight = new Map<string, Promise<z.infer<typeof ChatGrades>>>();
 

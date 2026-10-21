@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-21", title: "Watch for anything, in your own words", tag: "New",
+    items: [
+      "🔔 Every feature page (chatbot, AI agents, n8n & Make, approvals, CRM, Google Sheets, uptime) now has a \"Watch for…\" box. Write what to watch and when to be told, e.g. \"Alert me if the Order sync workflow runs fewer than 10 times a day\" or \"Tell me when an agent run costs more than $1\".",
+      "🧠 ProofMyAI turns your sentence into a precise rule, shows exactly how it understood it, and tells you how many times it would have alerted in the last 7 days, before it starts watching.",
+      "⚡ Watches are checked as soon as new data arrives and every 15 minutes, so \"fewer than…\" and \"hasn't run for…\" watches fire even when nothing arrives. Alerts go to your WhatsApp, Slack, email or other channels and close by themselves when things are back to normal.",
+    ],
+  },
+  {
     date: "2026-10-21", title: "Traces, failure simulator, retrieval diagnosis and custom AI checks", tag: "New",
     items: [
       "🔗 End-to-end traces: send the same trace_id with your chatbot, agent, workflow, approval and result-check calls, and see the whole request on one timeline with the first failing step highlighted (Live tracking → Traces).",
