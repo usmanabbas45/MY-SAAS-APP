@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const { exchanges } = result;
   if (wait) {
     const grades = await result.grades;
-    const results = grades.map((g, i) => ({ turn_index: exchanges[i].turnIndex, verdict: g.verdict, label: VERDICT_LABELS[g.verdict], severity: g.severity, reason: g.reason, decision: decisionFor(g.verdict, g.severity) }));
+    const results = grades.map((g, i) => ({ turn_index: exchanges[i].turnIndex, verdict: g.verdict, label: VERDICT_LABELS[g.verdict], severity: g.severity, reason: g.reason, evidence: g.evidence ?? null, ...(g.diagnosis ? { diagnosis: g.diagnosis } : {}), decision: decisionFor(g.verdict, g.severity) }));
     const decision = results.some((x) => x.decision === "block") ? "block" : results.some((x) => x.decision === "review") ? "review" : "allow";
     return json({ graded: grades.length, decision, results }, 200);
   }

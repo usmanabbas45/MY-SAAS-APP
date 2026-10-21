@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import type { ChatSource } from "@/lib/connectors/twilio";
 import { all } from "@/lib/db";
 import { connectionFreshness } from "@/lib/freshness";
-import { addChatSourceAction, deleteChatSourceAction, pollChatSourceAction, sendTestEventAction } from "../actions";
+import { addChatSourceAction, deleteChatSourceAction, pollChatSourceAction, sendTestEventAction, simulateFailureAction } from "../actions";
 import { liveFeed, sourceStatuses, type Source } from "@/lib/live";
 import { projectAccess } from "@/lib/projects";
 import { liveChatSnippets } from "@/lib/snippets";
@@ -49,6 +49,16 @@ export default async function LivePage({ params, searchParams }: { params: Promi
         actions={
           <>
             <form action={sendTestEventAction}>{pid}<SubmitButton className="btn btn-ghost btn-sm" pendingText="Sending…">▶ Send test event</SubmitButton></form>
+            <a className="btn btn-ghost btn-sm" href={`/app/p/${p.id}/traces`}>🔗 Traces</a>
+            <form action={simulateFailureAction} className="row" style={{ gap: 6 }}>
+              {pid}
+              <select name="kind" aria-label="Failure to simulate" defaultValue="silent" style={{ width: "auto" }}>
+                <option value="silent">Workflow: success with 0 items</option>
+                <option value="loop">AI agent stuck in a loop</option>
+                <option value="human">Chatbot claims to be human</option>
+              </select>
+              <SubmitButton className="btn btn-ghost btn-sm" pendingText="Simulating…">🧪 Simulate a failure</SubmitButton>
+            </form>
             <span className="badge badge-bad"><span className="dot live-dot" /> LIVE · updates every 5s</span>
           </>
         }

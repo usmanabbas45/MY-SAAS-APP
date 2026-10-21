@@ -30,6 +30,13 @@ export interface BenchMetrics {
 
 export interface BenchRun { mode: BenchMode; judge: string; version: string; metrics: BenchMetrics; results: BenchResult[]; createdAt: string }
 
+/** Metrics for the hard cases only (subtle, multi-turn, trick questions). */
+export function hardMetrics(r: BenchRun): BenchMetrics | null {
+  const hard = new Set(BENCH_CASES.filter((c) => c.level === "hard").map((c) => c.id));
+  const rows = r.results.filter((x) => hard.has(x.id));
+  return rows.length ? score(rows) : null;
+}
+
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 1000) / 10 : 0);
 
 export function score(results: BenchResult[]): BenchMetrics {
@@ -67,7 +74,7 @@ export async function runBenchmark(mode: BenchMode, cases: BenchCase[] = BENCH_C
   if (mode === "ai" && !llmAvailable()) throw new Error("No AI judge is configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).");
   const index = buildKbIndex(BENCH_DOCS);
   const results = await mapLimit(cases, mode === "ai" ? judgeConcurrency() : 8, async (bc): Promise<BenchResult> => {
-    const e = { conversationId: `bench-${bc.id}`, turnIndex: 1, question: bc.question, answer: bc.answer };
+    const e = { conversationId: `bench-${bc.id}`, turnIndex: 1, question: bc.question, answer: bc.answer, ...(bc.context ? { context: bc.context } : {}) };
     const raw = mode === "ai" ? (await llmGradeConversation([e], BENCH_DOCS))[0] : heuristicGrade(e, index);
     const { grade } = withConversationChecks(e, raw);
     return { id: bc.id, expected: bc.expected, got: grade.verdict, reason: grade.reason };

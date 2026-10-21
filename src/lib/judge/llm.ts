@@ -7,6 +7,7 @@ import { get, run } from "../db";
 import { clamp } from "../text";
 import { JudgeError } from "./errors";
 import { verifyQuote } from "./evidence";
+import { aiChecks } from "../rules";
 import { geminiJudge, geminiKey, geminiModel } from "./gemini";
 import { SEVERITIES, VERDICTS, type Exchange, type Grade, type KbDoc } from "./types";
 
@@ -201,7 +202,12 @@ export async function llmGradeConversation(exchanges: Exchange[], docs: KbDoc[],
   // Turns before the first reply being graded (e.g. live tracking grades only the newest reply).
   const earlier = (exchanges[0]?.context ?? []).slice(-20)
     .map((t) => `<${t.role === "user" ? "customer" : "assistant"}>${clampText(t.content, 1500)}</${t.role === "user" ? "customer" : "assistant"}>`).join("\n");
-  const task = `${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
+  // The business's own plain-English checks: breaking one is off policy, and the reason names the check.
+  const checks = aiChecks(use?.projectId);
+  const checksBlock = checks.length
+    ? `<business_checks>\n${checks.map((c, i) => `${i + 1}. ${c}`).join("\n")}\n</business_checks>\nIf a reply breaks one of these business checks, its verdict is off_policy (severity high unless the breach is trivial) and the reason starts with "Broke your check: <the check>". Ignore checks that don't apply to the reply.\n`
+    : "";
+  const task = `${checksBlock}${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<conversation id="${exchanges[0]?.conversationId ?? ""}">\n${transcript}\n</conversation>\nGrade each assistant reply. Return exactly one grade per turn_index: ${exchanges.map((e) => e.turnIndex).join(", ")}.`;
   // An exact repeat (same project, docs, judge and conversation text) gets the same grades without
   // paying the AI again. The conversation id is left out of the key because it does not affect grading.
   const projectId = use?.projectId ?? null;

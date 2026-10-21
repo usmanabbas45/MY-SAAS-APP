@@ -3,6 +3,7 @@ import { customMatcher, redactDeep, redactPII } from "../pii";
 import { raiseIncident } from "../incidents";
 import { aiForProject, JudgeError, llmJudgeAgentRun } from "../judge/llm";
 import { verifyClaim } from "../outcome";
+import { recordTrace } from "../traces";
 import { agentScore, AgentRunSchema, checkAgentRun, stepsLog, totals, type Issue } from "./checks";
 
 interface ProjectLimits {
@@ -49,10 +50,13 @@ export async function ingestAgentRun(projectId: number, body: unknown): Promise<
   );
 
   await alertOnIssues(projectId, data.agent_name, data.run_id, issues);
+  const worst = issues.filter((i) => i.severity !== "low");
+  recordTrace(projectId, data.trace_id, "agents", worst.length === 0 && data.status === "success",
+    `Agent "${data.agent_name}" run: ${data.status}, score ${Math.round(score)}`, worst.length ? worst.map((i) => i.message).join(" ") : `${data.steps.length} steps, ${(t.ms / 1000).toFixed(1)}s, $${t.cost.toFixed(4)}`);
 
   // Don't take the agent's word for it: confirm the result in the real system, after the response.
   if (parsed.data.verify && data.status === "success") {
-    void verifyClaim(projectId, { who: `Agent "${data.agent_name}"`, what: data.goal.slice(0, 200), ref: `run ${data.run_id}`, agentRunId: id }, parsed.data.verify)
+    void verifyClaim(projectId, { who: `Agent "${data.agent_name}"`, what: data.goal.slice(0, 200), ref: `run ${data.run_id}`, agentRunId: id, traceId: data.trace_id }, parsed.data.verify)
       .catch((err) => console.error("[outcome] check failed:", err));
   }
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { all, get, run } from "../db";
 import { raiseIncident, resolveIncidents } from "../incidents";
 import { truncate } from "../text";
+import { recordTrace } from "../traces";
 
 export const PLATFORMS = ["n8n", "make", "zapier", "other"] as const;
 export type Platform = (typeof PLATFORMS)[number];
@@ -18,6 +19,8 @@ export const WorkflowRunSchema = z.object({
   /** Items the run received (e.g. new rows or orders fetched). Tells "nothing to process" apart from "broken". */
   input_items: z.number().int().nonnegative().nullish(),
   error_message: z.string().max(5000).nullish(),
+  /** Your id for one end-to-end request, shared with /chat-events, /agent-runs, /approvals and /verify. */
+  trace_id: z.string().min(1).max(200).optional(),
 });
 export type WorkflowRunInput = z.infer<typeof WorkflowRunSchema>;
 
@@ -39,6 +42,9 @@ export async function recordWorkflowRun(projectId: number, input: WorkflowRunInp
     projectId, input.platform, input.workflow_id, name, input.execution_id, status, startedAt,
     input.duration_ms ?? null, input.output_items ?? null, input.input_items ?? null, input.error_message ?? null,
   );
+  const silent = status === "success" && input.output_items === 0;
+  const trace = () => recordTrace(projectId, input.trace_id, "workflows", status === "success" && !silent,
+    `Workflow "${name}": ${silent ? "success with 0 items" : status}`, input.error_message ?? (input.output_items != null ? `${input.output_items} items out` : ""));
   if (res.changes === 0) {
     // A run first reported as running/waiting has now finished: update it and evaluate the final status.
     const upd = run(
@@ -48,10 +54,12 @@ export async function recordWorkflowRun(projectId: number, input: WorkflowRunInp
       projectId, input.platform, input.execution_id, status,
     );
     if (upd.changes === 0) return false;
+    trace();
     const first = get<{ started_at: string }>("SELECT started_at FROM workflow_runs WHERE project_id = ? AND platform = ? AND execution_id = ?", projectId, input.platform, input.execution_id);
     await evaluateRun(projectId, { ...input, status, workflow_name: name, started_at: first?.started_at ?? startedAt });
     return true;
   }
+  trace();
   await evaluateRun(projectId, { ...input, status, workflow_name: name, started_at: startedAt });
   return true;
 }

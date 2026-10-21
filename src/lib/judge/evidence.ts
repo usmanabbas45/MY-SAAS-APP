@@ -26,6 +26,32 @@ function clip(s: string): string {
 const sentences = (text: string) =>
   text.split(/(?<=[.!?])\s+|\n+/).map((s) => s.trim()).filter((s) => s.length >= 12 && s.length <= 600);
 
+export type Diagnosis = "retrieval" | "generation" | "docs";
+
+export const DIAGNOSIS_TEXT: Record<Diagnosis, { label: string; text: string }> = {
+  retrieval: { label: "Retrieval problem", text: "The right fact is in your help docs, but it wasn't in the text your bot retrieved for this question. Fix search or chunking (which articles get fetched), not the prompt." },
+  generation: { label: "Generation problem", text: "Your bot was given the right fact (it was in the retrieved text) and still answered wrongly. Fix the prompt or model, not the docs." },
+  docs: { label: "Missing documentation", text: "Your help docs don't cover this, so neither retrieval nor the prompt can fix it. Add an article." },
+};
+
+/**
+ * Splits a wrong answer into a retrieval failure (the bot never got the right fact) or a generation failure (it had the
+ * fact and answered wrongly anyway), using the help-doc evidence and the chunks the bot says it retrieved.
+ */
+export function diagnose(verdict: string, evidence: string | null | undefined, retrieved: string[] | undefined): Diagnosis | null {
+  if (!retrieved?.length || verdict === "correct" || verdict === "should_escalate") return null;
+  if (!evidence) return verdict === "unsupported" || verdict === "hallucination" ? "docs" : null;
+  const ctx = norm(retrieved.join("\n"));
+  const ev = norm(evidence.replace(/…$/, ""));
+  if (ctx.includes(ev)) return "generation";
+  // The chunk may hold the fact in different words: most of the evidence's words present counts as retrieved.
+  const want = stems(evidence);
+  const have = stems(retrieved.join(" "));
+  let hit = 0;
+  want.forEach((w) => { if (have.has(w)) hit++; });
+  return want.size && hit / want.size >= 0.8 ? "generation" : "retrieval";
+}
+
 /** Crude stem so "item/items" and "return/returned" match. */
 const stems = (text: string) => new Set(tokenize(text).map((w) => w.slice(0, 5)));
 

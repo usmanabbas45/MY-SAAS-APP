@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AutoRefresh } from "@/components/client";
 import { PublicPage } from "@/components/site";
-import { averageUptime, components, overall, uptimeHistory, type Health } from "@/lib/status";
+import { lastBackup, lastRestoreTest } from "@/lib/backup";
+import { averageUptime, components, overall, uptimeHistory, type Component, type Day, type Health } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -18,8 +19,27 @@ const HEADLINE: Record<Health, string> = {
   not_configured: "All systems operational",
 };
 
+function backupRow(now = new Date()): Component {
+  const b = lastBackup();
+  const t = lastRestoreTest();
+  if (!b) return { icon: "💾", name: "Backups", description: "Daily encrypted backup, with an automatic restore test", health: "not_configured", detail: "Waiting for the first backup" };
+  const hours = (now.getTime() - Date.parse(b.at)) / 3600000;
+  const day = b.at.slice(0, 10);
+  const restored = t && t.at.slice(0, 10) === day;
+  return {
+    icon: "💾", name: "Backups", description: "Daily encrypted backup, with an automatic restore test",
+    health: !b.ok || hours > 36 || (restored && !t.ok) ? "degraded" : "operational",
+    detail: `Last backup ${day}${restored ? (t.ok ? " · restore test passed" : " · restore test failed") : ""}`,
+  };
+}
+
+/** Days in the last 30 where background checks fell short: the public incident history. */
+function pastIncidents(history: Day[]): Day[] {
+  return history.filter((d) => d.pct !== null && d.pct < 99).reverse();
+}
+
 export default function StatusPage() {
-  const list = components();
+  const list = [...components(), backupRow()];
   const state = overall(list);
   const history = uptimeHistory(30);
   const avg = averageUptime(history);
@@ -63,6 +83,16 @@ export default function StatusPage() {
         ))}
       </div>
       <div className="row between faint" style={{ fontSize: 12 }}><span>30 days ago</span><span>Today</span></div>
+
+      <h2>🧾 Past incidents, last 30 days</h2>
+      {pastIncidents(history).length ? (
+        <ul>
+          {pastIncidents(history).map((d) => (
+            <li key={d.day}><strong>{d.day}</strong>: background checks ran {d.pct!.toFixed(1)}% of the time ({d.runs} runs{d.failures ? `, ${d.failures} with errors` : ""}). Alerts for that day may have been delayed.</li>
+          ))}
+        </ul>
+      ) : <p className="sub">No days with missed or failed background checks in the last 30 days.</p>}
+      <p className="sub">Listed automatically: any day where scheduled checks ran less than 99% of the time. Backups are made daily and every backup is restored into a scratch database and checked before it counts.</p>
 
       <h2>🔔 Get notified</h2>
       <p>Problems that affect your own projects are sent through your alert channels (Settings → Notifications). For platform-wide issues, check this page or <Link href="/support">contact support</Link>. Developers can poll <code>/api/health</code>, which returns <code>200</code> when the service is up. See the <Link href="/changelog">changelog</Link> for recent updates.</p>

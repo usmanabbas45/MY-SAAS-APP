@@ -22,6 +22,8 @@ export const AgentRunSchema = z.object({
   steps: z.array(AgentStepSchema).max(2000).default([]),
   /** Optional: where ProofMyAI can confirm the result really exists (a CRM record, an order, a file). */
   verify: OutcomeCheckSchema.optional(),
+  /** Your id for one end-to-end request, shared with /chat-events, /workflow-runs, /approvals and /verify. */
+  trace_id: z.string().min(1).max(200).optional(),
 });
 
 export type AgentRun = z.infer<typeof AgentRunSchema>;

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import zlib from "node:zlib";
 import { adminEmails } from "./admin";
 import { get, getDb, run } from "./db";
@@ -86,6 +87,49 @@ function record(ok: boolean, detail: string, now: Date): void {
   run("INSERT INTO heartbeats (name, last_run_at, ok, detail) VALUES ('backup', ?, ?, ?) ON CONFLICT(name) DO UPDATE SET last_run_at = excluded.last_run_at, ok = excluded.ok, detail = excluded.detail", now.toISOString(), ok ? 1 : 0, detail.slice(0, 300));
 }
 
+/**
+ * Restore test: a backup only counts if it can be restored. Decompresses the file into a scratch database, runs
+ * SQLite's integrity check, compares key tables with the live database and (with APP_SECRET) checks the encrypted
+ * copy decrypts to the same bytes. The result is shown on the public status page.
+ */
+export function verifyRestore(gz: Buffer, now = new Date()): { ok: boolean; detail: string } {
+  const tmp = path.join(backupDir(), `.restore-test-${process.pid}-${Date.now()}.db`);
+  let result: { ok: boolean; detail: string };
+  try {
+    fs.writeFileSync(tmp, zlib.gunzipSync(gz));
+    const restored = new DatabaseSync(tmp, { readOnly: true });
+    try {
+      const integrity = (restored.prepare("PRAGMA integrity_check").get() as { integrity_check: string }).integrity_check;
+      if (integrity !== "ok") throw new Error(`integrity check: ${integrity}`);
+      const tables = ["users", "projects", "audit_items", "incidents"];
+      const counts = tables.map((t) => {
+        const r = (restored.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+        const live = get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t}`)?.n ?? 0;
+        // Rows can arrive between the snapshot and this check, so the backup may hold slightly fewer, never more.
+        if (r > live || (live > 0 && r === 0)) throw new Error(`${t}: ${r} restored vs ${live} live`);
+        return `${r} ${t.replace("_", " ")}`;
+      });
+      const secret = process.env.APP_SECRET;
+      if (secret && !decryptBackup(encryptBackup(gz, secret), secret).equals(gz)) throw new Error("encrypted copy doesn't decrypt to the same file");
+      result = { ok: true, detail: `Restored and checked: ${counts.join(", ")}` };
+    } finally {
+      restored.close();
+    }
+  } catch (err) {
+    result = { ok: false, detail: `Restore test failed: ${err instanceof Error ? err.message : String(err)}` };
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+  run("INSERT INTO heartbeats (name, last_run_at, ok, detail) VALUES ('restore_test', ?, ?, ?) ON CONFLICT(name) DO UPDATE SET last_run_at = excluded.last_run_at, ok = excluded.ok, detail = excluded.detail",
+    now.toISOString(), result.ok ? 1 : 0, result.detail.slice(0, 300));
+  return result;
+}
+
+export function lastRestoreTest(): { at: string; ok: boolean; detail: string | null } | null {
+  const r = get<{ last_run_at: string; ok: number; detail: string | null }>("SELECT last_run_at, ok, detail FROM heartbeats WHERE name = 'restore_test'");
+  return r ? { at: r.last_run_at, ok: Boolean(r.ok), detail: r.detail } : null;
+}
+
 let running = false;
 
 /** Makes today's backup, prunes old ones and emails the encrypted copy. */
@@ -100,6 +144,10 @@ export async function runBackup(now = new Date(), opts: { email?: boolean } = {}
     fs.writeFileSync(path.join(dir, `${name}.part`), gz);
     fs.renameSync(path.join(dir, `${name}.part`), path.join(dir, name));
     for (const old of listBackups().slice(KEEP_DAYS)) fs.rmSync(path.join(dir, old.name), { force: true });
+    const restore = verifyRestore(gz, now);
+    if (!restore.ok) {
+      await emailAdmins(systemEmail("🔴 Backup restore test failed · ProofMyAI", { icon: "🗄️", tone: "bad", title: "Today's backup could not be restored", paragraphs: [restore.detail, "The backup file was kept. Check the Railway volume and run a backup again from the admin page."] }));
+    }
 
     let emailed = 0;
     let note = "";
@@ -121,7 +169,7 @@ export async function runBackup(now = new Date(), opts: { email?: boolean } = {}
         if (!emailed) note = "not emailed (email not configured or failed)";
       }
     }
-    const detail = `${sizeLabel(gz.length)}${emailed ? `, emailed to ${emailed}` : note ? `, ${note}` : ""}`;
+    const detail = `${sizeLabel(gz.length)}${emailed ? `, emailed to ${emailed}` : note ? `, ${note}` : ""}${restore.ok ? ", restore test passed" : ", RESTORE TEST FAILED"}`;
     record(true, detail, now);
     return { ok: true, file: name, bytes: gz.length, emailed, detail };
   } catch (err) {

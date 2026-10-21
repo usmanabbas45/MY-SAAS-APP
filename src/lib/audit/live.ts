@@ -29,6 +29,10 @@ export const LiveChatSchema = z
     latency_ms: z.number().int().min(0).max(3_600_000).optional(),
     cost_usd: z.number().min(0).max(1000).optional(),
     error: z.string().max(500).optional(),
+    /** The text chunks your bot retrieved (RAG) for this reply: used to tell retrieval failures from generation failures. Never stored. */
+    retrieved: z.array(z.string().max(20000)).max(50).optional(),
+    /** Your id for one end-to-end request (chat → agent → workflow → CRM), to see everything it touched on one timeline. */
+    trace_id: z.string().min(1).max(200).optional(),
   })
   .refine((d) => d.messages || (d.answer ?? "").trim() !== "" || (d.question ?? "").trim() !== "", {
     message: "Send messages[], question + answer, or just question (a customer message the bot has not answered yet)",
@@ -255,7 +259,7 @@ export async function processLiveChat(
   const chat = project.redact_pii ? redactChat(raw, customMatcher(project.mask_terms)) : raw;
   trackPendingReply(project.id, chat, opts.receivedAt);
   const exchanges = newExchanges(project.id, chat);
-  const meta: ReplyMeta = { latencyMs: chat.latency_ms, costUsd: chat.cost_usd, error: chat.error };
+  const meta: ReplyMeta = { latencyMs: chat.latency_ms, costUsd: chat.cost_usd, error: chat.error, retrieved: raw.retrieved, traceId: chat.trace_id };
   const grades = gradeLiveChat(project.id, exchanges, meta).finally(() => alertMissingReplies(project.id).catch(() => 0));
   if (!opts.wait) grades.catch((err) => console.error("[live] grading failed:", err));
   return { exchanges, grades };

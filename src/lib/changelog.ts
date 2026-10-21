@@ -8,6 +8,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-21", title: "Traces, failure simulator, retrieval diagnosis and custom AI checks", tag: "New",
+    items: [
+      "🔗 End-to-end traces: send the same trace_id with your chatbot, agent, workflow, approval and result-check calls, and see the whole request on one timeline with the first failing step highlighted (Live tracking → Traces).",
+      "🧪 Simulate a failure: one click sends a realistic broken event (a workflow that returns 0 items, an agent stuck in a loop, a bot claiming to be human) through the real checks, so you see exactly what's detected and how the alert arrives.",
+      "🔎 RAG bots: send the chunks your bot retrieved, and every wrong answer is labelled a retrieval problem (the right fact wasn't fetched), a generation problem (it was fetched and ignored) or missing documentation.",
+      "🧠 Custom AI checks: write your own checks in plain English (e.g. \"pricing answers must mention the free trial\") and the AI checker applies them to every answer.",
+      "✋ Approval guarantees, each covered by an automated test: duplicate and simultaneous requests become one, rejected actions stay blocked on every retry, expired requests can never be approved, decisions survive a failed callback.",
+      "💾 Every daily backup is now restored into a scratch database and checked automatically; the result and a 30-day incident history are on the status page.",
+      "📏 Benchmark v2: 28 harder cases (subtle details, half-right answers, multi-turn contradictions, trick questions) added to the public benchmark.",
+    ],
+  },
+  {
     date: "2026-10-20", title: "Evidence on every verdict, CI tests and OpenTelemetry", tag: "New",
     items: [
       "📄 Every checked answer now shows the exact sentence from your help docs behind the verdict. A quote is only kept if it really appears in your docs, so the evidence is never made up. Also in the CSV export and the /check API.",

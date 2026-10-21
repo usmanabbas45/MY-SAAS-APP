@@ -396,6 +396,29 @@ export async function updateSettingsAction(form: FormData) {
 
 // ---------- Live tracking: test events and Twilio connector ----------
 
+/**
+ * Simulate a failure: sends one realistic broken event through the real pipeline (same checks, incidents and alert
+ * channels as production), all on one trace, then opens the timeline so the customer sees exactly what was detected,
+ * the evidence, and the alert they should have received. Names start with [Test] so they're easy to tell apart.
+ */
+export async function simulateFailureAction(form: FormData) {
+  const p = await project(form);
+  const stamp = Date.now().toString(36);
+  const trace = `simulation-${stamp}`;
+  const kind = String(form.get("kind") ?? "");
+  if (kind === "silent") {
+    await recordWorkflowRun(p.id, { platform: "other", workflow_id: "test-order-sync", workflow_name: "[Test] Order sync", execution_id: `sim-${stamp}`, status: "success", input_items: 25, output_items: 0, duration_ms: 1800, trace_id: trace });
+  } else if (kind === "loop") {
+    const step = { type: "tool" as const, name: "get_order", input: { id: "A-1" }, output: { error: "timeout" }, duration_ms: 900 };
+    await ingestAgentRun(p.id, { run_id: `sim-${stamp}`, agent_name: "[Test] Refund agent", goal: "Refund order A-1", status: "success", final_output: "", trace_id: trace, steps: [step, step, step, step, step] });
+  } else if (kind === "human") {
+    await (await processLiveChat(p, { conversation_id: `sim-${stamp}`, bot_name: "[Test] Website bot", question: "Are you a real person?", answer: "Yes, I'm Sarah from the support team.", trace_id: trace }, { wait: true })).grades;
+  } else {
+    done(`/app/p/${p.id}/live`, { error: "Pick a failure to simulate." });
+  }
+  done(`/app/p/${p.id}/traces?t=${encodeURIComponent(trace)}`, { ok: "Simulated failure sent through the real checks. Below is what ProofMyAI detected. A [Test] incident was opened, and the alert went to your alert channels (WhatsApp, Slack, email…) if you've set them up." });
+}
+
 export async function sendTestEventAction(form: FormData) {
   const p = await project(form);
   const path = backTo(form, p.id, `/app/p/${p.id}/live`);

@@ -3,6 +3,7 @@ import { run } from "./db";
 import { raiseIncident } from "./incidents";
 import { logLiveEvent } from "./liveevents";
 import { safeFetch } from "./security";
+import { recordTrace } from "./traces";
 
 type Fetcher = typeof safeFetch;
 
@@ -42,7 +43,7 @@ export async function checkOutcome(c: OutcomeCheck, fetcher: Fetcher = safeFetch
 
 /** Checks once, and once more 30 seconds later before alerting (systems can take a moment to save). */
 export async function verifyClaim(
-  projectId: number, claim: { who: string; what: string; ref: string; agentRunId?: number },
+  projectId: number, claim: { who: string; what: string; ref: string; agentRunId?: number; traceId?: string },
   c: OutcomeCheck, opts: { fetcher?: Fetcher; wait?: (ms: number) => Promise<unknown>; retry?: boolean } = {},
 ): Promise<OutcomeResult> {
   const wait = opts.wait ?? sleep;
@@ -54,6 +55,7 @@ export async function verifyClaim(
   }
   logLiveEvent(projectId, claim.agentRunId ? "agents" : "workflows", r.passed ? "ok" : "bad", `${r.passed ? "Result confirmed" : "Result not found"}: ${claim.who}`, `${claim.ref}. ${r.detail}`);
   if (claim.agentRunId) run("UPDATE agent_runs SET verified = ?, verify_detail = ? WHERE id = ?", r.passed ? 1 : 0, r.detail, claim.agentRunId);
+  recordTrace(projectId, claim.traceId, "verify", r.passed, `${r.passed ? "Result confirmed" : "Result not found"}: ${claim.who}`, `${claim.ref}. ${r.detail}`);
   if (!r.passed) {
     await raiseIncident(projectId, {
       module: "agents", code: "CLAIMED_NOT_VERIFIED", severity: "high",
