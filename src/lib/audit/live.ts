@@ -12,6 +12,7 @@ import { customMatcher, redactPII } from "../pii";
 import { sha256 } from "../security";
 import { normaliseRole } from "./parse";
 import { kbDocs, NOT_STORED, scoreFromSeverities, storeGradedItem, type ReplyMeta } from "./run";
+import { watchSoon } from "../watches";
 
 /**
  * Live chatbot monitoring: bots send each conversation (or each new reply) as it happens.
@@ -260,7 +261,7 @@ export async function processLiveChat(
   trackPendingReply(project.id, chat, opts.receivedAt);
   const exchanges = newExchanges(project.id, chat);
   const meta: ReplyMeta = { latencyMs: chat.latency_ms, costUsd: chat.cost_usd, error: chat.error, retrieved: raw.retrieved, traceId: chat.trace_id };
-  const grades = gradeLiveChat(project.id, exchanges, meta).finally(() => alertMissingReplies(project.id).catch(() => 0));
+  const grades = gradeLiveChat(project.id, exchanges, meta).finally(() => { alertMissingReplies(project.id).catch(() => 0); watchSoon(project.id); });
   if (!opts.wait) grades.catch((err) => console.error("[live] grading failed:", err));
   return { exchanges, grades };
 }

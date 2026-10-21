@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import { AutoRefresh, CopyButton, SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -135,6 +136,7 @@ export default async function CrmPage({ params, searchParams }: { params: Promis
           </p>
         </div>
       ) : null}
+      <WatchPanel projectId={p.id} module="crm" back={`/app/p/${p.id}/crm`} canEdit={role !== "viewer"} />
     </div>
   );
 }

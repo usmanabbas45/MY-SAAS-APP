@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import { AutoRefresh, SubmitButton } from "@/components/client";
 import { Empty, Flash, PageHeader, timeAgo } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -160,6 +161,7 @@ export default async function SheetsPage({ params, searchParams }: { params: Pro
           </p>
         </div>
       ) : null}
+      <WatchPanel projectId={p.id} module="incidents" back={`/app/p/${p.id}/sheets`} canEdit={role !== "viewer"} />
     </div>
   );
 }

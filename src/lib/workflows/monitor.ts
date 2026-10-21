@@ -3,6 +3,7 @@ import { all, get, run } from "../db";
 import { raiseIncident, resolveIncidents } from "../incidents";
 import { truncate } from "../text";
 import { recordTrace } from "../traces";
+import { watchSoon } from "../watches";
 
 export const PLATFORMS = ["n8n", "make", "zapier", "other"] as const;
 export type Platform = (typeof PLATFORMS)[number];
@@ -43,8 +44,12 @@ export async function recordWorkflowRun(projectId: number, input: WorkflowRunInp
     input.duration_ms ?? null, input.output_items ?? null, input.input_items ?? null, input.error_message ?? null,
   );
   const silent = status === "success" && input.output_items === 0;
-  const trace = () => recordTrace(projectId, input.trace_id, "workflows", status === "success" && !silent,
-    `Workflow "${name}": ${silent ? "success with 0 items" : status}`, input.error_message ?? (input.output_items != null ? `${input.output_items} items out` : ""));
+  // Runs once per newly recorded (or newly finished) run: the trace step, and a check of the customer's watches.
+  const trace = () => {
+    watchSoon(projectId);
+    recordTrace(projectId, input.trace_id, "workflows", status === "success" && !silent,
+      `Workflow "${name}": ${silent ? "success with 0 items" : status}`, input.error_message ?? (input.output_items != null ? `${input.output_items} items out` : ""));
+  };
   if (res.changes === 0) {
     // A run first reported as running/waiting has now finished: update it and evaluate the final status.
     const upd = run(

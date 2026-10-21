@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import { SafePromptCard } from "../FixViews";
 import { fixAvailability, latestFixes } from "@/lib/fixes";
 import Link from "next/link";
@@ -223,6 +224,7 @@ export default async function ChatbotPage({ params, searchParams }: { params: Pr
           </div>
         )}
       </div>
+      <WatchPanel projectId={p.id} module="chatbot" back={`/app/p/${p.id}/chatbot`} canEdit={role !== "viewer"} />
     </div>
   );
 }

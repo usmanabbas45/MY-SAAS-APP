@@ -6,6 +6,7 @@ import { logLiveEvent } from "./liveevents";
 import { notify } from "./notify";
 import { safeFetch } from "./security";
 import { recordTrace } from "./traces";
+import { watchSoon } from "./watches";
 
 type Fetcher = typeof safeFetch;
 
@@ -110,6 +111,7 @@ export async function submitApproval(projectId: number, a: ApprovalInput, now = 
     verdict.commitments.length ? verdict.commitments.join(", ") : null, verdict.status === "approved" ? "ProofMyAI (rule)" : null,
     verdict.status === "approved" ? now.toISOString() : null, a.callback_url ?? null, now.toISOString(), expires, a.trace_id ?? null,
   ).lastInsertRowid;
+  watchSoon(projectId);
   recordTrace(projectId, a.trace_id, "approvals", true,
     verdict.status === "pending" ? `Waiting for approval: ${a.action}, ${a.summary}` : `Approved automatically: ${a.action}, ${a.summary}`, verdict.reason, now);
   logLiveEvent(projectId, "agents", verdict.status === "pending" ? "warn" : "ok",

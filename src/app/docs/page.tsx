@@ -71,6 +71,7 @@ export default function DocsPage() {
         <li><strong>Intercom (Fin):</strong> in <em>Connect → Intercom</em>, paste an Intercom access token. Every Fin or bot reply is checked automatically.</li>
         <li><strong>Google Sheets:</strong> in <em>Google Sheets</em>, paste a sheet link. Alerts when it stops updating, shows #REF! or other errors, a key column comes in empty, columns change or rows are duplicated.</li>
         <li><strong>CRM:</strong> in <em>CRM</em>, paste a read-only token for HubSpot, Salesforce, Pipedrive, Zoho CRM, GoHighLevel and others (see <a href="#crm">CRM monitoring</a>).</li>
+        <li><strong>Watch for anything, in your own words:</strong> every feature page has a &quot;Watch for…&quot; box. Write what to watch and when to be told (e.g. &quot;Alert me if the Order sync workflow runs fewer than 10 times a day&quot;). ProofMyAI shows how it understood the request and how often it would have alerted in the last 7 days, then checks it on every new event and every 15 minutes.</li>
         <li><strong>Grok, ChatGPT, Claude or Gemini bots:</strong> any model works. <em>Connect → Grok (xAI) chatbot</em> has a ready-made example; the same call works for every model (see <a href="#chat-events">POST /chat-events</a>).</li>
         <li><strong>Twilio / WhatsApp:</strong> in <em>Live tracking</em>, connect Twilio with a read-only API key to check bot replies on SMS and WhatsApp.</li>
       </ul>

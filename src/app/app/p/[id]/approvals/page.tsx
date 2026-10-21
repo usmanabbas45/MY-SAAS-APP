@@ -1,3 +1,4 @@
+import { WatchPanel } from "../WatchPanel";
 import Link from "next/link";
 import { AutoRefresh, SubmitButton } from "@/components/client";
 import { Badge, Empty, Flash, PageHeader, Stat, timeAgo } from "@/components/ui";
@@ -145,6 +146,7 @@ export default async function ApprovalsPage({ params, searchParams }: { params: 
           </table></div>
         )}
       </div>
+      <WatchPanel projectId={p.id} module="approvals" back={`/app/p/${p.id}/approvals`} canEdit={role !== "viewer"} />
     </div>
   );
 }
