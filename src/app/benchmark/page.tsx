@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PublicPage } from "@/components/site";
 import { BENCH_CASES, BENCH_DOCS, BENCH_VERSION } from "@/lib/benchmark/dataset";
-import { hardMetrics, latestBenchmark, runBenchmark, type BenchRun } from "@/lib/benchmark/run";
+import { hardMetrics, latestBenchmark, runBenchmark, type BenchMetrics, type BenchRun } from "@/lib/benchmark/run";
 import { VERDICT_LABELS } from "@/lib/judge/types";
 
 export const metadata = {
@@ -13,19 +13,31 @@ export const dynamic = "force-dynamic";
 
 let basicCache: Promise<BenchRun> | null = null;
 
+function Cards({ m, heading }: { m: BenchMetrics; heading: string }) {
+  const wrong = m.total - (m.byExpected.correct?.total ?? 0);
+  const right = m.byExpected.correct?.total ?? 0;
+  return (
+    <>
+      <h3 style={{ margin: "16px 0 4px" }}>{heading}</h3>
+      <div className="grid grid-4" style={{ margin: "8px 0 12px" }}>
+        <div className="card stat"><span className="sub">Problems caught</span><strong style={{ fontSize: 28 }}>{m.recall}%</strong><span className="sub">of {wrong} wrong answers flagged</span></div>
+        <div className="card stat"><span className="sub">Flags that were right</span><strong style={{ fontSize: 28 }}>{m.precision}%</strong><span className="sub">precision</span></div>
+        <div className="card stat"><span className="sub">False alarms</span><strong style={{ fontSize: 28 }}>{m.falseAlarmRate}%</strong><span className="sub">of {right} correct answers flagged</span></div>
+        <div className="card stat"><span className="sub">Exact verdict</span><strong style={{ fontSize: 28 }}>{m.verdictAccuracy}%</strong><span className="sub">same label as the reviewer, of {m.total}</span></div>
+      </div>
+    </>
+  );
+}
+
 function Metrics({ r }: { r: BenchRun }) {
   const m = r.metrics;
   const hard = hardMetrics(r);
   return (
     <>
       {r.version !== BENCH_VERSION ? <p className="alert alert-warn">This run used an older dataset version ({r.version}, without the hard cases). A run on the current version ({BENCH_VERSION}) is coming.</p> : null}
-      {hard ? <p className="sub"><strong>Hard cases only</strong> ({hard.total}: subtle details, half-right answers, multi-turn contradictions, trick questions): {hard.recall}% of problems caught, {hard.falseAlarmRate}% false alarms, {hard.verdictAccuracy}% exact verdict.</p> : null}
-      <div className="grid grid-4" style={{ margin: "12px 0" }}>
-        <div className="card stat"><span className="sub">Problems caught</span><strong style={{ fontSize: 28 }}>{m.recall}%</strong><span className="sub">of wrong answers flagged</span></div>
-        <div className="card stat"><span className="sub">Flags that were right</span><strong style={{ fontSize: 28 }}>{m.precision}%</strong><span className="sub">precision</span></div>
-        <div className="card stat"><span className="sub">False alarms</span><strong style={{ fontSize: 28 }}>{m.falseAlarmRate}%</strong><span className="sub">of correct answers flagged</span></div>
-        <div className="card stat"><span className="sub">Exact verdict</span><strong style={{ fontSize: 28 }}>{m.verdictAccuracy}%</strong><span className="sub">same label as the reviewer</span></div>
-      </div>
+      <Cards m={m} heading={`All ${m.total} answers`} />
+      {hard ? <Cards m={hard} heading={`Hard cases only (${hard.total} of the ${m.total}): subtle details, half-right answers, multi-turn contradictions, trick questions`} /> : null}
+      <p className="sub">The table below is for all {m.total} answers.</p>
       <div className="table-wrap">
         <table>
           <thead><tr><th>Reviewer&apos;s label</th><th>Answers</th><th>Flagged as a problem</th><th>Exact same verdict</th></tr></thead>
@@ -56,7 +68,8 @@ export default async function BenchmarkPage() {
   const kinds = BENCH_CASES.reduce<Record<string, number>>((a, b) => ({ ...a, [b.expected]: (a[b.expected] ?? 0) + 1 }), {});
   return (
     <PublicPage title="Accuracy benchmark">
-      <p>How often does ProofMyAI catch a wrong AI answer, and how often does it raise a false alarm? We publish the numbers on a labelled dataset that anyone can download and rerun. The dataset is a fictional outdoor shop: {BENCH_DOCS.length} help articles and {BENCH_CASES.length} chatbot answers, each labelled by a person ({Object.entries(kinds).map(([k, n]) => `${n} ${VERDICT_LABELS[k as keyof typeof VERDICT_LABELS].toLowerCase()}`).join(", ")}).</p>
+      <p>How often does ProofMyAI catch a wrong AI answer, and how often does it raise a false alarm? We publish the numbers on a labelled dataset that anyone can download and rerun. The dataset is a fictional outdoor shop: {BENCH_DOCS.length} help articles and {BENCH_CASES.length} chatbot answers, each labelled by a person ({Object.entries(kinds).map(([k, n]) => `${n} ${VERDICT_LABELS[k as keyof typeof VERDICT_LABELS].toLowerCase()}`).join(", ")}). {BENCH_CASES.filter((c) => c.level === "hard").length} of them are deliberately hard cases; results are shown for all answers and for the hard cases separately.</p>
+      <p className="sub"><strong>Reproduce it yourself:</strong> download <a href="/benchmark/dataset.json" download>dataset.json</a>, add its 6 help articles to a free ProofMyAI project, and send each case to <code>POST /api/v1/check</code> (question, answer, and for multi-turn cases the earlier messages via <code>/chat-events?wait=1</code>). Compare each verdict with the label. The same file works for testing any other tool.</p>
 
       <h2>🧠 With AI checking (what paying projects use)</h2>
       {ai ? (
