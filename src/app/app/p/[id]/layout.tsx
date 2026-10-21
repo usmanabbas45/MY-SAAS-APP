@@ -23,6 +23,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
     { href: `${base}/approvals`, label: "Approvals", icon: "✋", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM approvals WHERE project_id = ? AND status = 'pending'", project.id)?.n ?? 0, badgeTone: "brand" },
     ...(role === "viewer" ? [] : [{ href: `${base}/connect`, label: "Connect", icon: "➕" }]),
     { href: `${base}/live`, label: "Live tracking", icon: "📡" },
+    { href: `${base}/traces`, label: "Traces", icon: "🔗" },
     { href: `${base}/chatbot`, label: "Chatbot audits", icon: "💬" },
     { href: `${base}/tests`, label: "Chatbot tests", icon: "🧪", badge: get<{ n: number }>("SELECT COUNT(*) AS n FROM test_suggestions WHERE project_id = ?", project.id)?.n ?? 0, badgeTone: "brand" },
     { href: `${base}/agents`, label: "AI agents", icon: "🤖" },
