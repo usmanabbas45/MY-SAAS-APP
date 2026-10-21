@@ -16,9 +16,10 @@ export function describeSpec(module: WatchModule, spec: WatchSpec): string {
   const what = `${src.label}${conds.length ? ` where ${conds.join(" and ")}` : ""}`;
   const sev = spec.severity === "high" ? " (high priority)" : spec.severity === "low" ? " (low priority)" : "";
   if (spec.kind === "each") return `Alert on every one of the ${what}${sev}.`;
-  const win = windowLabel(spec.window_minutes ?? 60);
-  if (spec.kind === "below" && spec.threshold === 1) return `Alert if there are no ${what} in a ${win}${sev}.`;
-  return `Alert if there are ${spec.kind === "above" ? "more than" : "fewer than"} ${spec.threshold} ${what} in a ${win}${sev}.`;
+  const label = windowLabel(spec.window_minutes ?? 60);
+  const win = /^\d/.test(label) ? label : label === "hour" ? "an hour" : `a ${label}`;
+  if (spec.kind === "below" && spec.threshold === 1) return `Alert if there are no ${what} in ${win}${sev}.`;
+  return `Alert if there are ${spec.kind === "above" ? "more than" : "fewer than"} ${spec.threshold} ${what} in ${win}${sev}.`;
 }
 
 const UNIT_MIN: Record<string, number> = { minute: 1, min: 1, mins: 1, minutes: 1, hour: 60, hr: 60, hrs: 60, hours: 60, day: 1440, days: 1440, week: 10080, weeks: 10080 };

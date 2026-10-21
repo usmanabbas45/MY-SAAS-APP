@@ -34,14 +34,14 @@ export default async function TracesPage({ params, searchParams }: { params: Pro
 
       {t ? (
         <div className="card">
-          <div className="card-head"><div><h3>🔗 {t}</h3><span className="sub">{events.length} steps{firstBad >= 0 ? ` · first problem at step ${firstBad + 1}` : events.length ? " · no problems" : ""}</span></div></div>
+          <div className="card-head"><div><h3>🔗 {t}</h3><span className="sub">{events.length} step{events.length === 1 ? "" : "s"}{firstBad >= 0 ? ` · first problem at step ${firstBad + 1}` : events.length ? " · no problems" : ""}</span></div></div>
           {events.length ? (
             <ol className="trace-timeline">
               {events.map((e, i) => (
                 <li key={i} className={e.ok ? "" : "bad"}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     <span>{ICON[e.source]} <strong>{NAME[e.source]}</strong></span>
-                    <Badge tone={e.ok ? "ok" : "bad"}>{e.ok ? "OK" : i === firstBad ? "First problem" : "Problem"}</Badge>
+                    {e.ok && e.title.startsWith("Waiting for approval") ? <Badge tone="warn">Waiting for a person</Badge> : <Badge tone={e.ok ? "ok" : "bad"}>{e.ok ? "OK" : i === firstBad ? "First problem" : "Problem"}</Badge>}
                     <span className="sub">{new Date(e.at).toISOString().replace("T", " ").slice(0, 19)} UTC</span>
                   </div>
                   <div>{e.title}</div>

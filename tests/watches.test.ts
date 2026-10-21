@@ -106,3 +106,11 @@ describe("watches fire and resolve", () => {
     expect(incidents()[0].detail).toContain("Agent “Researcher”, success, $2.5000, 3 steps");
   });
 });
+
+describe("plain-English description grammar", () => {
+  it("says 'in an hour' and 'in 2 days', and keeps the workflow name", () => {
+    expect(parse("workflows", "Alert me if more than 3 workflows fail in an hour")?.summary).toContain("in an hour");
+    const s = parse("workflows", "Alert me if the New Shopify order workflow hasn't run for 2 days")!;
+    expect(s.summary).toBe("Alert if there are no n8n, Make and webhook workflow runs where workflow name contains “New Shopify order” in 2 days (high priority).");
+  });
+});

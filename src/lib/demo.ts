@@ -6,6 +6,8 @@ import type { Severity, Verdict } from "./judge/types";
 import { newApiKey } from "./projects";
 import { recordWorkflowRun } from "./workflows/monitor";
 import { topicFor } from "./topics";
+import { parseWatchPrompt } from "./watchparse";
+import { addWatch, type WatchModule } from "./watches";
 
 /**
  * "Try with demo data": a separate, clearly-labelled sample project (a fictional online shop) filled with
@@ -232,6 +234,21 @@ export async function createDemoProject(userId: number): Promise<number> {
         error_message: fail ? "OpenAI node: 429 Rate limit reached. Retry after 20s." : null,
       });
     }
+  }
+
+  // Watches written in plain English, so the "Watch for anything" boxes show real examples.
+  for (const [module, prompt, fired, minsAgo] of [
+    ["workflows", "Tell me when the Review replies workflow fails", 2, 2 * 1440 - 180],
+    ["workflows", "Alert me if the New Shopify order workflow hasn't run for 2 days", 0, 0],
+    ["agents", "Alert me if any agent run costs more than $0.01", 1, 3 * 1440],
+    ["chatbot", "Tell me whenever an answer mentions a refund", 3, 95],
+    ["approvals", "Alert me for any refund over 50", 1, 25],
+    ["crm", "Tell me when a new lead has no email", 0, 0],
+  ] as [WatchModule, string, number, number][]) {
+    const spec = parseWatchPrompt(module, prompt);
+    if (!spec) continue;
+    const id = addWatch(projectId, module, prompt, spec, new Date(Date.now() - 14 * 86400000));
+    if (fired) run("UPDATE watches SET fired_count = ?, last_fired_at = ? WHERE id = ?", fired, new Date(Date.now() - minsAgo * 60000).toISOString(), id);
   }
   return projectId;
 }
