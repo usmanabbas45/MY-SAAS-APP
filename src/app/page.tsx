@@ -20,7 +20,7 @@ const FEATURES = [
   { icon: "⚙️", title: "n8n & Make monitoring", text: "Connect n8n or Make in two minutes. Get alerted on failures, silent failures (success with zero output), stuck runs, workflows switched off or stopped, error spikes, sudden drops in output, and an expired API key." },
   { icon: "✨", title: "Fix with AI, not just a score", text: "Problems are grouped by the help article that caused them. One click writes the corrected article and a safe system prompt for your bot." },
   { icon: "📈", title: "Chatbot analytics", text: "See what customers ask about, accuracy per topic, resolution and escalation rates, response times, 👍/👎 satisfaction and the questions your help docs don't answer yet." },
-  { icon: "📡", title: "Live tracking", text: "Connect your bot, agents and workflows once and watch every answer and run checked in real time, with a clear ✓ working / ✕ problem feed." },
+  { icon: "📡", title: "Live tracking", text: "Chatbot answers, agent runs and webhook events are checked within seconds; n8n/Make, Google Sheets and CRMs are read every 15 minutes (or instantly with a webhook). Each connection shows when data last arrived and when the next check is due." },
   { icon: "🔒", title: "Privacy built in", text: "Emails, phone numbers, card numbers and IBANs are masked before anything is stored or checked by AI. Your own rules (\"never say…\") are enforced on every answer." },
   { icon: "📄", title: "Client-ready reports", text: "Share a read-only report link or save it as a PDF, with your agency's name on it. Export everything to CSV and get a weekly summary email." },
   { icon: "🛡️", title: "Safety & security checks", text: "Catch prompt-injection and jailbreak attempts, leaked system prompts, exposed card numbers, rude replies and answers in the wrong language." },
@@ -43,7 +43,7 @@ const TOUR: TourTab[] = [
   { id: "trust", name: "Trust report", subtitle: "Topic by topic: where your AI can decide alone, where to spot-check and where a person must approve.", img: "/tour/trust.webp", alt: "AI trust report: trust score 85, 44% of decisions can be made alone, recommendations per topic" },
   { id: "approvals", name: "Approvals", subtitle: "Agents prepare refunds, payments and emails. You approve the risky ones with one click.", img: "/tour/approvals.webp", alt: "Approvals inbox with a refund and an invoice payment waiting for one-click approval" },
   { id: "crm", name: "CRM", subtitle: "HubSpot, Salesforce, Pipedrive, Zoho, GoHighLevel and more: duplicates, missing fields, leads not followed up.", img: "/tour/crm.webp", alt: "CRM monitoring for HubSpot showing duplicates and leads not followed up" },
-  { id: "live", name: "Live tracking", subtitle: "Every answer, agent run, workflow, sheet and CRM change, checked the moment it happens.", img: "/tour/live.webp", alt: "Live tracking with status cards for chatbots, agents, n8n, Google Sheets and CRM, and a live feed" },
+  { id: "live", name: "Live tracking", subtitle: "Answers, agent runs and webhooks checked within seconds; n8n/Make, Sheets and CRMs every 15 minutes, with each connection's freshness shown.", img: "/tour/live.webp", alt: "Live tracking with status cards for chatbots, agents, n8n, Google Sheets and CRM, and a live feed" },
   { id: "connect", name: "Connect", subtitle: "Intercom, WhatsApp, Zendesk, n8n, Make or one HTTP call. Each takes 2 to 5 minutes.", img: "/tour/connect.webp", alt: "Connect page with no-code options for chatbots, AI agents and workflows" },
 ];
 
@@ -276,7 +276,7 @@ export default function Landing() {
         <div className="lp-hero-copy">
           <Link href="/changelog" className="shiny-pill"><span className="shiny-pill-new">New</span><span className="shiny-text">CRM monitoring, one-click approvals &amp; Grok support</span> →</Link>
           <h1 style={{ marginTop: 18 }}>Your AI talks to customers 24/7.<br /><span className="gradient-text gradient-anim">Know when it</span> <WordRotate words={["gets things wrong.", "makes things up.", "breaks your policy.", "leaks card data.", "misses a hand-over."]} /></h1>
-          <p>ProofMyAI checks your chatbot&apos;s answers, your AI agents, your n8n/Make workflows, Google Sheets and CRM, then tells you exactly what broke and how to fix it, before your customers notice.</p>
+          <p>ProofMyAI checks your chatbot&apos;s answers, your AI agents, your n8n/Make workflows, Google Sheets and CRM, then shows what broke with the evidence, how to fix it, and tells you when the problem has stopped, before your customers notice.</p>
           <div className="row lp-hero-ctas">
             <ShortcutLink href="/signup" k="s" className="btn btn-lg btn-shimmer" event="hero_start">Get your free AI audit →</ShortcutLink>
             <ShortcutLink href="#tour" k="d" className="btn btn-ghost btn-lg" event="hero_demo">▶ See it in action</ShortcutLink>

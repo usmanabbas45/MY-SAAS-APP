@@ -294,12 +294,10 @@ export function WordRotate({ words, interval = 2400 }: { words: string[]; interv
     return () => clearInterval(t);
   }, [reduce, words.length, interval]);
   return (
-    <>
-      <span className="sr-only">{words[0]}</span>
-      <span className="word-rotate" aria-hidden>
-        {words.map((w, n) => <span key={w} className={n === i ? "on" : ""}>{w}</span>)}
-      </span>
-    </>
+    // Every phrase is in the page once (no hidden duplicate), so screen readers and search engines read the full list.
+    <span className="word-rotate">
+      {words.map((w, n) => <span key={w} className={n === i ? "on" : ""}>{w}</span>)}
+    </span>
   );
 }
 

@@ -45,7 +45,7 @@ export default async function LivePage({ params, searchParams }: { params: Promi
       <Flash ok={flash.ok} error={flash.error} />
       <PageHeader
         title="Live tracking"
-        subtitle="Chatbot answers, agent runs, workflow executions, Google Sheets and CRMs, checked the moment they happen"
+        subtitle="Chatbot answers, agent runs and webhooks are checked within seconds; n8n/Make, Google Sheets and CRMs are read every 15 minutes. Each connection's freshness is shown below."
         actions={
           <>
             <form action={sendTestEventAction}>{pid}<SubmitButton className="btn btn-ghost btn-sm" pendingText="Sending…">▶ Send test event</SubmitButton></form>
