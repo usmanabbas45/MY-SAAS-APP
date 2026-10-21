@@ -14,7 +14,7 @@ vi.mock("@/lib/email", () => ({
 }));
 
 import { get, openDatabase, run, setDb } from "@/lib/db";
-import { backupDue, decryptBackup, listBackups, runBackup, KEEP_DAYS } from "@/lib/backup";
+import { backupDue, decryptBackup, lastRestoreTest, listBackups, runBackup, verifyRestore, KEEP_DAYS } from "@/lib/backup";
 import { checkCronHealth, errorCount, purgeOldErrors, reportError, SPIKE_ERRORS } from "@/lib/monitoring";
 import { confirmEmail, isVerified, sendVerification } from "@/lib/verify";
 import { recordCronRun } from "@/lib/status";
@@ -145,6 +145,16 @@ describe("backups", () => {
     fs.writeFileSync(enc, att.content);
     expect(execFileSync("node", ["scripts/restore-backup.mjs", enc, "test-secret-123"]).toString()).toMatch(/Restored/);
     expect(fs.existsSync(path.join(dir, "restored-proofmyai.db"))).toBe(true);
+
+    // every backup is restore-tested automatically, and the result is recorded for the status page
+    expect(r.detail).toContain("restore test passed");
+    expect(lastRestoreTest()).toMatchObject({ ok: true });
+    expect(lastRestoreTest()?.detail).toMatch(/Restored and checked: 1 users, 2 projects/);
+  });
+
+  it("fails the restore test for a damaged backup", () => {
+    expect(verifyRestore(zlib.gzipSync(Buffer.from("not a database")))).toMatchObject({ ok: false });
+    expect(lastRestoreTest()).toMatchObject({ ok: false });
   });
 
   it(`keeps only the last ${KEEP_DAYS} days`, async () => {

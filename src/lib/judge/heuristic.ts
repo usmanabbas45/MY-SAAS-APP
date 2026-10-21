@@ -32,7 +32,8 @@ export function heuristicGrade(ex: Exchange, index: KbIndex): Grade {
   // wrong number for this topic (e.g. "free delivery over £30" when the delivery article says £50).
   const doc = index.docs.find((d) => d.title === source);
   const docNums = new Set(doc ? extractNumbers(doc.content) : []);
-  const wrongNum = docNums.size ? extractNumbers(ex.answer).find((n) => !docNums.has(n)) : undefined;
+  const askedNums = new Set(extractNumbers(ex.question)); // the customer's own numbers (order total, order number…)
+  const wrongNum = docNums.size ? extractNumbers(ex.answer).find((n) => !docNums.has(n) && !askedNums.has(n)) : undefined;
   if (wrongNum && !s.refusal && !s.escalated) {
     return { ...base, verdict: "hallucination", severity: "high", confidence: 0.5,
       reason: `The answer says "${wrongNum}", but your "${source}" article doesn't mention that number. Check it's right.` };

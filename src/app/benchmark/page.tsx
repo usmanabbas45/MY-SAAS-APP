@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PublicPage } from "@/components/site";
 import { BENCH_CASES, BENCH_DOCS, BENCH_VERSION } from "@/lib/benchmark/dataset";
-import { latestBenchmark, runBenchmark, type BenchRun } from "@/lib/benchmark/run";
+import { hardMetrics, latestBenchmark, runBenchmark, type BenchRun } from "@/lib/benchmark/run";
 import { VERDICT_LABELS } from "@/lib/judge/types";
 
 export const metadata = {
@@ -15,8 +15,11 @@ let basicCache: Promise<BenchRun> | null = null;
 
 function Metrics({ r }: { r: BenchRun }) {
   const m = r.metrics;
+  const hard = hardMetrics(r);
   return (
     <>
+      {r.version !== BENCH_VERSION ? <p className="alert alert-warn">This run used an older dataset version ({r.version}, without the hard cases). A run on the current version ({BENCH_VERSION}) is coming.</p> : null}
+      {hard ? <p className="sub"><strong>Hard cases only</strong> ({hard.total}: subtle details, half-right answers, multi-turn contradictions, trick questions): {hard.recall}% of problems caught, {hard.falseAlarmRate}% false alarms, {hard.verdictAccuracy}% exact verdict.</p> : null}
       <div className="grid grid-4" style={{ margin: "12px 0" }}>
         <div className="card stat"><span className="sub">Problems caught</span><strong style={{ fontSize: 28 }}>{m.recall}%</strong><span className="sub">of wrong answers flagged</span></div>
         <div className="card stat"><span className="sub">Flags that were right</span><strong style={{ fontSize: 28 }}>{m.precision}%</strong><span className="sub">precision</span></div>
@@ -81,7 +84,7 @@ export default async function BenchmarkPage() {
       <h2>⚖️ Limits, honestly</h2>
       <ul>
         <li>The dataset is small ({BENCH_CASES.length} answers) and written by the ProofMyAI team, so it isn&apos;t independent and your own results will differ.</li>
-        <li>It covers single answers in English. It doesn&apos;t measure agent, workflow or CRM checks; those are rule-based and covered by our automated tests.</li>
+        <li>It covers chatbot answers in English, including a few multi-turn conversations. It doesn&apos;t measure agent, workflow or CRM checks; those are rule-based and covered by our automated tests.</li>
         <li>Download it, check the labels, and rerun it against any tool: <a href="/benchmark/dataset.json" download>dataset.json</a> (version {BENCH_VERSION}).</li>
       </ul>
       <p>Want to measure your own bot? Upload your conversations and mark verdicts right or wrong; your <Link href="/signup">Trust report</Link> shows how often your team agrees with ProofMyAI.</p>

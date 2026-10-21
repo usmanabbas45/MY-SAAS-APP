@@ -5,6 +5,7 @@ import { raiseIncident } from "./incidents";
 import { logLiveEvent } from "./liveevents";
 import { notify } from "./notify";
 import { safeFetch } from "./security";
+import { recordTrace } from "./traces";
 
 type Fetcher = typeof safeFetch;
 
@@ -27,6 +28,8 @@ export const ApprovalSchema = z.object({
   require_approval: z.boolean().optional(),
   callback_url: z.string().url().max(2000).optional(),
   expires_in_hours: z.number().min(0.1).max(720).optional(),
+  /** Your id for one end-to-end request, shared with /chat-events, /agent-runs, /workflow-runs and /verify. */
+  trace_id: z.string().min(1).max(200).optional(),
 });
 export type ApprovalInput = z.infer<typeof ApprovalSchema>;
 export type ApprovalStatus = "pending" | "approved" | "rejected" | "expired";
@@ -36,7 +39,7 @@ export interface Approval {
   action: string; summary: string; details: string | null; category: string | null; amount: number | null; currency: string | null;
   reversible: number | null; status: ApprovalStatus; auto: number; reason: string; commitments: string | null;
   decided_by: string | null; decided_at: string | null; note: string | null; callback_url: string | null;
-  created_at: string; expires_at: string;
+  created_at: string; expires_at: string; trace_id: string | null;
 }
 
 const COMMITMENTS: [RegExp, string][] = [
@@ -100,13 +103,15 @@ export async function submitApproval(projectId: number, a: ApprovalInput, now = 
   const verdict = assess(projectId, a);
   const expires = new Date(now.getTime() + (a.expires_in_hours ?? 24) * 3600000).toISOString();
   const id = run(
-    `INSERT INTO approvals (project_id, external_id, fingerprint, agent_name, action, summary, details, category, amount, currency, reversible, status, auto, reason, commitments, decided_by, decided_at, callback_url, created_at, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO approvals (project_id, external_id, fingerprint, agent_name, action, summary, details, category, amount, currency, reversible, status, auto, reason, commitments, decided_by, decided_at, callback_url, created_at, expires_at, trace_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     projectId, a.action_id ?? null, fingerprint, a.agent_name ?? null, a.action, a.summary, a.details ?? null, a.category ?? null, a.amount ?? null, a.currency ?? null,
     a.reversible == null ? null : a.reversible ? 1 : 0, verdict.status, verdict.status === "approved" ? 1 : 0, verdict.reason,
     verdict.commitments.length ? verdict.commitments.join(", ") : null, verdict.status === "approved" ? "ProofMyAI (rule)" : null,
-    verdict.status === "approved" ? now.toISOString() : null, a.callback_url ?? null, now.toISOString(), expires,
+    verdict.status === "approved" ? now.toISOString() : null, a.callback_url ?? null, now.toISOString(), expires, a.trace_id ?? null,
   ).lastInsertRowid;
+  recordTrace(projectId, a.trace_id, "approvals", true,
+    verdict.status === "pending" ? `Waiting for approval: ${a.action}, ${a.summary}` : `Approved automatically: ${a.action}, ${a.summary}`, verdict.reason, now);
   logLiveEvent(projectId, "agents", verdict.status === "pending" ? "warn" : "ok",
     verdict.status === "pending" ? `Waiting for approval: ${a.action}, ${a.summary}` : `Approved automatically: ${a.action}, ${a.summary}`, verdict.reason, now);
   if (verdict.status === "pending") {
@@ -133,6 +138,7 @@ export async function decideApproval(
   }
   const done = get<Approval>("SELECT * FROM approvals WHERE id = ?", id)!;
   logLiveEvent(projectId, "agents", status === "approved" ? "ok" : "warn", `${status === "approved" ? "Approved" : "Rejected"} by ${by}: ${a.action}, ${a.summary}`, note ?? (choice === "approve_rule" ? `Now approved automatically for "${a.category}".` : ""), now);
+  recordTrace(projectId, a.trace_id, "approvals", status === "approved", `${status === "approved" ? "Approved" : "Rejected"} by ${by}: ${a.action}, ${a.summary}`, note ?? "", now);
   if (a.callback_url) {
     fetcher(a.callback_url, {
       method: "POST", headers: { "content-type": "application/json" },

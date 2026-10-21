@@ -7,6 +7,7 @@ const VerifySchema = OutcomeCheckSchema.extend({
   reference: z.string().max(200).optional(),
   claim: z.string().max(500).optional(),
   delay_seconds: z.number().min(0).max(60).default(0),
+  trace_id: z.string().min(1).max(200).optional(),
 });
 
 /**
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return json({ error: parsed.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ") }, 400);
   }
-  const { name, reference, claim, ...check } = parsed.data;
-  const result = await verifyClaim(r.project.id, { who: name, what: claim ?? "", ref: reference ?? new Date().toISOString() }, check);
+  const { name, reference, claim, trace_id, ...check } = parsed.data;
+  const result = await verifyClaim(r.project.id, { who: name, what: claim ?? "", ref: reference ?? new Date().toISOString(), traceId: trace_id }, check);
   return json(result, 200);
 }

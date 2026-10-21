@@ -93,6 +93,8 @@ X-API-Key: ap_live_xxxxxxxxxxxxxxxx`}</Code>
         ["latency_ms", "integer", "Optional: how long the reply took."],
         ["cost_usd", "number", "Optional: what the reply cost."],
         ["error", "string", "Optional: an error your bot hit while replying."],
+        ["retrieved", "string[]", "Optional (RAG bots): the text chunks your bot retrieved for this reply. When an answer is wrong, ProofMyAI says whether it was a retrieval problem (the right fact wasn't fetched), a generation problem (it was fetched and ignored) or missing documentation. Used for the check only, never stored."],
+        ["trace_id", "string", "Optional: your id for one end-to-end request (e.g. an order or ticket number). Send the same id to /check, /agent-runs, /workflow-runs, /approvals and /verify, then open Live tracking → 🔗 Traces to see every step on one timeline, with the first failing step highlighted. Kept up to 90 days (or your retention setting)."],
       ]} />
       <p>Send <code>messages</code>, or <code>question</code> + <code>answer</code>, or just <code>question</code>.</p>
       <Code>{`curl -X POST ${API}/chat-events \\
@@ -179,6 +181,16 @@ jobs:
  "reason": "This can't be undone, so a person approves it first.", "commitments": ["a refund", "a deadline"],
  "poll_url": "${API}/approvals/812"}`}</Code>
       <p>Then wait for the decision: ProofMyAI POSTs <code>{`{"id", "action_id", "status", "decided_by", "note"}`}</code> to your <code>callback_url</code>, or poll <code>GET /approvals/812</code>. Only act when <code>status</code> is <code>approved</code>. Requests expire after 24 hours (<code>expires_in_hours</code>). If the agent submits an action again after a person rejected it, it stays <code>rejected</code> and you get an alert. Every decision is logged with who decided, when and their note. In n8n: HTTP Request node → Wait node (resume on webhook) → IF <code>status = approved</code>.</p>
+
+      <p><strong>Safety guarantees</strong> (each one is covered by an automated test that runs before every release):</p>
+      <ul>
+        <li>The same action sent several times at once, or again while it waits, is <b>one</b> request, never a duplicate refund or payment.</li>
+        <li>A rejected action stays rejected on every retry (matched by <code>action_id</code> or identical content), raises one &quot;rejected action retried&quot; alert, and can&apos;t be flipped to approved.</li>
+        <li>Two people deciding at the same moment: only the first decision counts.</li>
+        <li>Expired requests can never be approved later; resubmitting asks a person again.</li>
+        <li>If your <code>callback_url</code> is down, the decision is still recorded and your agent can poll <code>poll_url</code> for it.</li>
+        <li>Every decision records who decided, when and why.</li>
+      </ul>
 
       <h2 id="verify">🔎 Verify results: don&apos;t take the agent&apos;s word for it</h2>
       <p>Agents and workflows can report &quot;done&quot; when the CRM record never saved or the email never went out. Tell ProofMyAI where the result should be, and it checks the real system. If the result isn&apos;t there, it checks again 30 seconds later, then raises a high alert.</p>

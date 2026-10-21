@@ -49,6 +49,8 @@ export interface Grade {
   topic?: string | null;
   /** Exact sentence from the help docs that backs the verdict (verified to appear in the docs). */
   evidence?: string | null;
+  /** With retrieved chunks: was a wrong answer a retrieval, generation or missing-docs problem? */
+  diagnosis?: "retrieval" | "generation" | "docs" | null;
 }
 
 export function exchangesOf(conv: Conversation): Exchange[] {

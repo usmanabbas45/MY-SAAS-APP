@@ -6,7 +6,14 @@ export const RULE_KINDS = {
   never_say: { label: "Bot must never say", hint: "e.g. a competitor's name, \"lifetime warranty\", \"guaranteed\"" },
   must_escalate: { label: "Always hand over to a human when the customer mentions", hint: "e.g. \"chargeback\", \"allergic\", \"cancel my subscription\"" },
   must_include: { label: "When a topic comes up, the answer must include", hint: "topic => required words, e.g. \"windscreen => not covered\" or \"courtesy car => not available\"" },
+  ai_check: { label: "Custom AI check (plain English, needs AI checking)", hint: "e.g. \"Never quote a delivery date for custom orders\" or \"Pricing answers must mention the 14-day free trial\"" },
 } as const;
+
+/** Plain-English checks the AI judge applies to every answer (the other rule kinds are matched by keyword). */
+export function aiChecks(projectId: number | null | undefined): string[] {
+  if (projectId == null) return [];
+  return all<{ pattern: string }>("SELECT pattern FROM rules WHERE project_id = ? AND kind = 'ai_check' ORDER BY id LIMIT 30", projectId).map((r) => r.pattern);
+}
 
 /** Splits a must_include rule "topic => required text". */
 export function parseMustInclude(pattern: string): { topic: string; required: string } | null {

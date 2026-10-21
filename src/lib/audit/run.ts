@@ -1,9 +1,10 @@
 import { all, get, run, transaction } from "../db";
 import { buildKbIndex, featureVector, signalsFor, type KbIndex } from "../judge/features";
-import { bestSentence } from "../judge/evidence";
+import { bestSentence, diagnose } from "../judge/evidence";
+import { recordTrace } from "../traces";
 import { heuristicGrade } from "../judge/heuristic";
 import { aiForProject, JudgeError, judgeConcurrency, judgeLabel, llmGradeConversation } from "../judge/llm";
-import { exchangesOf, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
+import { exchangesOf, VERDICT_LABELS, type Conversation, type Exchange, type Grade, type KbDoc, type Severity, type Verdict } from "../judge/types";
 import type { MlpModel } from "../ml/mlp";
 import { loadModel, riskScore } from "../ml/risk";
 import { applyRules, parseMustInclude, projectRules, type Rule } from "../rules";
@@ -105,22 +106,27 @@ export function storeGradedItem(auditId: number, e: Exchange, g: Grade, index: K
   const topic = topicFor(e.question, grade.sourceDoc, g.topic);
   // Evidence comes from the business's own docs (never from the customer), so it is kept even in results-only mode.
   const evidence = grade.evidence ?? (grade.sourceDoc ? bestSentence(index.docs.find((d) => d.title === grade.sourceDoc), e.question, e.answer, grade.reason) : null);
+  const diagnosis = diagnose(grade.verdict, evidence, meta.retrieved);
   const storeText = get<{ s: number }>("SELECT p.store_text AS s FROM audits a JOIN projects p ON p.id = a.project_id WHERE a.id = ?", auditId)?.s ?? 1;
   if (!storeText) e = { ...e, question: NOT_STORED, answer: NOT_STORED };
   run(
     `INSERT INTO audit_items (audit_id, conversation_id, turn_index, question, answer, verdict, severity, reason, source_doc, confidence, features_json, risk, created_at, frustrated, rule_hit,
-       conv_flags, latency_ms, cost_usd, bot_error, topic, evidence)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
+       conv_flags, latency_ms, cost_usd, bot_error, topic, evidence, diagnosis, trace_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     auditId, e.conversationId, e.turnIndex, e.question, e.answer, grade.verdict, grade.severity, grade.reason + note, grade.sourceDoc,
     grade.confidence, JSON.stringify(features), riskScore(model, features, grade.verdict, grade.confidence),
     frustrated, hit, flags.length ? flags.join(",") : null,
-    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null, topic, evidence,
+    meta.latencyMs ?? null, meta.costUsd ?? null, meta.error ?? null, topic, evidence, diagnosis, meta.traceId ?? null,
   );
-  return { ...grade, evidence };
+  if (meta.traceId) {
+    const projectId = get<{ p: number }>("SELECT project_id AS p FROM audits WHERE id = ?", auditId)?.p;
+    if (projectId) recordTrace(projectId, meta.traceId, "chatbot", grade.verdict === "correct", `Chatbot reply: ${VERDICT_LABELS[grade.verdict]}`, grade.reason);
+  }
+  return { ...grade, evidence, diagnosis };
 }
 
 /** Operational data a bot can send with a reply (live tracking). */
-export interface ReplyMeta { latencyMs?: number; costUsd?: number; error?: string }
+export interface ReplyMeta { latencyMs?: number; costUsd?: number; error?: string; retrieved?: string[]; traceId?: string }
 
 /** Grades every chatbot reply in the conversations and stores the results. Never throws; failures are stored on the audit. */
 export async function executeAudit(auditId: number, projectId: number, conversations: Conversation[]): Promise<void> {

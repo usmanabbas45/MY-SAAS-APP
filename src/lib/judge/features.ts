@@ -4,7 +4,7 @@ import { VERDICTS } from "./types";
 
 // Always needs a human: legal threats, fraud/security, safety, or an explicit request for a person.
 const STRONG_ESCALATION =
-  /\b(lawyer|legal action|sue|suing|chargeback|fraud|scam|hacked|stolen|injur\w*|allergic reaction|medical emergency|emergency|furious|unacceptable|(speak|talk) (to|with) (a |an )?(human|person|manager|agent|someone|real))\b/i;
+  /\b(lawyer|legal action|sue|suing|chargeback|fraud|scam|hacked|stolen|injur\w*|allergic reaction|medical emergency|emergency|furious|unacceptable|(speak|talk) (to|with) (a |an )?(human|person|manager|agent|someone|real)|(get|give) me (a |an )?(human|person|manager|agent)|charged (twice|two times|double)|double[- ]charged|without my (permission|consent|knowledge)|didn'?t authori[sz]e|unauthori[sz]ed|swallow\w*|burn(ed|t|s)? (my|his|her|their)|poison\w*|bleeding|choking|unconscious)\b/i;
 // Needs a human only if the docs cannot answer it (e.g. a refund *policy* question is fine for a bot).
 const SOFT_ESCALATION = /\b(refund|cancel\w*|complain\w*|complaint|angry|broken|damaged|urgent|manager|human)\b/i;
 export const ESCALATION_ACTIONS =

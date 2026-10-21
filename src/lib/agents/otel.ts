@@ -100,6 +100,7 @@ export function runFromTrace(spans: Span[]): AgentRun | null {
   const failed = isError(root);
   return {
     run_id: root.traceId!.slice(0, 200),
+    trace_id: str(first(a, "proofmyai.trace_id", "session.id") ?? root.traceId).slice(0, 200),
     agent_name: str(first(a, "gen_ai.agent.name", "agent.name") ?? root.service ?? root.name).slice(0, 200) || root.name?.slice(0, 200) || "agent",
     goal: clip(first(a, "input.value", "gen_ai.prompt", "gen_ai.agent.description")),
     status: failed ? "error" : "success",

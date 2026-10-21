@@ -426,6 +426,12 @@ function migrate(db: DatabaseSync): void {
     expires_at TEXT NOT NULL
   )`);
   db.exec("CREATE INDEX IF NOT EXISTS idx_approvals_project ON approvals (project_id, status, id)");
+  // Belt and braces: never two pending requests for the same action, even if several app instances race.
+  try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_approvals_one_pending ON approvals (project_id, fingerprint) WHERE status = 'pending'");
+  } catch (err) {
+    console.error("[db] could not add the one-pending-approval index (existing duplicates?):", err instanceof Error ? err.message : err);
+  }
   db.exec(`CREATE TABLE IF NOT EXISTS approval_rules (
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     category TEXT NOT NULL,
@@ -610,6 +616,22 @@ function migrate(db: DatabaseSync): void {
   // Chatbot analytics: topic of each answer, and ratings from the bot's own users (thumbs up/down, stars).
   addColumn(db, "audit_items", "topic", "TEXT");
   addColumn(db, "audit_items", "evidence", "TEXT");
+  addColumn(db, "audit_items", "diagnosis", "TEXT");
+  addColumn(db, "audit_items", "trace_id", "TEXT");
+  // End-to-end traces across chatbot, agents, workflows, approvals and outcome checks (lib/traces).
+  db.exec(`CREATE TABLE IF NOT EXISTS trace_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    trace_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    at TEXT NOT NULL
+  )`);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_trace_events ON trace_events (project_id, trace_id, at)");
+  addColumn(db, "approvals", "trace_id", "TEXT");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_audit_items_trace ON audit_items (trace_id) WHERE trace_id IS NOT NULL");
   // Public accuracy benchmark runs (see lib/benchmark).
   db.exec(`CREATE TABLE IF NOT EXISTS benchmark_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
