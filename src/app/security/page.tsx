@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default function SecurityPage() {
   const subs = subprocessors();
   return (
-    <PublicPage title="Trust Center" updated="19 October 2026">
+    <PublicPage title="Trust Center" updated="21 October 2026">
       <p>ProofMyAI processes conversations between businesses and their customers, so we built it to collect as little as possible and to give each business control over what is stored and where it goes. This page answers the questions a data protection review usually asks.</p>
 
       <h2>🏢 Who we are</h2>
@@ -62,6 +62,25 @@ export default function SecurityPage() {
         <li>Administrator access is limited to the operator and every admin action is logged. Support staff never see API keys, and we only open a customer&apos;s conversations to help that customer, at their request.</li>
         <li>Personal data breaches are reported to affected customers without undue delay, and at most within 72 hours of us becoming aware.</li>
       </ul>
+
+      <h2>🧪 Security &amp; resilience, tested on every release</h2>
+      <p>These behaviours are checked by automated tests that must pass before any change goes live (360+ tests in total). They show the protections work as designed; they are not an external penetration test or certification.</p>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Area</th><th>What the tests prove</th></tr></thead>
+          <tbody>
+            <tr><td>Tenant isolation</td><td>A login or API key can never open, read or write another customer&apos;s project, approvals or traces; data sent with a key lands only in that key&apos;s project.</td></tr>
+            <tr><td>Outbound requests (SSRF)</td><td>Private, loopback, cloud-metadata and reserved addresses are blocked in every notation, before and while connecting, including DNS-rebinding tricks.</td></tr>
+            <tr><td>Credentials</td><td>Integration secrets are encrypted and tampering is detected; passwords are hashed; password resets are single-use and expire; resetting signs out every device.</td></tr>
+            <tr><td>Login protection</td><td>Two-factor codes match the RFC 6238 standard and work once; CAPTCHA can&apos;t be replayed; breached and weak passwords are refused; disposable emails are blocked; rate limits apply.</td></tr>
+            <tr><td>Approvals (retry safety)</td><td>Duplicate and simultaneous requests become one; rejected actions stay blocked on every retry; only the first of two simultaneous decisions counts; expired requests can&apos;t be approved; a failed callback never loses the decision.</td></tr>
+            <tr><td>Webhooks</td><td>WhatsApp webhooks need the project key; phone numbers are never used as conversation ids.</td></tr>
+            <tr><td>Privacy</td><td>Personal data masking (cards, emails, phones, postcodes, plates, names, custom words), results-only mode, AI-off mode and retention deletion.</td></tr>
+            <tr><td>Recovery</td><td>Every daily backup is restored into a scratch database and checked (integrity, row counts, encryption round-trip); the restore script recovers the data; a damaged backup fails the check. Result shown on the <a href="/status">status page</a>.</td></tr>
+            <tr><td>Detection quality</td><td>A regression guard keeps basic-mode accuracy on the <a href="/benchmark">public benchmark</a> from getting worse.</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>🛡️ Your AI integration stays safe</h2>
       <p>Our code snippets send data in the background with a 2-second limit, so monitoring can never slow down or break your chatbot or agent. Nightly tests should point at a test endpoint, never at a live WhatsApp/Twilio or SMS webhook.</p>
