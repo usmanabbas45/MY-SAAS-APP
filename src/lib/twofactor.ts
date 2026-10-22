@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { all, get, run, transaction } from "./db";
-import { decrypt, derivedKey, encrypt, sha256 } from "./security";
+import { decrypt, derivedKey, derivedKeys, encrypt, sha256 } from "./security";
 
 /**
  * Two-factor authentication with time-based one-time codes (TOTP, RFC 6238), compatible with Google
@@ -70,7 +70,10 @@ export function pendingSecret(userId: number): string | null {
   return enc ? decrypt(enc) : null;
 }
 
-const hashCode = (code: string) => sha256(`${derivedKey("recovery")}:${code.replace(/[^a-z0-9]/gi, "").toLowerCase()}`);
+const normCode = (code: string) => code.replace(/[^a-z0-9]/gi, "").toLowerCase();
+const hashCode = (code: string) => sha256(`${derivedKey("recovery")}:${normCode(code)}`);
+/** Hashes to look for: codes issued before an APP_SECRET rotation were hashed with the previous secret. */
+const codeHashes = (code: string) => derivedKeys("recovery").map((k) => sha256(`${k}:${normCode(code)}`));
 
 /** Confirms setup with a code from the app. Returns the recovery codes to show once, or null if the code is wrong. */
 export function confirmSetup(userId: number, code: string, now = Date.now()): string[] | null {
@@ -97,7 +100,7 @@ export function verifySecondFactor(userId: number, code: string, now = Date.now(
     run("UPDATE users SET totp_last_step = ? WHERE id = ?", step, userId);
     return { ok: true };
   }
-  const used = run("UPDATE recovery_codes SET used_at = ? WHERE user_id = ? AND code_hash = ? AND used_at IS NULL", new Date(now).toISOString(), userId, hashCode(code));
+  const used = run(`UPDATE recovery_codes SET used_at = ? WHERE user_id = ? AND code_hash IN (${codeHashes(code).map(() => "?").join(", ")}) AND used_at IS NULL`, new Date(now).toISOString(), userId, ...codeHashes(code));
   return used.changes ? { ok: true, usedRecovery: true } : { ok: false };
 }
 

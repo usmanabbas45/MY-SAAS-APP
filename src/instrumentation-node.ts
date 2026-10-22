@@ -4,6 +4,15 @@ import { checkCronHealth, reportError } from "./lib/monitoring";
 import { runDueMonitors } from "./lib/uptime";
 import { runDueSheets } from "./lib/sheets";
 import { checkHeartbeats } from "./lib/heartbeats";
+import { reencryptStoredSecrets } from "./lib/keyrotation";
+
+// After an APP_SECRET rotation, move every stored credential onto the new secret before anything else runs.
+try {
+  const r = reencryptStoredSecrets();
+  if (r.reencrypted || r.unreadable) console.log(`[security] APP_SECRET rotation: ${r.reencrypted} stored credentials re-encrypted, ${r.unreadable} unreadable`);
+} catch (err) {
+  console.error("[security] re-encryption after APP_SECRET rotation failed:", err);
+}
 
 /**
  * Every minute: missing-reply alerts (so they arrive about a minute after the project's reply-time limit

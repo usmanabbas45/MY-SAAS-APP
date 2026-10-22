@@ -13,9 +13,25 @@ function appSecret(): string {
   return "dev-only-insecure-secret-change-me";
 }
 
+/**
+ * The secret in use before the last rotation (APP_SECRET_PREVIOUS). While it is set, anything made with the old
+ * secret still opens: stored credentials are re-encrypted with the new one at startup (see keyrotation.ts), and
+ * links, recovery codes and signatures made before the rotation keep working.
+ */
+export function previousAppSecret(): string | null {
+  const s = process.env.APP_SECRET_PREVIOUS;
+  return s && s.length >= 16 && s !== process.env.APP_SECRET ? s : null;
+}
+
 /** A stable, non-secret identifier derived from the app secret (one-way), e.g. the IndexNow key. */
 export function derivedKey(label: string): string {
   return sha256(`${label}:${appSecret()}`).slice(0, 32);
+}
+
+/** derivedKey for the current secret, plus the previous one while a rotation is in progress (for checking only). */
+export function derivedKeys(label: string): string[] {
+  const prev = previousAppSecret();
+  return [derivedKey(label), ...(prev ? [sha256(`${label}:${prev}`).slice(0, 32)] : [])];
 }
 
 export function randomToken(bytes = 32): string {
@@ -40,8 +56,8 @@ export function verifyPassword(password: string, stored: string): boolean {
   return crypto.timingSafeEqual(expected, actual);
 }
 
-function encryptionKey(): Buffer {
-  return crypto.createHash("sha256").update(`enc:${appSecret()}`).digest();
+function encryptionKey(secret = appSecret()): Buffer {
+  return crypto.createHash("sha256").update(`enc:${secret}`).digest();
 }
 
 /** AES-256-GCM encryption for third-party credentials stored in the database. */
@@ -52,11 +68,32 @@ export function encrypt(plain: string): string {
   return [iv, cipher.getAuthTag(), data].map((b) => b.toString("base64url")).join(".");
 }
 
-export function decrypt(payload: string): string {
+function decryptWith(payload: string, key: Buffer): string {
   const [iv, tag, data] = payload.split(".").map((p) => Buffer.from(p, "base64url"));
-  const decipher = crypto.createDecipheriv("aes-256-gcm", encryptionKey(), iv);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+}
+
+/** Decrypts with the current secret, falling back to APP_SECRET_PREVIOUS during a rotation. */
+export function decrypt(payload: string): string {
+  try {
+    return decryptWith(payload, encryptionKey());
+  } catch (err) {
+    const prev = previousAppSecret();
+    if (!prev) throw err;
+    return decryptWith(payload, encryptionKey(prev));
+  }
+}
+
+/** True when the payload opens with the current secret (so it doesn't need re-encrypting). */
+export function encryptedWithCurrentKey(payload: string): boolean {
+  try {
+    decryptWith(payload, encryptionKey());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Address ranges a customer-supplied URL must never reach (loopback, private, link-local, metadata, reserved). */

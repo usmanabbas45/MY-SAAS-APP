@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { all, get, run } from "./db";
 import { trackEvent, userGaIds } from "./ga";
 import { onFriendPaid } from "./referral-rewards";
+import { previousAppSecret } from "./security";
 
 /**
  * Plans, usage limits and Paddle billing (Paddle is the Merchant of Record).
@@ -212,8 +213,8 @@ export function projectOwner(projectId: number): number {
 // ---------- Paddle ----------
 
 /** Signs the user ID we pass to checkout so a subscription can't be attached to someone else's account. */
-export function checkoutSignature(userId: number): string {
-  return createHmac("sha256", process.env.APP_SECRET || "dev-secret").update(`paddle-user:${userId}`).digest("hex").slice(0, 32);
+export function checkoutSignature(userId: number, secret = process.env.APP_SECRET || "dev-secret"): string {
+  return createHmac("sha256", secret).update(`paddle-user:${userId}`).digest("hex").slice(0, 32);
 }
 
 function signedUserId(custom: unknown): number | null {
@@ -221,8 +222,10 @@ function signedUserId(custom: unknown): number | null {
   const id = Number(c?.user_id);
   if (!Number.isInteger(id) || id <= 0 || typeof c?.sig !== "string") return null;
   const a = Buffer.from(c.sig);
-  const b = Buffer.from(checkoutSignature(id));
-  return a.length === b.length && timingSafeEqual(a, b) ? id : null;
+  // Checkouts started before an APP_SECRET rotation were signed with the previous secret.
+  const prev = previousAppSecret();
+  return [checkoutSignature(id), ...(prev ? [checkoutSignature(id, prev)] : [])]
+    .some((sig) => { const b = Buffer.from(sig); return a.length === b.length && timingSafeEqual(a, b); }) ? id : null;
 }
 
 /** Verifies the Paddle-Signature header ("ts=...;h1=...") over the raw body. */
