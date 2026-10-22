@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { run } from "./db";
-import { derivedKey } from "./security";
+import { derivedKey, derivedKeys } from "./security";
 import { SITE_URL } from "./seo";
 
 /**
@@ -8,6 +8,11 @@ import { SITE_URL } from "./seo";
  * APP_SECRET, so only the real email can turn it off. Supports the List-Unsubscribe-Post one-click
  * standard (RFC 8058) that Gmail and Yahoo expect from senders.
  */
+const sameToken = (token: string, expected: string) => {
+  const a = Buffer.from(token), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
 export const unsubToken = (projectId: number) => derivedKey(`unsub-digest:${projectId}`);
 
 export function unsubUrl(projectId: number): string {
@@ -20,8 +25,7 @@ export function unsubHeaders(projectId: number): Record<string, string> {
 
 export function validUnsub(projectId: number, token: string): boolean {
   if (!Number.isInteger(projectId) || projectId <= 0 || !token) return false;
-  const a = Buffer.from(token), b = Buffer.from(unsubToken(projectId));
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return derivedKeys(`unsub-digest:${projectId}`).some((k) => sameToken(token, k));
 }
 
 /** Welcome emails (per user rather than per project). */
@@ -34,8 +38,7 @@ export function welcomeUnsubHeaders(userId: number): Record<string, string> {
 }
 export function validWelcomeUnsub(userId: number, token: string): boolean {
   if (!Number.isInteger(userId) || userId <= 0 || !token) return false;
-  const a = Buffer.from(token), b = Buffer.from(welcomeToken(userId));
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return derivedKeys(`unsub-welcome:${userId}`).some((k) => sameToken(token, k));
 }
 export function unsubscribeWelcome(userId: number, token: string): boolean {
   if (!validWelcomeUnsub(userId, token)) return false;
