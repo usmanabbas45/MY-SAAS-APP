@@ -34,7 +34,7 @@ Written for Muhammad Usman. Follow the parts in order. Each step says exactly wh
 
 ### A2. Download the code
 ```bash
-git clone https://github.com/usmanabbas45/MY-SAAS-APP.git
+git clone https://github.com/usmanabbas45/ProofMyAi.git
 cd MY-SAAS-APP
 git checkout claude/saas-market-research-tt8mkn
 npm install
@@ -105,7 +105,7 @@ Without a key, ProofMyAI uses rules plus your neural network. With a key, Claude
 Railway is the easiest option: about $5/month, works worldwide, and uses the included `Dockerfile` automatically.
 
 ### C1. Put your code on GitHub
-Your code is already in `github.com/usmanabbas45/MY-SAAS-APP` on the branch `claude/saas-market-research-tt8mkn`. On GitHub, open a pull request and merge it into `main`.
+Your code is already in `github.com/usmanabbas45/ProofMyAi` on the branch `claude/saas-market-research-tt8mkn`. On GitHub, open a pull request and merge it into `main`.
 
 ### C2. Create the Railway service
 1. Go to **https://railway.app** → **Login with GitHub**.
@@ -126,7 +126,7 @@ Your code is already in `github.com/usmanabbas45/MY-SAAS-APP` on the branch `cla
 
 **Alternative: your own server (Hetzner or DigitalOcean, about $5/month).** Create an Ubuntu server, install Docker, then:
 ```bash
-git clone https://github.com/usmanabbas45/MY-SAAS-APP.git && cd MY-SAAS-APP
+git clone https://github.com/usmanabbas45/ProofMyAi.git && cd ProofMyAi
 cp .env.example .env && nano .env      # fill in the values
 docker compose up -d
 ```
