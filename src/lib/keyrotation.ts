@@ -1,4 +1,5 @@
-import { all, run } from "./db";
+import { all, get, run } from "./db";
+import { sendEmail } from "./email";
 import { decrypt, encrypt, encryptedWithCurrentKey, previousAppSecret } from "./security";
 
 /** Every column holding a credential encrypted with APP_SECRET. */
@@ -32,4 +33,52 @@ export function reencryptStoredSecrets(): { reencrypted: number; unreadable: num
     }
   }
   return { reencrypted, unreadable };
+}
+
+/** Counts stored credentials that neither the current nor the previous secret can open. */
+export function unreadableSecrets(): { table: string; column: string; count: number }[] {
+  return ENCRYPTED.map(([table, column]) => ({
+    table, column,
+    count: all<{ v: string }>(`SELECT ${column} AS v FROM ${table} WHERE ${column} IS NOT NULL AND ${column} != ''`)
+      .filter((r) => { try { decrypt(r.v); return false; } catch { return true; } }).length,
+  })).filter((r) => r.count > 0);
+}
+
+/**
+ * Recovery when the old APP_SECRET was lost (set APP_SECRET_LOST=1 for one deploy). Two-factor setups that can no
+ * longer be read are reset so those people can sign in with their password and set 2FA up again, and each of
+ * them is emailed. Saved connection keys are left in place: they show "please reconnect" until re-entered.
+ * Opt-in on purpose, so a mistyped APP_SECRET can never reset anyone's 2FA by accident.
+ */
+export async function recoverFromLostSecret(): Promise<{ twoFactorReset: number; connectionsToReconnect: number }> {
+  const users = all<{ id: number; email: string; s: string | null; p: string | null }>(
+    "SELECT id, email, totp_secret_enc AS s, totp_pending_enc AS p FROM users WHERE totp_secret_enc IS NOT NULL OR totp_pending_enc IS NOT NULL",
+  );
+  let twoFactorReset = 0;
+  for (const u of users) {
+    const unreadable = [u.s, u.p].some((v) => { if (!v) return false; try { decrypt(v); return false; } catch { return true; } });
+    if (!unreadable) continue;
+    const hadTwoFactor = Boolean(get<{ enabled: number }>("SELECT totp_enabled_at IS NOT NULL AS enabled FROM users WHERE id = ?", u.id)?.enabled);
+    run("UPDATE users SET totp_secret_enc = NULL, totp_pending_enc = NULL, totp_enabled_at = NULL, totp_last_step = NULL WHERE id = ?", u.id);
+    run("DELETE FROM recovery_codes WHERE user_id = ?", u.id);
+    if (!hadTwoFactor) continue;
+    twoFactorReset++;
+    await sendEmail(u.email, "Please turn on two-factor authentication again",
+      [
+        "Hello,",
+        "",
+        "Our hosting provider had a security incident, so we replaced all of ProofMyAI's secret keys as a precaution. Because of this, your authenticator app setup (two-factor authentication) had to be reset.",
+        "",
+        "Your account, projects and results are not affected. You can sign in with your email and password as usual.",
+        "Please set up two-step login again: sign in, open Account, and choose \"Set up two-step login\". Delete the old ProofMyAI entry from your authenticator app.",
+        "",
+        "If any n8n, Make, CRM, Intercom, Twilio or alert connection shows \"please reconnect\", enter its key again once.",
+        "",
+        "Sorry for the trouble. Reply to this email if you need help.",
+        "ProofMyAI",
+      ].join("\n"),
+    ).catch(() => false);
+  }
+  const connectionsToReconnect = unreadableSecrets().filter((r) => r.table !== "users").reduce((n, r) => n + r.count, 0);
+  return { twoFactorReset, connectionsToReconnect };
 }

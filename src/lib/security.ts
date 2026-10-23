@@ -75,14 +75,24 @@ function decryptWith(payload: string, key: Buffer): string {
   return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }
 
+/** Thrown when a stored credential was encrypted with an APP_SECRET that is no longer available. */
+export class UnreadableSecretError extends Error {
+  constructor() {
+    super("This saved key can't be read after a security update. Please reconnect it (enter the key again) in ProofMyAI.");
+    this.name = "UnreadableSecretError";
+  }
+}
+
 /** Decrypts with the current secret, falling back to APP_SECRET_PREVIOUS during a rotation. */
 export function decrypt(payload: string): string {
   try {
     return decryptWith(payload, encryptionKey());
-  } catch (err) {
+  } catch {
     const prev = previousAppSecret();
-    if (!prev) throw err;
-    return decryptWith(payload, encryptionKey(prev));
+    try {
+      if (prev) return decryptWith(payload, encryptionKey(prev));
+    } catch { /* falls through */ }
+    throw new UnreadableSecretError();
   }
 }
 
