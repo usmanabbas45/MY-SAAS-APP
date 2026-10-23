@@ -8,6 +8,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-23", title: "Free n8n Workflow Checker", tag: "New",
+    items: [
+      "🔍 Paste any n8n workflow at /tools/n8n-workflow-checker and get a risk score in seconds: API keys pasted in nodes, webhooks anyone can call, errors that pass as success, missing retries, no error workflow, unchecked empty results and pinned test data, each with the exact fix.",
+      "🔒 It runs entirely in your browser. The workflow is never uploaded or stored, and there's no sign-up.",
+      "🛡️ Saved keys and 2FA now survive a full secret-key rotation, after our hosting provider's security incident on 21 October.",
+    ],
+  },
+  {
     date: "2026-10-21", title: "Watch for anything, in your own words", tag: "New",
     items: [
       "🔔 Every feature page (chatbot, AI agents, n8n & Make, approvals, CRM, Google Sheets, uptime) now has a \"Watch for…\" box. Write what to watch and when to be told, e.g. \"Alert me if the Order sync workflow runs fewer than 10 times a day\" or \"Tell me when an agent run costs more than $1\".",
