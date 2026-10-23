@@ -27,6 +27,7 @@ Key facts:
 - [Home and pricing](${SITE_URL}/): overview, features, pricing and FAQ
 ${SOLUTIONS.map((s) => `- [${s.title}](${SITE_URL}/solutions/${s.slug}): ${s.description}`).join("\n")}
 - [Free AI chatbot answer checker](${SITE_URL}/tools/ai-chatbot-checker): free tool, no sign-up. Paste a customer question, the bot's answer and your policy to see if the answer is correct, made up, not in your docs or should have been escalated.
+- [Free n8n workflow checker](${SITE_URL}/tools/n8n-workflow-checker): free tool, no sign-up, runs in the browser (nothing uploaded). Paste an n8n workflow to find API keys pasted in nodes, webhooks without authentication, errors that pass as success, missing retries, missing error workflow, unchecked empty results and pinned test data, each with the fix.
 - [Free done-for-you chatbot audit](${SITE_URL}/free-audit): request a free audit of your website chatbot, delivered by email within 2 business days.
 ${COMPARISONS.map((c) => `- [ProofMyAI vs ${c.name}](${SITE_URL}/compare/${c.slug}): ${c.description}`).join("\n")}
 

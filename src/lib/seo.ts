@@ -109,6 +109,7 @@ export const SOLUTIONS: Solution[] = [
     faqs: [
       { q: "How do I get alerts when an n8n workflow fails?", a: "Connect n8n to ProofMyAI with an API key (n8n → Settings → n8n API). ProofMyAI checks executions every 15 minutes and alerts you on Slack or email. For instant alerts, add an Error Trigger workflow that posts to the ProofMyAI webhook." },
       { q: "Does it work with self-hosted n8n?", a: "Yes, as long as your n8n public API is reachable from the internet. You can also push executions to ProofMyAI with a webhook." },
+      { q: "Can I check a workflow before connecting anything?", a: "Yes. The free n8n workflow checker at proofmyai.com/tools/n8n-workflow-checker scans a pasted workflow for exposed API keys, open webhooks, errors that pass as success, missing retries and a missing error workflow. It runs in your browser and nothing is uploaded." },
     ],
   },
   {

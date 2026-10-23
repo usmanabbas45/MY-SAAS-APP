@@ -1306,3 +1306,10 @@ html.is-scrolling .beam-hub-mark::after { animation-play-state: paused; }
 .kb-or { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
 .kb-or::before, .kb-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .export-help { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 14px; }
+
+/* n8n workflow checker */
+.checker details.scan-finding { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 10px 0 0; background: var(--surface); }
+.checker details.scan-finding p { line-height: 1.55; }
+.scan-finding summary { cursor: pointer; list-style: none; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.scan-finding summary::-webkit-details-marker { display: none; }
+kbd { font: 600 12px/1 var(--mono, monospace); padding: 2px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); }

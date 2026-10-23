@@ -21,7 +21,7 @@ export async function SiteHeader() {
           <Link href="/#features">Features</Link>
           <Link href="/solutions/ai-chatbot-monitoring">Solutions</Link>
           <Link href="/#pricing">Pricing</Link>
-          <Link href="/tools/ai-chatbot-checker">Free checker</Link>
+          <Link href="/tools/n8n-workflow-checker">Free n8n checker</Link>
           <Link href="/blog">Guides</Link>
           <Link href="/docs">Docs</Link>
           <Link href="/#faq">FAQ</Link>
@@ -59,6 +59,7 @@ export function SiteFooter() {
             <li><Link href="/#faq">FAQ</Link></li>
             <li><Link href="/free-audit">Free AI audit (done for you)</Link></li>
             <li><Link href="/tools/ai-chatbot-checker">Free chatbot answer checker</Link></li>
+            <li><Link href="/tools/n8n-workflow-checker">Free n8n workflow checker</Link></li>
             {COMPARISONS.map((c) => <li key={c.slug}><Link href={`/compare/${c.slug}`}>ProofMyAI vs {c.name}</Link></li>)}
             <li><Link href="/blog">Guides</Link></li>
             <li><Link href="/docs">Docs &amp; API</Link></li>

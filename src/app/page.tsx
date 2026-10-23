@@ -286,7 +286,7 @@ export default function Landing() {
             <ShortcutLink href="/signup" k="s" className="btn btn-lg btn-shimmer" event="hero_start">Get your free AI audit →</ShortcutLink>
             <ShortcutLink href="#tour" k="d" className="btn btn-ghost btn-lg" event="hero_demo">▶ See it in action</ShortcutLink>
           </div>
-          <p className="hero-alt">Not ready to sign up? <Link href="/tools/ai-chatbot-checker">Check one answer free</Link> or <Link href="/free-audit">get a done-for-you audit</Link>.</p>
+          <p className="hero-alt">Not ready to sign up? <Link href="/tools/n8n-workflow-checker">Scan an n8n workflow free</Link>, <Link href="/tools/ai-chatbot-checker">check one chatbot answer</Link> or <Link href="/free-audit">get a done-for-you audit</Link>.</p>
           <ul className="lp-trust">
             <li>✓ Free for 50 conversations a month</li>
             <li>✓ Cancel any time</li>
