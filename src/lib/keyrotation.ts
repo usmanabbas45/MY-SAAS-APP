@@ -70,7 +70,7 @@ export async function recoverFromLostSecret(): Promise<{ twoFactorReset: number;
         "Our hosting provider had a security incident, so we replaced all of ProofMyAI's secret keys as a precaution. Because of this, your authenticator app setup (two-factor authentication) had to be reset.",
         "",
         "Your account, projects and results are not affected. You can sign in with your email and password as usual.",
-        "Please set up two-step login again: sign in, open Account, and choose \"Set up two-step login\". Delete the old ProofMyAI entry from your authenticator app.",
+        "Please turn it back on: sign in, open Account, and choose \"Turn on two-factor authentication\". Delete the old ProofMyAI entry from your authenticator app.",
         "",
         "If any n8n, Make, CRM, Intercom, Twilio or alert connection shows \"please reconnect\", enter its key again once.",
         "",
